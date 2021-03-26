@@ -1,0 +1,3 @@
+[submodule "libraries/uquake"]
+	path = libraries/uquake
+	url = git@github.com:jeanphilippemercier/uquake.git
