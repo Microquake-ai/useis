@@ -1,5 +1,5 @@
 [default]
-project.site = 'test'
+project.name = 'test'
 project.network = 'OT'
 project.base_directory = ''
 api_base_url = 'https://api.microquake.org/api/v1/'
@@ -14,18 +14,6 @@ logging_level = 0
 DEBUG_LEVEL = 0
 DEBUG_FILE_DIR = '.'
 
-# nlloc
-nlloc.nll_base = 'NLL'
-nlloc.locsig = 'Oyu Tolgoi Geotechnical Monitoring Team'
-nlloc.loccom = 'Prototype'
-nlloc.residual_tolerance = 10e-3
-# locsearch = 'OCT 20 20 30 1e-6 50000 1000 0 1'
-# locsearch = 'OCT 10 10 10 1e-6 20000 1000 0 1'
-nlloc.locsearch = 'OCT 5 5 5 1e-6 5000 500 0 1'
-nlloc.locmeth = 'EDT_OT_WT 9999.0 4 -1 -1 -1 0'
-nlloc.locgau = ''
-nlloc.picking_error = 2.5e-3
-
 time_zone.type = 'UTC_offset'                # either 'UTC_offset or 'time_zone'
 time_zone.time_zone_code = 'ULN'             # time zone code. If type=time_zone, time_zone_code must be a valid pytz timezone
 time_zone.offset = 8                         # time offset in hours, ignored if type=time_zone
@@ -34,12 +22,11 @@ pre_processing_message_queue = 'event_connector.pre_processing'
 automatic_pipeline_message_queue = 'workflow.automatic'
 api_message_queue = 'api'
 
-# grids.units = 'meter'
-# grids.method = 'ODS'
-# grids.origin = [650200, 4766170, -500]
-# grids.dimensions = [100, 101, 68]
-# grids.spacing = [25, 25, 25]
-
+grids.units = 'meter'
+grids.method = 'ODS'
+grids.origin = [650200, 4766170, -500]
+grids.dimensions = [100, 101, 68]
+grids.spacing = [25, 25, 25]
 grids.velocities.source = 'local'
 grids.velocities.homogeneous = false
 grids.velocities.vp = 'velocities/vp'

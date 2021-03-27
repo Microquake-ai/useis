@@ -1,8 +1,10 @@
 from ..core.project_manager import *
+from uquake.nlloc.nlloc import *
 
 
 class NLLOC(ProjectManager):
     def __init__(self, path, project_name, network_code, use_srces=False):
+        super().__init__(path, project_name, network_code, use_srces=use_srces)
 
         self.run_id = str(uuid4())
         self.current_run_directory = self.root_directory / 'run' / self.run_id
@@ -39,7 +41,16 @@ class NLLOC(ProjectManager):
 
         self.last_location = None
 
-        super.__init__(path, project_name, network_code, use_srces=use_srces)
+        self.nlloc_settings_file = self.config_location / 'nlloc.toml'
+
+        if not self.settings_file.is_file():
+            settings_template = Path(os.path.realpath(__file__)).parent / \
+                                    '../settings/nlloc_settings_template.toml'
+
+            shutil.copyfile(settings_template, self.nlloc_settings_file)
+
+        self.nlloc_settings = Settings(str(self.config_location),
+                                       self.nlloc_settings_file)
 
     def add_template_control(self, control=Control(message_flag=1),
                              transformation=GeographicTransformation(),

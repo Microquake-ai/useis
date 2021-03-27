@@ -1,0 +1,12 @@
+[default]
+# nlloc
+nlloc.nll_base = 'NLL'
+nlloc.locsig = 'Oyu Tolgoi Geotechnical Monitoring Team'
+nlloc.loccom = 'Prototype'
+nlloc.residual_tolerance = 10e-3
+# locsearch = 'OCT 20 20 30 1e-6 50000 1000 0 1'
+# locsearch = 'OCT 10 10 10 1e-6 20000 1000 0 1'
+nlloc.locsearch = 'OCT 5 5 5 1e-6 5000 500 0 1'
+nlloc.locmeth = 'EDT_OT_WT 9999.0 4 -1 -1 -1 0'
+nlloc.locgau = ''
+nlloc.picking_error = 2.5e-3

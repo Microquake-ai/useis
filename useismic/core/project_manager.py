@@ -2,20 +2,14 @@ from pathlib import Path
 import pickle
 from uquake.core.inventory import read_inventory
 from uquake.core.logging import logger
-from uquake.nlloc import (Srces, Control, GeographicTransformation,
-                          LocSearchOctTree, LocationMethod,
-                          GaussianModelErrors, LocQual2Err, LocSearchGrid,
-                          LocSearchMetropolis, LocGrid, Observations,
-                          read_hypocenter_file, read_scatter_file,
-                          NllocInputFiles)
+from uquake.nlloc import (Srces)
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
 from uquake.grid import nlloc as nlloc_grid
-from uuid import uuid4
 from time import time
 import numpy as np
 import os
 import shutil
-from .settings import Settings
+from ..settings.settings import Settings
 
 
 def calculate_uncertainty(point_cloud):
@@ -196,13 +190,13 @@ class ProjectManager(object):
 
         self.settings = Settings(str(self.config_location))
 
-        if not self.settings_file.exists():
+        if not self.settings_file.is_file():
             settings_template = Path(os.path.realpath(__file__)).parent / \
-                                    'settings_template.toml'
+                                    '../settings/settings_template.toml'
 
             shutil.copyfile(settings_template, self.settings_file)
 
-        self.settings = Settings(self.settings_file)
+        self.settings = Settings(str(self.config_location))
 
         self.srces = None
         self.inventory = None
