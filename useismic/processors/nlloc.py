@@ -314,7 +314,6 @@ class NLLOC(ProjectManager):
         if calculate_rays:
             logger.info('calculating rays')
             t0_ray = time()
-            self.travel_times.ray_tracer()
             rays = self.travel_times.ray_tracer(np.array([x, y, z]),
                                                 multithreading=multithreading)
             t1_ray = time()
