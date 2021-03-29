@@ -278,7 +278,8 @@ class NLLOC(ProjectManager):
     def run_location(self, observations=None, calculate_rays=True,
                      delete_output_files=True, event=None,
                      evaluation_mode: str = 'automatic',
-                     evaluation_status: str = 'preliminary'):
+                     evaluation_status: str = 'preliminary',
+                     multithreading=False):
 
         import subprocess
 
@@ -313,7 +314,9 @@ class NLLOC(ProjectManager):
         if calculate_rays:
             logger.info('calculating rays')
             t0_ray = time()
-            rays = self.travel_times.ray_tracer(np.array([x, y, z]))
+            self.travel_times.ray_tracer()
+            rays = self.travel_times.ray_tracer(np.array([x, y, z]),
+                                                multithreading=multithreading)
             t1_ray = time()
             logger.info(f'done calculating rays in {t1_ray - t0_ray:0.2f} '
                         f'seconds')
