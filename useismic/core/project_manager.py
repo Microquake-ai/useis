@@ -168,8 +168,9 @@ class ProjectManager(object):
             shutil.copyfile(settings_template, self.settings_file)
 
         if not self.service_setting_file.is_file():
-            settings_template = Path(os.path.realpath(__file__)).parent / \
-                                '../settings/service_settings_template.toml'
+            settings_path = Path(os.path.realpath(__file__)).parent.parent
+            settings_template = settings_path / \
+                                'settings/services_settings_template.toml'
 
             shutil.copyfile(settings_template, self.config_location /
                             'service_settings.toml')

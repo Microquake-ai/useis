@@ -41,7 +41,7 @@ def calculate_uncertainty(point_cloud):
 
 class NLLOCResult(object):
     def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
-                 scatter_cloud: np.ndarray, rays: list[Ray],
+                 scatter_cloud: np.ndarray, rays: list,
                  observations: Observations, evaluation_mode: str,
                  evaluation_status: str):
         self.hypocenter = hypocenter
@@ -53,7 +53,7 @@ class NLLOCResult(object):
         self.evaluation_status = evaluation_status
 
         self.uncertainty_ellipsoid = calculate_uncertainty(
-            self.scatters[:, :-1])
+            self.scatter_cloud[:, :-1])
 
         self.creation_info = CreationInfo(author='uQuake-nlloc',
                                           creation_time=UTCDateTime.now())
@@ -61,64 +61,20 @@ class NLLOCResult(object):
     def __repr__(self):
         ce = self.uncertainty_ellipsoid.confidence_ellipsoid
         out_str = f"""
-        time                 : {self.event_time}\n
-        location             : {self.x:0.1f} (x), {self.y:0.1f} (y), 
-        {self.z:0.1f} (z)\n
-        location uncertainty : {ce.semi_major_axis_length:0.1f}\n 
+        time (UTC)  : {self.t}
+        location    : x- {self.x:>10.1f} (m)
+                      y- {self.y:>10.1f} (m)
+                      z- {self.z:>10.1f} (m)
+        uncertainty : {ce.semi_major_axis_length:0.1f} (1 std - m)
         """
+        return out_str
 
-    def __add__(self, other:Event):
-        if not isinstance(other, Event):
-            raise TypeError(f'the operand must be of type {type(Event)}')
-        self.append_to_event(other)
-
-    @property
-    def arrivals(self) -> list[Arrival]:
-        arrivals = []
-        for pick in self.observations.picks:
-            travel_time = pick.time - self.t
-            phase = pick.phase_hint
-            sensor_code = pick.sensor
-            for ray in self.rays:
-                if (ray.sensor_code == sensor_code) & (ray.phase == phase):
-                    break
-            distance = len(ray)
-
-            time_residual = Arrival.calculate_time_residual(ray.travel_time -
-                                                            travel_time)
-
-            time_weight = 1
-            azimuth = ray.azimuth
-            takeoff_angle = ray.takeoff_angle
-
-            arrival = Arrival(phase=phase, distance=distance,
-                              time_residual=time_residual,
-                              time_weight=time_weight, azimuth=azimuth,
-                              takeoff_angle=takeoff_angle,
-                              pick_id=pick.resource_id)
-
-            arrivals.append(arrival)
-
-        return arrivals
-
-    @property
-    def origin(self):
-        origin = Origin(x=self.x, y=self.y, z=self.z, time=self.t,
-                        evaluation_mode=self.evaluation_mode,
-                        evaluation_status=self.evaluation_status,
-                        epicenter_fixed=False, method_id='uQuake-NLLOC',
-                        creation_info=self.creation_info,
-                        arrivals=self.arrivals,
-                        rays=self.rays)
-        return origin
-
-    def append_to_event(self, event: Event, evaluation_mode: str,
-                        evaluation_status: str) -> Event:
-
-        return event.append_origin_as_preferred_origin(self.origin)
-
-    def export_as_event(self):
-        return Event(origins=[self.origin], picks=self.observations.picks)
+    def __add__(self, other: Event):
+        if not (isinstance(other, Catalog) | isinstance(other, Event)):
+            raise TypeError(f'object type {type(Event)} or'
+                            f'{type(Catalog)} expected. Object of type '
+                            f'{type(other)} provided')
+        return self.append_to_event(other)
 
     @property
     def loc(self):
@@ -141,7 +97,7 @@ class NLLOCResult(object):
         return self.event_time
 
     @property
-    def arrivals(self) -> list[Arrival]:
+    def arrivals(self) -> list:
         arrivals = []
         for pick in self.observations.picks:
             travel_time = pick.time - self.t
@@ -150,9 +106,9 @@ class NLLOCResult(object):
             for ray in self.rays:
                 if (ray.sensor_code == sensor_code) & (ray.phase == phase):
                     break
-            distance = len(ray)
+            distance = ray.length
 
-            time_residual = Arrival.calculate_time_residual(ray.travel_time -
+            time_residual = Arrival.calculate_time_residual(ray.travel_time,
                                                             travel_time)
 
             time_weight = 1
@@ -177,12 +133,27 @@ class NLLOCResult(object):
                         epicenter_fixed=False, method_id='uQuake-NLLOC',
                         creation_info=self.creation_info,
                         arrivals=self.arrivals,
+                        origin_uncertainty=self.uncertainty_ellipsoid,
                         rays=self.rays)
         return origin
 
     @property
     def event(self):
         return self.export_as_event()
+
+    def append_to_event(self, event: Event) -> Event:
+        o = self.origin
+        if isinstance(event, Catalog):
+            event[0].append_origin_as_preferred_origin(o)
+        elif isinstance(event, Event):
+            event.append_origin_as_preferred_origin(o)
+        return event
+
+    def export_as_event(self):
+        o = self.origin
+        e = Event(origins=[o], picks=self.observations.picks)
+        e.preferred_origin_id = o.resource_id
+        return e
 
 
 class NLLOC(ProjectManager):

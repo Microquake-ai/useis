@@ -69,11 +69,12 @@ def make_layered_model():
     return velocities
 
 
-velocities = make_layered_model()
+vels = make_layered_model()
 
 nlloc.add_inventory(inventory, initialize_travel_time=False)
-nlloc.add_velocities(velocities, initialize_travel_time=True)
+nlloc.add_velocities(vels, initialize_travel_time=False)
 
 observations = Observations.from_event(event)
 
-loc = nlloc.run_location(observations=observations, calculate_rays=True)
+loc = nlloc.run_location(calculate_rays=True,
+                         event=event)
