@@ -11,7 +11,7 @@ reload(nlloc)
 
 project_path = Path('/data_2/projects')
 project_name = 'test_nlloc'
-network = 'nlloc_test'
+network = 'test_nlloc'
 
 nlloc = nlloc.NLLOC(project_path, project_name, network)
 settings = nlloc.settings

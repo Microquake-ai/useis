@@ -12,37 +12,6 @@ import shutil
 from ..settings.settings import Settings
 
 
-def calculate_uncertainty(point_cloud):
-    """
-    :param point_cloud: location point cloud
-    :return: obspy.core.event.OriginUncertainty()
-    """
-
-    v, u = np.linalg.eig(np.cov(point_cloud.T))
-
-    major_axis_index = np.argmax(v)
-
-    uncertainty = np.sort(np.sqrt(v))[-1::-1]
-
-    h = np.linalg.norm(u[major_axis_index, :-1])
-    vert = u[major_axis_index, -1]
-
-    major_axis_plunge = np.arctan2(-vert, h)
-    x = u[major_axis_index, 0]
-    y = u[major_axis_index, 1]
-    major_axis_azimuth = np.arctan2(x, y)
-    major_axis_rotation = 0
-
-    ce = ConfidenceEllipsoid(semi_major_axis_length=uncertainty[0],
-                             semi_intermediate_axis_length=uncertainty[1],
-                             semi_minor_axis_length=uncertainty[2],
-                             major_axis_plunge=major_axis_plunge,
-                             major_axis_azimuth=major_axis_azimuth,
-                             major_axis_rotation=major_axis_rotation)
-
-    return OriginUncertainty(confidence_ellipsoid=ce)
-
-
 class ProjectManager(object):
 
     inventory_file_name = 'inventory.xml'
@@ -182,19 +151,28 @@ class ProjectManager(object):
         self.inventory_file = self.inventory_location / 'inventory.xml'
         self.srces_file = self.inventory_location / 'srces.pickle'
 
+        # SETTINGS
+
         self.config_location = self.root_directory / 'config'
 
         self.config_location.mkdir(parents=True, exist_ok=True)
 
         self.settings_file = self.config_location / 'settings.toml'
-
-        self.settings = Settings(str(self.config_location))
+        self.service_setting_file = self.config_location / \
+                                    'services_settings.toml'
 
         if not self.settings_file.is_file():
             settings_template = Path(os.path.realpath(__file__)).parent / \
                                     '../settings/settings_template.toml'
 
             shutil.copyfile(settings_template, self.settings_file)
+
+        if not self.service_setting_file.is_file():
+            settings_template = Path(os.path.realpath(__file__)).parent / \
+                                '../settings/service_settings_template.toml'
+
+            shutil.copyfile(settings_template, self.config_location /
+                            'service_settings.toml')
 
         self.settings = Settings(str(self.config_location))
 

@@ -1,0 +1,131 @@
+version: '3.5'
+
+#x-build-args: &build_args
+#  DJANGO_DB_HOST: db
+#  DJANGO_DB_PORT: 5432
+#  # Credentials for private pypi registry at https://pkg.microquake.org
+#  PYPI_USER: micro
+#  PYPI_PASS: quake
+#  # Dockerfile defines two images:
+#  #  * spp-api-web - (default) basic image for production
+#  #  * spp-api-dev - extended image, includes testing and dev packages
+#  SPP_API_TARGET: spp-api-dev
+#
+#x-django_common: &django_common
+#  links:
+#    - redisdb
+#  external_links:
+#    - broker
+#  volumes:
+#    - .:/code
+#    - ./common:/code/common
+#    - ./log:/var/log/spp
+#    - ./tmp/cache_rays:/var/tmp/rays
+#    - ./tmp/cache_waveforms:/var/tmp/waveform_decimation
+#    - ./matplotlib_font_cache/fontlist-v330.json:/root/.cache/matplotlib/fontlist-v330.json
+#  depends_on:
+#    - db
+#  environment:
+#    DJANGO_SETTINGS_MODULE: api.settings
+#    SPP_COMMON: /code/common
+#    DJANGO_DB_HOST: db
+#    DJANGO_DB_PORT: 5432
+
+networks:
+  default:
+    name: seismic-network
+
+services:
+  redisdb:
+    image: redis:4
+    hostname: redisdb
+    container_name: redisdb
+    volumes:
+      - redis:/data
+    ports:
+      - "6379:6379"
+    environment:
+      - HOSTNAME=redisdb
+    command: redis-server
+
+#  db:
+#    image: postgres
+#    volumes:
+#      - pgdata:/var/lib/postgresql/data
+#    ports:
+#      - "5432:5432"
+#    environment:
+#      POSTGRES_USER: seismicapi
+#      POSTGRES_PASSWORD: seismicapi
+#
+#  init:
+#    build:
+#      context: .
+#      target: ${SPP_API_TARGET:-spp-api-web}
+#      args:
+#        <<: *build_args
+#    image: spp-api-dev
+#    <<: *django_common
+#    command: init
+#
+#  web:
+#    image: spp-api-dev
+#    <<: *django_common
+#    command: runserver 0.0.0.0:8000
+#    depends_on:
+#      - init
+#    ports:
+#      - "8000:8000"
+#
+#  rq:
+#    image: spp-api-dev
+#    <<: *django_common
+#    command: rq worker high default low --url redis://redisdb:6379/4
+#    depends_on:
+#      - init
+#
+#  test:
+#    build:
+#      context: .
+#      target: spp-api-dev
+#      args:
+#        <<: *build_args
+#    image: spp-api-dev
+#    <<: *django_common
+#    command: test
+#
+#  prometheus:
+#    image: prom/prometheus
+#    command:
+#      - '--config.file=/etc/prometheus/conf.yml'
+#      - '--storage.tsdb.path=/data'
+#    user: 0:0
+#    ports:
+#      - 9090:9090/tcp
+#    links:
+#      - db
+#    volumes:
+#      - ./.prometheus:/etc/prometheus
+#      - prometheus_data:/data
+#
+#  node-exporter:
+#    image: prom/node-exporter
+#    links:
+#      - prometheus
+#    ports:
+#      - "9100:9100"
+#
+#  grafana:
+#    image: grafana/grafana
+#    environment:
+#      - GF_SECURITY_ADMIN_PASSWORD=admin
+#    links:
+#      - prometheus
+#      - db
+#    ports:
+#      - "3000:3000"
+
+volumes:
+  redis: {}
+#  pgdata: {}
+#  prometheus_data: {}

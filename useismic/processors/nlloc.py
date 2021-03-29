@@ -1,9 +1,149 @@
 from ..core.project_manager import *
 from uquake.nlloc.nlloc import *
+from uquake.core.event import (Catalog, Event, RayCollection, Pick,
+                               CreationInfo, Ray)
+from uquake.core import UTCDateTime
+import numpy as np
+
+
+def calculate_uncertainty(point_cloud):
+    """
+    :param point_cloud: location point cloud
+    :return: obspy.core.event.OriginUncertainty()
+    """
+
+    v, u = np.linalg.eig(np.cov(point_cloud.T))
+
+    major_axis_index = np.argmax(v)
+
+    uncertainty = np.sort(np.sqrt(v))[-1::-1]
+
+    h = np.linalg.norm(u[major_axis_index, :-1])
+    vert = u[major_axis_index, -1]
+
+    major_axis_plunge = np.arctan2(-vert, h)
+    x = u[major_axis_index, 0]
+    y = u[major_axis_index, 1]
+    major_axis_azimuth = np.arctan2(x, y)
+    major_axis_rotation = 0
+
+    ce = ConfidenceEllipsoid(semi_major_axis_length=uncertainty[0],
+                             semi_intermediate_axis_length=uncertainty[1],
+                             semi_minor_axis_length=uncertainty[2],
+                             major_axis_plunge=major_axis_plunge,
+                             major_axis_azimuth=major_axis_azimuth,
+                             major_axis_rotation=major_axis_rotation)
+
+    return OriginUncertainty(confidence_ellipsoid=ce,
+                             preferred_description='confidence ellipsoid',
+                             confidence_level=68)
+
+
+class NLLOCResult(object):
+    def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
+                 scatter_cloud: np.ndarray, rays: list[Ray],
+                 observations: Observations):
+        self.hypocenter = hypocenter
+        self.event_time = event_time
+        self.scatter_cloud = scatter_cloud
+        self.rays = rays
+        self.observations = observations
+
+        self.uncertainty_ellipsoid = calculate_uncertainty(
+            self.scatters[:, :-1])
+
+    def __repr__(self):
+        ce = self.uncertainty_ellipsoid.confidence_ellipsoid
+        out_str = f"""
+        time                 : {self.event_time}\n
+        location             : {self.x:0.1f} (x), {self.y:0.1f} (y), 
+        {self.z:0.1f} (z)\n
+        location uncertainty : {ce.semi_major_axis_length:0.1f}\n 
+        """
+
+    @property
+    def arrivals(self) -> list[Arrival]:
+        arrivals = []
+        for pick in self.observations.picks:
+            travel_time = pick.time - self.t
+            phase = pick.phase_hint
+            sensor_code = pick.sensor
+            for ray in self.rays:
+                if (ray.sensor_code == sensor_code) & (ray.phase == phase):
+                    break
+            distance = len(ray)
+
+            time_residual = Arrival.calculate_time_residual(ray.travel_time -
+                                                            travel_time)
+
+            time_weight = 1
+            azimuth = ray.azimuth
+            takeoff_angle = ray.takeoff_angle
+
+            arrival = Arrival(phase=phase, distance=distance,
+                              time_residual=time_residual,
+                              time_weight=time_weight, azimuth=azimuth,
+                              takeoff_angle=takeoff_angle,
+                              pick_id=pick.resource_id)
+
+            arrivals.append(arrival)
+
+        return arrivals
+
+    def append_to_event(self, event: Event, evaluation_mode: str,
+                        evaluation_status: str) -> Event:
+
+        creation_info = CreationInfo(author='uQuake-nlloc',
+                                     creation_time=UTCDateTime.now())
+
+        # evaluation_mode = event.preferred_origin().evaluation_mode
+        # evaluation_status = event.preferred_origin().evaluation_status
+
+        origin = Origin(x=self.x, y=self.y, z=self.z, time=self.t,
+                        evaluation_mode=evaluation_mode,
+                        evaluation_status=evaluation_status,
+                        epicenter_fixed=False, method_id='uQuake-NLLOC',
+                        creation_info=creation_info,
+                        arrivals=self.arrivals,
+                        rays=self.rays)
+
+        return event.append_origin_as_preferred_origin(origin)
+
+
+
+    def export_as_event(self, evaluation_mode: str, evaluation_status: str):
+
+
+
+
+
+
+    @property
+    def loc(self):
+        return self.hypocenter
+
+    @property
+    def x(self):
+        return self.loc[0]
+
+    @property
+    def y(self):
+        return self.loc[1]
+
+    @property
+    def z(self):
+        return self.loc[2]
+
+    @property
+    def t(self):
+        return self.event_time
+
 
 
 class NLLOC(ProjectManager):
-    def __init__(self, path, project_name, network_code, use_srces=False):
+    def __init__(self, path: Path, project_name: str, network_code: str,
+                 use_srces: bool=False):
+
         super().__init__(path, project_name, network_code, use_srces=use_srces)
 
         self.run_id = str(uuid4())
@@ -39,8 +179,6 @@ class NLLOC(ProjectManager):
         self.last_event_hypocenter = None
         self.last_event_time = None
 
-        self.last_location = None
-
         self.nlloc_settings_file = self.config_location / 'nlloc.toml'
 
         if not self.settings_file.is_file():
@@ -49,8 +187,7 @@ class NLLOC(ProjectManager):
 
             shutil.copyfile(settings_template, self.nlloc_settings_file)
 
-        self.nlloc_settings = Settings(str(self.config_location),
-                                       self.nlloc_settings_file)
+        self.settings = Settings(str(self.config_location))
 
     def add_template_control(self, control=Control(message_flag=1),
                              transformation=GeographicTransformation(),
@@ -108,7 +245,7 @@ class NLLOC(ProjectManager):
         with open(self.control_file, 'w') as control_file:
             control_file.write(self.control)
 
-    def add_observations(self, observations):
+    def __add_observations__(self, observations):
         """
         adding observations to the project
         :param observations: Observations
@@ -122,7 +259,9 @@ class NLLOC(ProjectManager):
 
         self.observations = observations
 
-    def run_location(self, observations=None, calculate_rays=True,
+    def run_location(self, evaluation_mode:str='automatic',
+                     evaluation_status:str='preliminary',
+                     observations=None, calculate_rays=True,
                      delete_output_files=True, event=None):
 
         import subprocess
@@ -137,7 +276,7 @@ class NLLOC(ProjectManager):
                              'method.')
 
         elif observations is not None:
-            self.add_observations(observations)
+            self.__add_observations__(observations)
 
         self.write_control_file()
 
@@ -163,8 +302,6 @@ class NLLOC(ProjectManager):
             logger.info(f'done calculating rays in {t1_ray - t0_ray:0.2f} '
                         f'seconds')
 
-        uncertainty_ellipsoid = calculate_uncertainty(scatters[:, :-1])
-
         if delete_output_files:
             for fle in self.observation_path.glob('*'):
                 fle.unlink()
@@ -181,14 +318,8 @@ class NLLOC(ProjectManager):
 
             self.output_file_path.parent.rmdir()
 
-        result = {'event_id': str(t),
-                  'time': t,
-                  'hypocenter_location': np.array([x, y, z]),
-                  'scatters': scatters,
-                  'rays': rays,
-                  'uncertainty': uncertainty_ellipsoid}
-
-        self.last_location = result
+        result = NLLOCResult(np.array([x, y, z]), t, scatters, rays,
+                             observations)
 
         return result
 

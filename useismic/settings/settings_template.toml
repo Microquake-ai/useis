@@ -1,4 +1,5 @@
 [default]
+dynaconf_include = ["*.toml"]
 project.name = 'test'
 project.network = 'OT'
 project.base_directory = ''
