@@ -581,27 +581,22 @@ version = "0.4.33"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
-python-versions = "^3.8"
-develop = false
+python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
-dynaconf = "^3.1.4"
-h5py = "^3.2.1"
-ipython = "^7.19.0"
+dynaconf = ">=3.1.4,<4.0.0"
+h5py = ">=3.2.1,<4.0.0"
+ipython = ">=7.19.0,<8.0.0"
 jedi = "0.17.2"
-loguru = "^0.5.3"
-numpy = "^1.18.0"
-obspy = "^1.2.2"
-openpyxl = "^3.0.6"
-pandas = "^1.2.1"
-pytest = "^6.2.1"
-scikit-fmm = "^2021.2.2"
-tqdm = "^4.59.0"
-vtk = "^9.0.1"
-
-[package.source]
-type = "directory"
-url = "libraries/uquake"
+loguru = ">=0.5.3,<0.6.0"
+numpy = ">=1.18.0,<2.0.0"
+obspy = ">=1.2.2,<2.0.0"
+openpyxl = ">=3.0.6,<4.0.0"
+pandas = ">=1.2.1,<2.0.0"
+pytest = ">=6.2.1,<7.0.0"
+scikit-fmm = ">=2021.2.2,<2022.0.0"
+tqdm = ">=4.59.0,<5.0.0"
+vtk = ">=9.0.1,<10.0.0"
 
 [[package]]
 name = "urllib3"
@@ -649,7 +644,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "9640253d5c2074681367e0e29aae45c25a562a328eadc6886bc9fb2a2a243537"
+content-hash = "d9eb6b83a7a91385ec8d3454177deb103098931c1606d10200ede289d8ae3cdd"
 
 [metadata.files]
 appnope = [
@@ -1103,7 +1098,10 @@ traitlets = [
     {file = "traitlets-5.0.5-py3-none-any.whl", hash = "sha256:69ff3f9d5351f31a7ad80443c2674b7099df13cc41fc5fa6e2f6d3b0330b0426"},
     {file = "traitlets-5.0.5.tar.gz", hash = "sha256:178f4ce988f69189f7e523337a3e11d91c786ded9360174a3d9ca83e79bc5396"},
 ]
-uquake = []
+uquake = [
+    {file = "uquake-0.4.33-py3-none-any.whl", hash = "sha256:b9cea55a6918e6e777a01968af7702b00ac295a2f296b85450fc919490b21b98"},
+    {file = "uquake-0.4.33.tar.gz", hash = "sha256:e58d48f79a7954e8e7d130fe2f0e43950bb0666d0b0f648f3b74ca8c71e69431"},
+]
 urllib3 = [
     {file = "urllib3-1.26.4-py2.py3-none-any.whl", hash = "sha256:2f4da4594db7e1e110a944bb1b551fdf4e6c136ad42e4234131391e21eb5b0df"},
     {file = "urllib3-1.26.4.tar.gz", hash = "sha256:e7b021f7241115872f92f43c6508082facffbd1c048e3c6e2bb9c2a157e28937"},

@@ -421,64 +421,6 @@ def prepare_data(cat=None, stream=None, context=None, variable_length=None):
     return files
 
 
-def events_list(self, start_time=None,
-                end_time=None,
-                microquake_event_type=True,
-                **kwargs):
-    """
-    get the list of event from start_time to end_time
-    :param start_time: start_time in UTC expressed as
-    "YYYY-MM-DDTHH:MM:SS.MS" or a UTCDateTime, or a datetime
-    explicitely providing this paramter will override the time_utc_after
-    :param end_time: end_time in UTC expressed as "YYYY-MM-DDTHH:MM:SS.MS"
-    or a UTCDateTime, or a datetime
-    explicitely providing this paramter will override the time_utc_before
-    :param microquake_event_type: if true use microquake event types else
-    use Quakeml event types
-    :param kwargs:
-    :return:
-    """
-
-    if 'event_type' in kwargs.keys():
-        if microquake_event_type:
-            event_types_lut = get_event_types(self.api_base_url,
-                                              username=self.username,
-                                              password=self.password)
-            kwargs['event_type'] = event_types_lut[kwargs['event_type']]
-
-    if start_time:
-        kwargs['time_utc_after'] = str(start_time)
-    if end_time:
-        kwargs['time_utc_before'] = str(end_time)
-
-    events = []
-
-    try:
-        response = self.api_instance.api_v1_events_list(**kwargs)
-    except Exception as e:
-        logger.error(e)
-        return {}, events
-
-    for event in response.results:
-        events.append(RequestEvent(event.to_dict()))
-    query = response.next
-
-    while query:
-        re = requests.get(query, timeout=timeout)
-        if not re:
-            break
-        response = re.json()
-        logger.info(f"page {response['current_page']} of "
-                    f"{response['total_pages']}")
-
-        query = response['next']
-
-        for event in response['results']:
-            events.append(RequestEvent(event))
-
-    return response, events
-
-
 def get_event_types(api_base_url, username=None, password=None):
 
     if api_base_url[-1] != '/':
@@ -629,8 +571,7 @@ def reject_event(api_base_url, event_id):
                                                          event_id))
 
 
-def get_catalog(api_base_url, start_time, end_time, event_type=None,
-                status=None, **kwargs):
+def get_catalog(api_base_url, **kwargs):
     """
     get the event catalogue from the API
     :param api_base_url: API base url
@@ -651,36 +592,25 @@ def get_catalog(api_base_url, start_time, end_time, event_type=None,
     api_base_url += 'events'
 
     event_types = get_event_types(api_base_url)
-    obs_event_type = None
+    # obs_event_type = None
+    #
+    # request_dict = {'time_utc_after': str(start_time),
+    #                 'time_utc_before': str(end_time)}
 
-    request_dict = {'time_utc_after': str(start_time),
-                    'time_utc_before': str(end_time)}
-
-    if event_type is not None:
+    if 'event_type' in kwargs.keys():
         try:
-            request_dict['event_type'] = event_types[event_type]
+            kwargs['event_type'] = event_types[kwargs['event_type']]
         except KeyError:
-            logger.error(f'event type: {event_type} does not appear to be a '
-                         f'valid event type for your system')
-
-            raise KeyError
-    else:
-        event_type_str = ''
-        for key in event_types.keys():
-            event_type_str += f'{event_types[key]},'
-        event_type_str = event_type_str[:-1]
-        request_dict['event_type'] = event_type_str
-
-    if status is not None:
-        request_dict['status'] = status
+            logger.error(f'event type: {kwargs["event_type"]} does not appear '
+                         f'to be a valid event type for your system')
 
     events = []
 
-    tmp = urllib.parse.urlencode(request_dict)
+    tmp = urllib.parse.urlencode(kwargs)
     query = f'{api_base_url}?{tmp}'
 
     while query:
-        re = requests.get(query, timeout=timeout)
+        re = requests.get(query, params=kwargs)
         # from ipdb import set_trace; set_trace()()
         if not re:
             # logger.info('The API catalogue does not contain any events that'
@@ -692,7 +622,7 @@ def get_catalog(api_base_url, start_time, end_time, event_type=None,
 
         query = response['next']
 
-        for event in response.results:
+        for event in response['results']:
             events.append(RequestEvent(event))
 
     return events
