@@ -421,62 +421,62 @@ def prepare_data(cat=None, stream=None, context=None, variable_length=None):
     return files
 
 
-    def events_list(self, start_time=None,
-                    end_time=None,
-                    microquake_event_type=True,
-                    **kwargs):
-        """
-        get the list of event from start_time to end_time
-        :param start_time: start_time in UTC expressed as
-        "YYYY-MM-DDTHH:MM:SS.MS" or a UTCDateTime, or a datetime
-        explicitely providing this paramter will override the time_utc_after
-        :param end_time: end_time in UTC expressed as "YYYY-MM-DDTHH:MM:SS.MS"
-        or a UTCDateTime, or a datetime
-        explicitely providing this paramter will override the time_utc_before
-        :param microquake_event_type: if true use microquake event types else
-        use Quakeml event types
-        :param kwargs:
-        :return:
-        """
+def events_list(self, start_time=None,
+                end_time=None,
+                microquake_event_type=True,
+                **kwargs):
+    """
+    get the list of event from start_time to end_time
+    :param start_time: start_time in UTC expressed as
+    "YYYY-MM-DDTHH:MM:SS.MS" or a UTCDateTime, or a datetime
+    explicitely providing this paramter will override the time_utc_after
+    :param end_time: end_time in UTC expressed as "YYYY-MM-DDTHH:MM:SS.MS"
+    or a UTCDateTime, or a datetime
+    explicitely providing this paramter will override the time_utc_before
+    :param microquake_event_type: if true use microquake event types else
+    use Quakeml event types
+    :param kwargs:
+    :return:
+    """
 
-        if 'event_type' in kwargs.keys():
-            if microquake_event_type:
-                event_types_lut = get_event_types(self.api_base_url,
-                                                  username=self.username,
-                                                  password=self.password)
-                kwargs['event_type'] = event_types_lut[kwargs['event_type']]
+    if 'event_type' in kwargs.keys():
+        if microquake_event_type:
+            event_types_lut = get_event_types(self.api_base_url,
+                                              username=self.username,
+                                              password=self.password)
+            kwargs['event_type'] = event_types_lut[kwargs['event_type']]
 
-        if start_time:
-            kwargs['time_utc_after'] = str(start_time)
-        if end_time:
-            kwargs['time_utc_before'] = str(end_time)
+    if start_time:
+        kwargs['time_utc_after'] = str(start_time)
+    if end_time:
+        kwargs['time_utc_before'] = str(end_time)
 
-        events = []
+    events = []
 
-        try:
-            response = self.api_instance.api_v1_events_list(**kwargs)
-        except Exception as e:
-            logger.error(e)
-            return {}, events
+    try:
+        response = self.api_instance.api_v1_events_list(**kwargs)
+    except Exception as e:
+        logger.error(e)
+        return {}, events
 
-        for event in response.results:
-            events.append(RequestEvent(event.to_dict()))
-        query = response.next
+    for event in response.results:
+        events.append(RequestEvent(event.to_dict()))
+    query = response.next
 
-        while query:
-            re = requests.get(query, timeout=timeout)
-            if not re:
-                break
-            response = re.json()
-            logger.info(f"page {response['current_page']} of "
-                        f"{response['total_pages']}")
+    while query:
+        re = requests.get(query, timeout=timeout)
+        if not re:
+            break
+        response = re.json()
+        logger.info(f"page {response['current_page']} of "
+                    f"{response['total_pages']}")
 
-            query = response['next']
+        query = response['next']
 
-            for event in response['results']:
-                events.append(RequestEvent(event))
+        for event in response['results']:
+            events.append(RequestEvent(event))
 
-        return response, events
+    return response, events
 
 
 def get_event_types(api_base_url, username=None, password=None):
