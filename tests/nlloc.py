@@ -1,4 +1,4 @@
-from useismic.processors import nlloc
+from useis.processors import nlloc
 from importlib import reload
 from pathlib import Path
 from uquake.grid.nlloc import (ModelLayer, LayeredVelocityModel,

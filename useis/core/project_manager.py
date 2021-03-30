@@ -56,7 +56,7 @@ class ProjectManager(object):
                   hierarchy more representative of mine monitoring systems.
                   The uquake Inventory object hierarchy is as follows:
                  1. Inventory
-                    1.1. Networks: A useismic network. a network includes at
+                    1.1. Networks: A useis network. a network includes at
                                    least one data acquisition station.
                         1.1.1 Stations: A place where the data acquisition is
                                         performed. For instance, station
@@ -133,7 +133,7 @@ class ProjectManager(object):
         # object
         >>> nonlinloc = nlloc.NonLinLoc()
         # this will initialize the nonlinloc object sith default value. Those
-        # value have been used to locate useismic events in a volumes of
+        # value have been used to locate useis events in a volumes of
         # approximately 3000 m x 3000 m x 1500 m. The parameters should be
         # provide adequate results for volumes of similar scale but would need
         # to be adapted to smaller or larger volumes.
