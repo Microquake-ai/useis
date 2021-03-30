@@ -306,6 +306,16 @@ class NLLOC(ProjectManager):
         t1 = time()
         logger.info(f'done locating event in {t1 - t0:0.2f} seconds')
 
+        if event is not None:
+            event_time = event.time
+        else:
+            p_times = []
+            for pick in observations.picks:
+                p_times.append(pick.time)
+            event_time = np.min(p_times)
+
+        if not (self.output_file_path / 'last.hyp').exists():
+            logger.error(f'event location failed for event {event_time}!')
         t, x, y, z = read_hypocenter_file(self.output_file_path / 'last.hyp')
 
         scatters = read_scatter_file(self.output_file_path / 'last.scat')

@@ -8,11 +8,11 @@ from obspy import UTCDateTime
 from libraries.uquake.uquake.core.event import Catalog
 from obspy.core.util.attribdict import AttribDict
 
-from libraries.uquake.uquake.core.logging import logger
-from libraries.uquake.uquake.core import read
-from libraries.uquake.uquake.core.event import Ray, read_events
+from uquake.core.logging import logger
+from uquake.core import read
+from uquake.core.event import Ray, read_events
 from uuid import uuid4
-from libraries.uquake.uquake.core.decorators import deprecated
+from uquake.core.decorators import deprecated
 
 timeout = 200
 
