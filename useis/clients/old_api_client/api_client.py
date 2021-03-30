@@ -5,7 +5,7 @@ from io import BytesIO
 import requests
 from dateutil import parser
 from obspy import UTCDateTime
-from libraries.uquake.uquake.core.event import Catalog
+from uquake.core.event import Catalog
 from obspy.core.util.attribdict import AttribDict
 
 from uquake.core.logging import logger
