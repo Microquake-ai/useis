@@ -577,7 +577,7 @@ test = ["pytest"]
 
 [[package]]
 name = "uquake"
-version = "0.4.31"
+version = "0.4.32"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
@@ -1099,8 +1099,8 @@ traitlets = [
     {file = "traitlets-5.0.5.tar.gz", hash = "sha256:178f4ce988f69189f7e523337a3e11d91c786ded9360174a3d9ca83e79bc5396"},
 ]
 uquake = [
-    {file = "uquake-0.4.31-py3-none-any.whl", hash = "sha256:6f93c37cab4fe19068161907b025703726f91f4ef1c3392fc3c4a3dfeafdf97b"},
-    {file = "uquake-0.4.31.tar.gz", hash = "sha256:6c628834f4748c6a6e9d4066476b3eaa99f792d77bd6265b7fbfae2b73dc0d7a"},
+    {file = "uquake-0.4.32-py3-none-any.whl", hash = "sha256:39af722e83c8ee02705fb87b939abbd07b646053ab715b726538eba852e6041a"},
+    {file = "uquake-0.4.32.tar.gz", hash = "sha256:80fdb63d3459cbb4bfb9f4e4a56f1e585d31a8387fbbbddcbbfc79215b47d1ad"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.4-py2.py3-none-any.whl", hash = "sha256:2f4da4594db7e1e110a944bb1b551fdf4e6c136ad42e4234131391e21eb5b0df"},
