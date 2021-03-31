@@ -605,31 +605,26 @@ test = ["pytest"]
 
 [[package]]
 name = "uquake"
-version = "0.5.0"
+version = "0.5.5"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
-python-versions = "^3.8"
-develop = false
+python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
-dynaconf = "^3.1.4"
-h5py = "^3.2.1"
-ipython = "^7.19.0"
+dynaconf = ">=3.1.4,<4.0.0"
+h5py = ">=3.2.1,<4.0.0"
+ipython = ">=7.19.0,<8.0.0"
 jedi = "0.17.2"
-loguru = "^0.5.3"
-numpy = "^1.18.0"
-obspy = "^1.2.2"
-openpyxl = "^3.0.6"
-pandas = "^1.2.1"
-pytest = "^6.2.1"
-scikit-fmm = "^2021.2.2"
-tqdm = "^4.59.0"
-vtk = "^9.0.1"
-
-[package.source]
-type = "directory"
-url = "libraries/uquake"
+loguru = ">=0.5.3,<0.6.0"
+numpy = ">=1.18.0,<2.0.0"
+obspy = ">=1.2.2,<2.0.0"
+openpyxl = ">=3.0.6,<4.0.0"
+pandas = ">=1.2.1,<2.0.0"
+pytest = ">=6.2.1,<7.0.0"
+scikit-fmm = ">=2021.2.2,<2022.0.0"
+tqdm = ">=4.59.0,<5.0.0"
+vtk = ">=9.0.1,<10.0.0"
 
 [[package]]
 name = "urllib3"
@@ -677,7 +672,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "0f57004c9e05203c596ce307645dc3bf864664f1466935d1eca5e389ff7ed0a1"
+content-hash = "c242eb77787bd04fa687233bcc86585fbe5e71c70a9ea455818b7a5645316851"
 
 [metadata.files]
 appnope = [
@@ -1167,7 +1162,10 @@ traitlets = [
     {file = "traitlets-5.0.5-py3-none-any.whl", hash = "sha256:69ff3f9d5351f31a7ad80443c2674b7099df13cc41fc5fa6e2f6d3b0330b0426"},
     {file = "traitlets-5.0.5.tar.gz", hash = "sha256:178f4ce988f69189f7e523337a3e11d91c786ded9360174a3d9ca83e79bc5396"},
 ]
-uquake = []
+uquake = [
+    {file = "uquake-0.5.5-py3-none-any.whl", hash = "sha256:2629ac65e3c92f1c97d9114b9090328133f1c23093c73bc247d6f8e8c1bf2624"},
+    {file = "uquake-0.5.5.tar.gz", hash = "sha256:4dd817433213c7b0c2501216f383fd804799ddad6244eb6251525d24f7b165df"},
+]
 urllib3 = [
     {file = "urllib3-1.26.4-py2.py3-none-any.whl", hash = "sha256:2f4da4594db7e1e110a944bb1b551fdf4e6c136ad42e4234131391e21eb5b0df"},
     {file = "urllib3-1.26.4.tar.gz", hash = "sha256:e7b021f7241115872f92f43c6508082facffbd1c048e3c6e2bb9c2a157e28937"},
