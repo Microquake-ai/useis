@@ -9,8 +9,9 @@ license = "MIT"
 python = "^3.8"
 #uquake = {path = "libraries/uquake" }
 dynaconf = "^3.1.4"
-uquake = "^0.4.34"
+uquake = "^0.5.0"
 tqdm = "^4.59.0"
+PyQt5 = "^5.15.4"
 
 [tool.poetry.dev-dependencies]
 

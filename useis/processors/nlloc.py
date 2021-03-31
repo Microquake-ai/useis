@@ -102,9 +102,9 @@ class NLLOCResult(object):
         for pick in self.observations.picks:
             travel_time = pick.time - self.t
             phase = pick.phase_hint
-            sensor_code = pick.sensor
+            site_code = pick.site
             for ray in self.rays:
-                if (ray.sensor_code == sensor_code) & (ray.phase == phase):
+                if (ray.site_code == site_code) & (ray.phase == phase):
                     break
             distance = ray.length
 
@@ -307,7 +307,12 @@ class NLLOC(ProjectManager):
         logger.info(f'done locating event in {t1 - t0:0.2f} seconds')
 
         if event is not None:
-            event_time = event.time
+            if isinstance(event, Catalog):
+                event = event[0]
+            if event.preferred_origin() is not None:
+                event_time = event.preferred_origin().time
+            else:
+                event_time = event.origins[-1].time
         else:
             p_times = []
             for pick in observations.picks:
@@ -365,8 +370,8 @@ class NLLOC(ProjectManager):
     def control(self):
 
         if self.srces is None:
-            raise ValueError('The project does not contain sensors or '
-                             'inventory. Sensors (srces) or inventory '
+            raise ValueError('The project does not contain sites or '
+                             'inventory. sites (srces) or inventory '
                              'information can be added using the add_srces or'
                              'add_inventory methods.')
 

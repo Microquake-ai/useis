@@ -62,11 +62,11 @@ class ProjectManager(object):
                                         performed. For instance, station
                                         usually includes power, communication
                                         and data acquisition equipment. One
-                                        or more sensor can be connected to a
+                                        or more site can be connected to a
                                         station.
-                            1.1.1.1 Sensors: A instrument converting a
+                            1.1.1.1 sites: A instrument converting a
                                              physical phenomenon to data either
-                                             digital or analog. A sensor
+                                             digital or analog. A site
                                              comprises one or more channel.
                                 1.1.1.1.1 Channels: A channel is a the smallest
                                                     unit of measuring.
@@ -75,24 +75,24 @@ class ProjectManager(object):
         >>> inventory = read_inventory(path_to_uquake_inventory_file)
         >>> pm.add_inventory(inventory)
 
-        # alternatively, sensors can be added to the using the srces object.
-        # Sensors can be added this way from a nlloc.nlloc.Srces object using
+        # alternatively, sites can be added to the using the srces object.
+        # sites can be added this way from a nlloc.nlloc.Srces object using
         the .add_srces method.
         ..note:: srces stands for sources and it is the nomenclature used in
                  NonLinLoc. This might be a soure of confusion for the users.
                  In addition, what NonLinLoc refers to as station is called a
-                 sensors in this context.
+                 sites in this context.
 
         # srces object can be constructed from an inventory as follows:
         >>> srces = Srces.from_inventory(inventory)
-        # alternatively, each sensors can be added individually using the
-        .add_sensor method. As follows:
+        # alternatively, each sites can be added individually using the
+        .add_site method. As follows:
         >>> srces = Srces()
         >>> x = 250
         >>> y = 250
         >>> z = 250
         >>> elevation = 0
-        >>> srces.add_sensor('sensor label', x, y, z, elev=elevation)
+        >>> srces.add_site('site label', x, y, z, elev=elevation)
 
         # Srces can be added to the project as follows:
         >>> pm.add_srces(srces)
@@ -184,10 +184,10 @@ class ProjectManager(object):
                 (not self.srces_file.exists()):
             logger.warning('the project does not contain an inventory file nor'
                            'an srces file. to add an inventory file use '
-                           'the add_inventory method. Alternatively, sensors '
+                           'the add_inventory method. Alternatively, sites '
                            'information can be provided using an Srces object.'
                            'Note, however, that an Srces object only contains'
-                           'the sensors location information. When '
+                           'the sites location information. When '
                            'the inventory file is present, the Srces object '
                            'is automatically constructed from the inventory.'
                            'A Srces object can be added using the add_srces '
@@ -349,15 +349,15 @@ class ProjectManager(object):
     def add_srces(self, srces, force=False, initialize_travel_time=True):
         """
         add a list of sources to the projects
-        :param srces: list of sources or sensors
+        :param srces: list of sources or sites
         :param force: force the insertion of the srces object if an inventory
         file is present
         :param initialize_travel_time: if True, initialize the travel time
         grid
         :type srces: Srces
 
-        ..warning:: travel time should be initialized when the sensors/srces
-        are updated. Not doing so, may cause the sensors/source and the
+        ..warning:: travel time should be initialized when the sites/srces
+        are updated. Not doing so, may cause the sites/source and the
         travel time grids to be incompatible.
         """
 
@@ -397,8 +397,8 @@ class ProjectManager(object):
         :param initialize_travel_time: if True, initialize the travel time
         grid
 
-        ..warning:: travel time should be initialized when the sensors/srces
-        are updated. Not doing so, may cause the sensors/source and the
+        ..warning:: travel time should be initialized when the sites/srces
+        are updated. Not doing so, may cause the sites/source and the
         travel time grids to be incompatible.
         """
 
@@ -426,8 +426,8 @@ class ProjectManager(object):
         :type velocity: nlloc.grid.VelocityGrid3D
         :param initialize_travel_time: if true initialize the travel time grids
 
-        ..warning:: travel time should be initialized when the sensors/srces
-        are updated. Not doing so, may cause the sensors/source and the
+        ..warning:: travel time should be initialized when the sites/srces
+        are updated. Not doing so, may cause the sites/source and the
         travel time grids to be incompatible.
         """
 

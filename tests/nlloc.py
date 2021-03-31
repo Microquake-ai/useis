@@ -24,14 +24,14 @@ def get_catalog():
     event_file = test_artifact_path / 'event_file.xml'
     cat = read_events(str(event_file))
     for i, pick in enumerate(cat[0].picks):
-        for sensor in inventory.sensors:
-            if sensor.alternate_code == pick.waveform_id.station_code:
+        for site in inventory.sites:
+            if site.alternate_code == pick.waveform_id.station_code:
                 cat[0].picks[i].waveform_id.network_code = inventory[0].code
-                cat[0].picks[i].waveform_id.station_code = sensor.station.code
+                cat[0].picks[i].waveform_id.station_code = site.station.code
                 cat[0].picks[i].waveform_id.location_code = \
-                    sensor.location_code
+                    site.location_code
                 cat[0].picks[i].waveform_id.channel_code = \
-                    sensor.channels[0].code
+                    site.channels[0].code
                 break
     return cat
 
