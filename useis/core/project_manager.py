@@ -16,7 +16,8 @@ class ProjectManager(object):
 
     inventory_file_name = 'inventory.xml'
 
-    def __init__(self, path, project_name, network_code, use_srces=False):
+    def __init__(self, path, project_name, network_code, use_srces=False,
+                 **kwargs):
         """
         Interface to manage project providing an interface to selected
         components of the NonLinLoc software by Anthony Lomax.
@@ -222,7 +223,8 @@ class ProjectManager(object):
         self.velocity_grid_location = self.root_directory / 'velocities'
         self.velocity_grid_location.mkdir(parents=True, exist_ok=True)
 
-        p_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(network_code, 'P')
+        p_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(network_code,
+                                                                  'P')
         self.p_velocity_file = self.velocity_grid_location / p_vel_base_name
         p_files = self.velocity_grid_location.glob(f'{p_vel_base_name}*')
         if len(list(p_files)) == 0:
@@ -237,8 +239,8 @@ class ProjectManager(object):
                                                    path=str(
                                                  self.velocity_grid_location))
 
-        s_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(self.network_code,
-                                                            'S')
+        s_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(
+            self.network_code, 'S')
         self.s_velocity_file = self.velocity_grid_location / s_vel_base_name
         s_files = self.velocity_grid_location.glob(f'{s_vel_base_name}*')
         if len(list(s_files)) == 0:
