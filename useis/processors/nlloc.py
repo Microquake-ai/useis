@@ -135,6 +135,7 @@ class NLLOCResult(object):
                         arrivals=self.arrivals,
                         origin_uncertainty=self.uncertainty_ellipsoid,
                         rays=self.rays)
+        origin.rays = self.rays
         return origin
 
     @property
