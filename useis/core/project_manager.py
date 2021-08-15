@@ -16,14 +16,13 @@ class ProjectManager(object):
 
     inventory_file_name = 'inventory.xml'
 
-    def __init__(self, path, project_name, network_code, use_srces=False,
-                 **kwargs):
+    def __init__(self, base_projects_path, project_name, network_code,
+                 use_srces=False, **kwargs):
         """
-        Interface to manage project providing an interface to selected
-        components of the NonLinLoc software by Anthony Lomax.
+        Interface to manage project and grids.
 
-        :param path: base path
-        :type path: str
+        :param base_projects_path: base project path
+        :type base_projects_path: str
         :param project_name: project name or id
         :type project_name: str
         :param network_code: network name or id
@@ -143,9 +142,13 @@ class ProjectManager(object):
 
         self.project_name = project_name
         self.network_code = network_code
-        self.root_directory = Path(path) / project_name / network_code
+        self.base_projects_path = Path(base_projects_path)
+        self.root_directory = self.base_projects_path / project_name \
+                              / network_code
         # create the directory if it does not exist
         self.root_directory.mkdir(parents=True, exist_ok=True)
+        self.archive_directory = self.base_projects_path / 'archives'
+        self.archive_directory.mkdir(parents=True, exist_ok=True)
 
         self.inventory_location = self.root_directory / 'inventory'
         self.inventory_location.mkdir(parents=True, exist_ok=True)
@@ -275,6 +278,11 @@ class ProjectManager(object):
             self.travel_times = nlloc_grid.TravelTimeEnsemble.from_files(
                 self.travel_time_grid_location)
 
+    @staticmethod
+    def exists(project_path, project_name, network_code):
+        project_path = Path(project_path) / project_name / network_code
+        return project_path.exists()
+
     def init_travel_time_grid(self):
         """
         initialize the travel time grids
@@ -300,8 +308,7 @@ class ProjectManager(object):
 
         elif self.p_velocity:
             logger.warning('s-wave velocity model is not set, travel-times '
-                           'will'
-                           'will be generated for ')
+                           'will be generated for p only')
             self.travel_times = tt_gs_p
 
         elif self.s_velocity:
@@ -447,6 +454,115 @@ class ProjectManager(object):
             logger.warning('the inventory and the travel time grids might'
                            'be out of sync.')
 
-    def clean_project(self):
-        pass
+    def archive_network(self):
+        logger.info(f'Archiving network {self.project_name}.'
+                    f'{self.network_code}.'
+                    f'Note that the network archiving can be undone. '
+                    f'This actions lead to the deletion of all the '
+                    f'velocity derivative grids, i.e., the travel time and '
+                    f'angle grids. The network information can be restored '
+                    f'using the unarchived_project method.')
+        grids_path = self.root_directory / 'times'
+        if grids_path.exists():
+            grids_path.rmdir()
+
+        grids_path.mkdir(exist_ok=True)
+
+        shutil.move(str(self.root_directory), str(self.archive_directory /
+                    self.project_name / self.network_code))
+
+    def unarchive_network(self):
+        logger.info(f'restoring {self.project_name}.{self.network_code}.')
+
+        shutil.move(str(self.archive_directory / self.project_name
+                    / self.network_code), str(self.root_directory))
+        try:
+            self.init_travel_time_grid()
+        except Exception as e:
+            logger.error(e)
+
+    def list_active_projects(self):
+        """
+        List all active projects
+        :return: list of active projects
+        """
+        projects = []
+        for project in self.base_projects_path.glob('*'):
+            if project.name == 'archives':
+                continue
+            if project.is_dir():
+                projects.append(project.name)
+
+        return projects
+
+    def list_active_networks_project(self, project=None):
+        """
+        List all active networks
+        :param project: the project for which to list the networks
+        :return: a list of networks
+        """
+        if project is None:
+            project = self.project_name
+
+        project_directory = self.base_projects_path / project
+
+        if not project_directory.exists():
+            logger.warning(f'the project {project} does not exists')
+            return
+
+        networks = []
+        for network in project_directory.glob('*'):
+            if not network.is_dir():
+                continue
+            networks.append(network.name)
+
+        return networks
+
+    def list_all_active_networks(self):
+        """
+        list all active projects and networks
+        :return: a dictionary of list
+        """
+
+        out_dict = {}
+        for project in self.list_active_projects():
+            networks = self.list_active_networks_project(project=project)
+            out_dict[project] = networks
+
+        return out_dict
+
+    def list_all_archived_networks(self):
+        """
+        List all archived projects and networks
+        :return: dictionary of list where the keys are the projects name
+        """
+
+        out_dict = {}
+        for project in self.archive_directory.glob('*'):
+            if not project.is_dir():
+                continue
+            archived_project_dir = self.archive_directory / project.name
+            out_dict[project.name] = []
+            for network in archived_project_dir.glob('*'):
+                if not network.is_dir():
+                    continue
+                out_dict[project.name].append(network.name)
+
+        return out_dict
+
+    def has_p_velocity(self):
+        if self.p_velocity:
+            return True
+        return False
+
+    def has_s_velocity(self):
+        if self.s_velocity:
+            return True
+        return False
+
+    def has_inventory(self):
+        if self.inventory:
+            return True
+        return False
+
 

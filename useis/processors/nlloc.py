@@ -9,7 +9,9 @@ import numpy as np
 def calculate_uncertainty(point_cloud):
     """
     :param point_cloud: location point cloud
-    :return: obspy.core.event.OriginUncertainty()
+    :type point_cloud: numpy 2d array
+    :return: uncertainty
+    :rtype: uquake.core.event.OriginUncertainty
     """
 
     v, u = np.linalg.eig(np.cov(point_cloud.T))
@@ -158,10 +160,10 @@ class NLLOCResult(object):
 
 
 class NLLOC(ProjectManager):
-    def __init__(self, path: Path, project_name: str, network_code: str,
+    def __init__(self, base_projects_path: Path, project_name: str, network_code: str,
                  use_srces: bool=False):
 
-        super().__init__(path, project_name, network_code, use_srces=use_srces)
+        super().__init__(base_projects_path, project_name, network_code, use_srces=use_srces)
 
         self.run_id = str(uuid4())
         self.current_run_directory = self.root_directory / 'run' / self.run_id

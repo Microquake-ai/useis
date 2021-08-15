@@ -428,9 +428,9 @@ def get_event_types(api_base_url, username=None, password=None):
 
     url = api_base_url + 'inventory/microquake_event_types'
     if username:
-        response = requests.get(url, auth=(username, password))
+        response = requests.get(url, auth=(username, password), verify=False)
     else:
-        response = requests.get(url, timeout=timeout)
+        response = requests.get(url, timeout=timeout, verify=False)
 
     if not response:
         raise ConnectionError('API Connection Error')
@@ -610,7 +610,7 @@ def get_catalog(api_base_url, **kwargs):
     query = f'{api_base_url}?{tmp}'
 
     while query:
-        re = requests.get(query, params=kwargs)
+        re = requests.get(query, params=kwargs, verify=False)
         # from ipdb import set_trace; set_trace()()
         if not re:
             # logger.info('The API catalogue does not contain any events that'
