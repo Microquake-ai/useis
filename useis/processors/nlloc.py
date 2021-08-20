@@ -166,7 +166,7 @@ class NLLOC(ProjectManager):
         super().__init__(base_projects_path, project_name, network_code, use_srces=use_srces)
 
         self.run_id = str(uuid4())
-        self.current_run_directory = self.root_directory / 'run' / self.run_id
+        self.current_run_directory = self.paths.root / 'run' / self.run_id
         self.current_run_directory.mkdir(parents=True, exist_ok=False)
 
         self.output_file_path = self.current_run_directory / 'outputs'
@@ -179,7 +179,7 @@ class NLLOC(ProjectManager):
                                 self.observation_file_name
         self.observations = None
 
-        self.template_directory = self.root_directory / 'templates'
+        self.template_directory = self.paths.root / 'templates'
 
         self.template_directory.mkdir(parents=True, exist_ok=True)
 
@@ -198,15 +198,15 @@ class NLLOC(ProjectManager):
         self.last_event_hypocenter = None
         self.last_event_time = None
 
-        self.nlloc_settings_file = self.config_location / 'nlloc.toml'
+        self.nlloc_settings_file = self.paths.config / 'nlloc.toml'
 
-        if not self.settings_file.is_file():
+        if not self.files.settings.is_file():
             settings_template = Path(os.path.realpath(__file__)).parent / \
                                     '../settings/nlloc_settings_template.toml'
 
             shutil.copyfile(settings_template, self.nlloc_settings_file)
 
-        self.settings = Settings(str(self.config_location))
+        self.settings = Settings(str(self.paths.config))
 
     def add_template_control(self, control=Control(message_flag=1),
                              transformation=GeographicTransformation(),
@@ -365,7 +365,7 @@ class NLLOC(ProjectManager):
     @property
     def nlloc_files(self):
         return NllocInputFiles(self.observation_file,
-                               self.travel_time_grid_location /
+                               self.paths.times /
                                self.network_code,
                                self.output_file_path / self.network_code)
 
