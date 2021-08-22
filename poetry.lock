@@ -1166,27 +1166,22 @@ version = "0.6.57"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
-python-versions = "^3.8"
-develop = false
+python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
-dynaconf = "^3.1.4"
-h5py = "^3.2.1"
-ipython = "^7.19.0"
+dynaconf = ">=3.1.4,<4.0.0"
+h5py = ">=3.2.1,<4.0.0"
+ipython = ">=7.19.0,<8.0.0"
 jedi = "0.17.2"
-loguru = "^0.5.3"
-numpy = "^1.18.0"
-obspy = "^1.2.2"
-openpyxl = "^3.0.6"
-pandas = "^1.2.1"
-pytest = "^6.2.1"
-scikit-fmm = "^2021.2.2"
-tqdm = "^4.59.0"
-vtk = "^9.0.1"
-
-[package.source]
-type = "directory"
-url = "libraries/uquake"
+loguru = ">=0.5.3,<0.6.0"
+numpy = ">=1.18.0,<2.0.0"
+obspy = ">=1.2.2,<2.0.0"
+openpyxl = ">=3.0.6,<4.0.0"
+pandas = ">=1.2.1,<2.0.0"
+pytest = ">=6.2.1,<7.0.0"
+scikit-fmm = ">=2021.2.2,<2022.0.0"
+tqdm = ">=4.59.0,<5.0.0"
+vtk = ">=9.0.1,<10.0.0"
 
 [[package]]
 name = "urllib3"
@@ -1279,7 +1274,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "10e2b07ed6985f2e1c356ec7c488186aa36c3aea6e4ace711b3522e9e2547c8e"
+content-hash = "6c7ae5d520264546c4991c370799f0e4651905b93e9a37754cd1ab8367915e01"
 
 [metadata.files]
 aiohttp = [
@@ -2162,7 +2157,10 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.0-py3-none-any.whl", hash = "sha256:779383f6086d90c99ae41cf0ff39aac8a7937a9283ce0a414e5dd782f4c94a84"},
     {file = "typing_extensions-3.10.0.0.tar.gz", hash = "sha256:50b6f157849174217d0656f99dc82fe932884fb250826c18350e159ec6cdf342"},
 ]
-uquake = []
+uquake = [
+    {file = "uquake-0.6.57-py3-none-any.whl", hash = "sha256:bec334c98e38b124b3217818debd5c501ee30679a512432bca6f927d6c30704c"},
+    {file = "uquake-0.6.57.tar.gz", hash = "sha256:650cf773b550e2a68b0f4942c8e53572605041a3a576b517b971608d6b79b610"},
+]
 urllib3 = [
     {file = "urllib3-1.26.6-py2.py3-none-any.whl", hash = "sha256:39fb8672126159acb139a7718dd10806104dec1e2f0f6c88aab05d17df10c8d4"},
     {file = "urllib3-1.26.6.tar.gz", hash = "sha256:f57b4c16c62fa2760b7e3d97c35b255512fb6b59a259730f36ba32ce9f8e342f"},
