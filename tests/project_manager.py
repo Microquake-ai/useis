@@ -1,25 +1,29 @@
 import shutil
 import unittest
 from useis.core.project_manager import ProjectManager
+from utils import TestProjectManager
 from uquake.grid.nlloc import VelocityGrid3D, VelocityGridEnsemble
 from uquake.grid.base import Grid
 from uquake.nlloc.nlloc import Srces
 from glob import glob
 from loguru import logger
+from utils import TestUtils
 
-root_dir = 'projects'
-test_project = 'test_project'
-test_network = 'TN'
+tu = TestUtils()
 
-grid_dim = [10, 10, 10]
-grid_spacing = [1, 1, 1]
-grid_origin = [0, 0, 0]
+# root_dir = 'projects'
+# test_project = 'test_project'
+# test_network = 'TN'
+#
+# grid_dim = [10, 10, 10]
+# grid_spacing = [1, 1, 1]
+# grid_origin = [0, 0, 0]
 
 
-class CreationArchiving(unittest.TestCase):
+class TestPM(unittest.TestCase):
 
     def test_creation(self):
-        pm = ProjectManager(root_dir, test_project, test_network)
+        pm = TestProjectManager()
         self.assertTrue(pm.paths.root.exists())
         shutil.rmtree(root_dir)
 
@@ -80,7 +84,7 @@ class CreationArchiving(unittest.TestCase):
 
     def test_add_inventory(self):
         grid = Grid(grid_dim, grid_origin, grid_spacing, value=5000)
-        sites = Srces.generate_random_srces_in_grid(grid)
+        sites = Srces.generate_random_srces_in_grid(grid, n_srces=10)
         pm = ProjectManager(root_dir, test_project, test_network)
         pm.add_srces(sites, initialize_travel_time=False)
         self.assertTrue(pm.files.srces.exists())

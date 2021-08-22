@@ -7,15 +7,21 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-#uquake = {path = "libraries/uquake" }
+uquake = {path = "libraries/uquake"}
+#uquake = '^0.6.43'
 dynaconf = "^3.1.4"
 tqdm = "^4.59.0"
-# PyQt5 = "^5.15.4"
+Sphinx = "^4.1.2"
+myst-parser = "^0.15.1"
+sphinx-rtd-theme = "^0.5.2"
+rinohtype = "^0.5.3"
 
-uquake = "^0.6.20"
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.extras]
+docs = ["sphinx", "sphinx_rtd_theme"]

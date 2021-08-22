@@ -1,7 +1,6 @@
 from ..core.project_manager import *
 from uquake.nlloc.nlloc import *
-from uquake.core.event import (Catalog, Event, RayCollection, Pick,
-                               CreationInfo, Ray)
+from uquake.core.event import (Catalog, Event, CreationInfo, Origin)
 from uquake.core import UTCDateTime
 import numpy as np
 
@@ -61,13 +60,12 @@ class NLLOCResult(object):
                                           creation_time=UTCDateTime.now())
 
     def __repr__(self):
-        ce = self.uncertainty_ellipsoid.confidence_ellipsoid
         out_str = f"""
         time (UTC)  : {self.t}
         location    : x- {self.x:>10.1f} (m)
                       y- {self.y:>10.1f} (m)
                       z- {self.z:>10.1f} (m)
-        uncertainty : {ce.semi_major_axis_length:0.1f} (1 std - m)
+        uncertainty : {self.uncertainty:0.1f} (1 std - m)
         """
         return out_str
 
@@ -144,6 +142,11 @@ class NLLOCResult(object):
     def event(self):
         return self.export_as_event()
 
+    @property
+    def uncertainty(self):
+        ce = self.uncertainty_ellipsoid.confidence_ellipsoid
+        return ce.semi_major_axis_length
+
     def append_to_event(self, event: Event) -> Event:
         o = self.origin
         if isinstance(event, Catalog):
@@ -163,48 +166,56 @@ class NLLOC(ProjectManager):
     def __init__(self, base_projects_path: Path, project_name: str, network_code: str,
                  use_srces: bool=False):
 
-        super().__init__(base_projects_path, project_name, network_code, use_srces=use_srces)
+        """
+        Object to control NLLoc execution and manage the required grids, inputs
+        and outputs
+        :param base_projects_path:
+        :param project_name:
+        :param network_code:
+        :param use_srces:
+        """
+
+        super().__init__(base_projects_path, project_name, network_code,
+                         use_srces=use_srces)
 
         self.run_id = str(uuid4())
-        self.current_run_directory = self.paths.root / 'run' / self.run_id
-        self.current_run_directory.mkdir(parents=True, exist_ok=False)
 
-        self.output_file_path = self.current_run_directory / 'outputs'
-        self.output_file_path.mkdir(parents=True, exist_ok=True)
+        self.paths.current_run = self.paths.root / 'run' / self.run_id
+        self.paths.current_run.mkdir(parents=True, exist_ok=False)
 
-        self.observation_path = self.current_run_directory / 'observations'
-        self.observation_path.mkdir(parents=True, exist_ok=True)
-        self.observation_file_name = 'observations.obs'
-        self.observation_file = self.observation_path / \
-                                self.observation_file_name
+        self.paths.outputs = self.paths.current_run / 'outputs'
+        self.paths.outputs.mkdir(parents=True, exist_ok=True)
+
+        self.paths.observations = self.paths.current_run / 'inputs'
+        self.paths.observations.mkdir(parents=True, exist_ok=True)
+        self.files.observations = self.paths.observations / 'picks.obs'
         self.observations = None
 
-        self.template_directory = self.paths.root / 'templates'
+        self.paths.templates = self.paths.root / 'templates'
+        self.paths.templates.mkdir(parents=True, exist_ok=True)
 
-        self.template_directory.mkdir(parents=True, exist_ok=True)
+        self.files.template_ctrl = self.paths.templates / \
+                                   'ctrl_template.pickle'
 
-        self.template_ctrl_file = self.template_directory / \
-                                  'ctrl_template.pickle'
-
-        if self.template_ctrl_file.exists():
-            with open(self.template_ctrl_file, 'rb') as template_ctrl:
+        if self.files.template_ctrl.exists():
+            with open(self.files.template_ctrl, 'rb') as template_ctrl:
                 self.control_template = pickle.load(template_ctrl)
         else:
             self.control_template = None
             self.add_template_control()
 
-        self.control_file = self.current_run_directory / 'run.nll'
+        self.files.control = self.paths.current_run / 'run.nll'
 
         self.last_event_hypocenter = None
         self.last_event_time = None
 
-        self.nlloc_settings_file = self.paths.config / 'nlloc.toml'
+        self.files.nlloc_settings = self.paths.config / 'nlloc.toml'
 
         if not self.files.settings.is_file():
             settings_template = Path(os.path.realpath(__file__)).parent / \
                                     '../settings/nlloc_settings_template.toml'
 
-            shutil.copyfile(settings_template, self.nlloc_settings_file)
+            shutil.copyfile(settings_template, self.files.nlloc_settings)
 
         self.settings = Settings(str(self.paths.config))
 
@@ -225,7 +236,7 @@ class NLLOC(ProjectManager):
         if not issubclass(type(transformation), GeographicTransformation):
             raise TypeError(f'transformation is type {type(transformation)}. '
                             f'expecting type'
-                           f'{GeographicTransformation}.')
+                            f'{GeographicTransformation}.')
 
         if not locsearch.type == 'LOCSEARCH':
             raise TypeError(f'locsearch is type {type(locsearch)}'
@@ -255,13 +266,13 @@ class NLLOC(ProjectManager):
                     'locgau': locgau,
                     'locqual2err': locqual2err}
 
-        with open(self.template_ctrl_file, 'wb') as template_ctrl:
+        with open(self.files.template_ctrl, 'wb') as template_ctrl:
             pickle.dump(dict_out, template_ctrl)
 
         self.control_template = dict_out
 
     def write_control_file(self):
-        with open(self.control_file, 'w') as control_file:
+        with open(self.files.control, 'w') as control_file:
             control_file.write(self.control)
 
     def __add_observations__(self, observations):
@@ -272,9 +283,9 @@ class NLLOC(ProjectManager):
         if not isinstance(observations, Observations):
             raise TypeError(f'observations is type {type(observations)}. '
                             f'observations must be type {Observations}.')
-        self.observation_path.mkdir(parents=True, exist_ok=True)
-        observations.write(self.observation_file_name,
-                           path=self.observation_path)
+        self.paths.observations.mkdir(parents=True, exist_ok=True)
+        observations.write(self.files.observations.name,
+                           path=self.paths.observations)
 
         self.observations = observations
 
@@ -300,7 +311,7 @@ class NLLOC(ProjectManager):
 
         self.write_control_file()
 
-        cmd = ['NLLoc', self.control_file]
+        cmd = ['NLLoc', self.files.control]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
 
         logger.info('locating event using NonLinLoc')
@@ -322,11 +333,12 @@ class NLLOC(ProjectManager):
                 p_times.append(pick.time)
             event_time = np.min(p_times)
 
-        if not (self.output_file_path / 'last.hyp').exists():
+        if not (self.paths.outputs / 'last.hyp').exists():
             logger.error(f'event location failed for event {event_time}!')
-        t, x, y, z = read_hypocenter_file(self.output_file_path / 'last.hyp')
 
-        scatters = read_scatter_file(self.output_file_path / 'last.scat')
+        t, x, y, z = read_hypocenter_file(self.paths.outputs / 'last.hyp')
+
+        scatters = read_scatter_file(self.paths.outputs / 'last.scat')
 
         rays = None
         if calculate_rays:
@@ -339,20 +351,20 @@ class NLLOC(ProjectManager):
                         f'seconds')
 
         if delete_output_files:
-            for fle in self.observation_path.glob('*'):
+            for fle in self.paths.observations.glob('*'):
                 fle.unlink()
-            self.observation_path.rmdir()
+            self.paths.observations.rmdir()
 
-            output_dir = self.output_file_path
+            output_dir = self.paths.outputs
 
             for fle in output_dir.glob('*'):
                 fle.unlink()
             output_dir.rmdir()
 
-            for fle in self.output_file_path.parent.glob('*'):
+            for fle in self.paths.outputs.parent.glob('*'):
                 fle.unlink()
 
-            self.output_file_path.parent.rmdir()
+            self.paths.outputs.parent.rmdir()
 
         result = NLLOCResult(np.array([x, y, z]), t, scatters, rays,
                              observations, evaluation_mode, evaluation_status)
@@ -364,10 +376,10 @@ class NLLOC(ProjectManager):
 
     @property
     def nlloc_files(self):
-        return NllocInputFiles(self.observation_file,
+        return NllocInputFiles(self.files.observations,
                                self.paths.times /
                                self.network_code,
-                               self.output_file_path / self.network_code)
+                               self.paths.outputs / self.network_code)
 
     @property
     def control(self):
