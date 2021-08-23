@@ -14,7 +14,7 @@ Sphinx = "^4.1.2"
 myst-parser = "^0.15.1"
 sphinx-rtd-theme = "^0.5.2"
 rinohtype = "^0.5.3"
-uquake = "^0.6.57"
+uquake = "^0"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
