@@ -77,8 +77,3 @@ class Pick(BaseModel):
 # class Pick(BaseModel):
 #     pass
 
-
-class Observations(BaseModel):
-    picks: List[Pick]
-    p_pick_error: Optional[float]
-    s_pick_error: Optional[float]

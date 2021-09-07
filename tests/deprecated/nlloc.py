@@ -72,7 +72,7 @@ def make_layered_model():
 vels = make_layered_model()
 
 nlloc.add_inventory(inventory, initialize_travel_time=False)
-nlloc.add_velocities(vels, initialize_travel_time=False)
+nlloc.add_velocities(vels, initialize_travel_times=False)
 
 observations = Observations.from_event(event)
 

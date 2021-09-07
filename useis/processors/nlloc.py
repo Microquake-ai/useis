@@ -163,8 +163,8 @@ class NLLOCResult(object):
 
 
 class NLLOC(ProjectManager):
-    def __init__(self, base_projects_path: Path, project_name: str, network_code: str,
-                 use_srces: bool=False):
+    def __init__(self, base_projects_path: Path, project_name: str,
+                 network_code: str, use_srces: bool=False):
 
         """
         Object to control NLLoc execution and manage the required grids, inputs
@@ -218,6 +218,26 @@ class NLLOC(ProjectManager):
             shutil.copyfile(settings_template, self.files.nlloc_settings)
 
         self.settings = Settings(str(self.paths.config))
+
+    def __del__(self):
+        self.remove_run_directory()
+
+    def remove_run_directory(self):
+        for fle in self.paths.observations.glob('*'):
+            fle.unlink()
+
+        self.paths.observations.rmdir()
+
+        output_dir = self.paths.outputs
+
+        for fle in output_dir.glob('*'):
+            fle.unlink()
+        output_dir.rmdir()
+
+        for fle in self.paths.outputs.parent.glob('*'):
+            fle.unlink()
+
+        self.paths.outputs.parent.rmdir()
 
     def add_template_control(self, control=Control(message_flag=1),
                              transformation=GeographicTransformation(),
@@ -351,20 +371,7 @@ class NLLOC(ProjectManager):
                         f'seconds')
 
         if delete_output_files:
-            for fle in self.paths.observations.glob('*'):
-                fle.unlink()
-            self.paths.observations.rmdir()
-
-            output_dir = self.paths.outputs
-
-            for fle in output_dir.glob('*'):
-                fle.unlink()
-            output_dir.rmdir()
-
-            for fle in self.paths.outputs.parent.glob('*'):
-                fle.unlink()
-
-            self.paths.outputs.parent.rmdir()
+            self.remove_run_directory()
 
         result = NLLOCResult(np.array([x, y, z]), t, scatters, rays,
                              observations, evaluation_mode, evaluation_status)

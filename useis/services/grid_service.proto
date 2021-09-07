@@ -1,12 +1,42 @@
 syntax = "proto3";
 
-package Grid;
+package grid;
 
 message VelocityGrid3D {
-    string network_code = 1;
-    repeated float origin = 2 [packed=true];
-    repeated float spacing = 3 [packed=true];
-    string model_id = 4;
-    string phase = 5;
-    repeated float data = 6 [packed=true];
+    string project = 1;
+    string network_code = 2;
+    repeated float origin = 3 [packed=true];
+    repeated float spacing = 4 [packed=true];
+    repeated int32 dimensions = 5 [packed=true];
+    string model_id = 6;
+    string phase = 7;
+    repeated float data = 8 [packed=true];
+}
+
+message Site {
+    string label = 1;
+    float x = 2;
+    float y = 3;
+    float z = 4;
+    float elev = 5;
+}
+
+message Srces {
+    repeated Site sites = 1;
+    string project = 2;
+    string network = 3;
+}
+
+message GenericFile {
+    bytes file_bytes = 3;
+}
+
+message GenericMessage {
+    string message = 1;
+}
+
+service Grid {
+    rpc add_velocity_grid(VelocityGrid3D) returns (GenericMessage) {}
+    rpc add_inventory(stream GenericFile) returns (GenericMessage) {}
+    rpc add_srces(Srces) returns (GenericMessage) {}
 }

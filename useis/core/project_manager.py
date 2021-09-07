@@ -156,7 +156,7 @@ class ProjectManager(object):
         # calculation of the travel time grids.
         # It is possible to manually trigger the calculation of the travel
         # time grid by invoking
-        >>> pm.init_travel_time_grid()
+        >>> pm.init_travel_time_grids()
         # this should not, however, be required.
 
         # prior to running the location, NonLinLoc need to be configured.
@@ -273,7 +273,7 @@ class ProjectManager(object):
         project_path = Path(project_path) / project_name / network_code
         return project_path.exists()
 
-    def init_travel_time_grid(self):
+    def init_travel_time_grids(self, multi_threaded=True):
         """
         initialize the travel time grids
         """
@@ -300,17 +300,22 @@ class ProjectManager(object):
         seeds = self.srces.locs
         seed_labels = self.srces.labels
 
-        if self.has_p_velocity():
-            tt_gs_p = self.p_velocity.to_time_multi_threaded(seeds,
-                                                             seed_labels)
-            self.travel_times = tt_gs_p
-        if self.has_s_velocity():
-            tt_gs_s = self.s_velocity.to_time_multi_threaded(seeds,
-                                                             seed_labels)
-            self.travel_times = tt_gs_s
+        tt = self.velocities.to_time(seeds, seed_labels,
+                                     multi_threaded=multi_threaded)
 
-        if self.p_velocity and self.s_velocity:
-            self.travel_times = tt_gs_p + tt_gs_s
+        self.travel_times = tt
+
+        # if self.has_p_velocity():
+        #     tt_gs_p = self.p_velocity.to_time(seeds, seed_labels,
+        #                                       multi_threaded=multi_threaded)
+        #     self.travel_times = tt_gs_p
+        # if self.has_s_velocity():
+        #     tt_gs_s = self.s_velocity.to_time(seeds, seed_labels,
+        #                                       multi_threaded=multi_threaded)
+        #     self.travel_times = tt_gs_s
+        #
+        # if self.p_velocity and self.s_velocity:
+        #     self.travel_times = tt_gs_p + tt_gs_s
 
         # cleaning the directory before writing the new files
 
@@ -342,7 +347,7 @@ class ProjectManager(object):
                 pickle.dump(self.srces, srces_file)
 
         if initialize_travel_time:
-            self.init_travel_time_grid()
+            self.init_travel_time_grids()
         else:
             logger.warning('the travel time grids will not be initialized, '
                            'the inventory and the travel time grids might '
@@ -350,7 +355,8 @@ class ProjectManager(object):
                            'grids make sure initialize_travel_time is set to '
                            'True')
 
-    def add_srces(self, srces, force=False, initialize_travel_time=True):
+    def add_srces(self, srces, force=False, initialize_travel_time: bool=True,
+                  multi_threaded: bool=True):
         """
         add a list of sources to the projects
         :param srces: list of sources or sites
@@ -359,6 +365,8 @@ class ProjectManager(object):
         :param initialize_travel_time: if True, initialize the travel time
         grid
         :type srces: Srces
+        :param multi_threaded: if true, use multi-threading
+        :type multi_threaded: bool
 
         ..warning:: travel time should be initialized when the sites/srces
         are updated. Not doing so, may cause the sites/source and the
@@ -383,7 +391,7 @@ class ProjectManager(object):
             pickle.dump(self.srces, srces_file)
 
         if initialize_travel_time:
-            self.init_travel_time_grid()
+            self.init_travel_time_grids(multi_threaded=multi_threaded)
         else:
             logger.warning('the travel time grids will not be initialized, '
                            'the inventory and the travel time grids might '
@@ -391,14 +399,12 @@ class ProjectManager(object):
                            'grids make sure initialize_travel_time is set to '
                            'True')
 
-        self.init_travel_time_grid()
-
-    def add_velocities(self, velocities, initialize_travel_time=True):
+    def add_velocities(self, velocities, initialize_travel_times=False):
         """
         add P- and S-wave velocity models to the project
         :param velocities: velocity models
         :type velocities: nlloc.grid.VelocityEnsemble
-        :param initialize_travel_time: if True, initialize the travel time
+        :param initialize_travel_times: if True, initialize the travel time
         grid
 
         ..warning:: travel time should be initialized when the sites/srces
@@ -413,7 +419,8 @@ class ProjectManager(object):
         for key in velocities.keys():
             self.add_velocity(velocities[key])
 
-        self.init_travel_time_grid()
+        if initialize_travel_times:
+            self.init_travel_time_grids()
 
     def velocity_versioning_handler(self, phase):
         """
@@ -432,12 +439,12 @@ class ProjectManager(object):
 
         return np.max(exts) + 1
 
-    def add_velocity(self, velocity, initialize_travel_time=True):
+    def add_velocity(self, velocity, initialize_travel_times=False):
         """
         add P- or S-wave velocity model to the project
         :param velocity: p-wave velocity model
         :type velocity: uquake.grid.nlloc.VelocityGrid3D
-        :param initialize_travel_time: if true initialize the travel time grids
+        :param initialize_travel_times: if true initialize the travel time grids
 
         ..warning:: travel time should be initialized when the sites/srces
         are updated. Not doing so, may cause the sites/source and the
@@ -451,10 +458,11 @@ class ProjectManager(object):
 
         velocity.write(self.paths.velocities)
 
-        try:
-            self.init_travel_time_grid()
-        except Exception as e:
-            logger.warning(e)
+        if initialize_travel_times:
+            try:
+                self.init_travel_time_grids()
+            except Exception as e:
+                logger.warning(e)
 
     def list_active_projects(self):
         """

@@ -46,7 +46,7 @@ class TestNLLOC(NLLOC):
         srces = Srces.generate_random_srces_in_grid(p_velocity_grid,
                                                     n_srces=10)
         tpm.add_srces(srces)
-        tpm.init_travel_time_grid()
+        tpm.init_travel_time_grids()
 
         return tpm
 

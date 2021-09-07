@@ -7,15 +7,20 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
-#uquake = {path = "libraries/uquake"}
+uquake = {path = "libraries/uquake"}
 dynaconf = "^3.1.4"
 tqdm = "^4.59.0"
 Sphinx = "^4.1.2"
 myst-parser = "^0.15.1"
 sphinx-rtd-theme = "^0.5.2"
 rinohtype = "^0.5.3"
-uquake = "^0"
-
+#uquake = "^0"
+grpcio = "^1.39.0"
+grpcio-tools = "^1.39.0"
+fastapi = "^0.68.1"
+uvicorn = "^0.15.0"
+python-multipart = "^0.0.5"
+furl = "^2.1.2"
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
 

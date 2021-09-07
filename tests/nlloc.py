@@ -31,11 +31,13 @@ class NLLOC(unittest.TestCase):
                                          phase='S', value=3000)
 
         velocity_grids = VelocityGridEnsemble(p_velocity_grid, s_velocity_grid)
-        nll.add_velocities(velocity_grids)
+        nll.add_velocities(velocity_grids, initialize_travel_times=False)
 
         srces = Srces.generate_random_srces_in_grid(p_velocity_grid,
                                                     n_srces=20)
-        nll.add_srces(srces)
+        nll.add_srces(srces, initialize_travel_time=False)
+
+        nll.init_travel_time_grids(multi_threaded=True)
 
         e_loc = nll.p_velocity.generate_random_points_in_grid()
         observations = Observations.generate_observations_event_location(

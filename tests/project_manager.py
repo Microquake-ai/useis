@@ -1,29 +1,28 @@
 import shutil
 import unittest
 from useis.core.project_manager import ProjectManager
-from utils import TestProjectManager
 from uquake.grid.nlloc import VelocityGrid3D, VelocityGridEnsemble
 from uquake.grid.base import Grid
 from uquake.nlloc.nlloc import Srces
 from glob import glob
 from loguru import logger
-from utils import TestUtils
-
-tu = TestUtils()
-
-# root_dir = 'projects'
-# test_project = 'test_project'
-# test_network = 'TN'
+# from utils import TestUtils
 #
-# grid_dim = [10, 10, 10]
-# grid_spacing = [1, 1, 1]
-# grid_origin = [0, 0, 0]
+# tu = TestUtils()
+
+root_dir = 'projects'
+test_project = 'test_project'
+test_network = 'TN'
+
+grid_dim = [10, 10, 10]
+grid_spacing = [1, 1, 1]
+grid_origin = [0, 0, 0]
 
 
 class TestPM(unittest.TestCase):
 
     def test_creation(self):
-        pm = TestProjectManager()
+        pm = ProjectManager(root_dir, test_project, test_network)
         self.assertTrue(pm.paths.root.exists())
         shutil.rmtree(root_dir)
 
@@ -54,12 +53,12 @@ class TestPM(unittest.TestCase):
                                          grid_spacing, phase='S', value=3000)
 
         pm = ProjectManager(root_dir, test_project, test_network)
-        pm.add_velocity(p_velocity_grid, initialize_travel_time=False)
+        pm.add_velocity(p_velocity_grid, initialize_travel_times=False)
 
         logger.warning(f'{glob(str(pm.files.p_velocity) + ".hdr")}')
 
         self.assertTrue(len(glob(str(pm.files.p_velocity) + '.hdr')) > 0)
-        pm.add_velocity(s_velocity_grid, initialize_travel_time=False)
+        pm.add_velocity(s_velocity_grid, initialize_travel_times=False)
         self.assertTrue(len(glob(str(pm.files.s_velocity) + '.hdr')) > 0)
         shutil.rmtree(root_dir)
 
