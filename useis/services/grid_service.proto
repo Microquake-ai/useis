@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package Grid;
+
+message VelocityGrid3D {
+    string network_code = 1;
+    repeated float origin = 2 [packed=true];
+    repeated float spacing = 3 [packed=true];
+    string model_id = 4;
+    string phase = 5;
+    repeated float data = 6 [packed=true];
+}
