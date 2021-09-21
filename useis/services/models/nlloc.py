@@ -4,6 +4,7 @@ from typing import Optional, List
 from uquake.nlloc import nlloc
 from enum import Enum
 from datetime import datetime
+import numpy as np
 
 
 class Coordinates3D(BaseModel):
@@ -56,7 +57,6 @@ class Observations(BaseModel):
 class NLLOCResults(BaseModel):
     hypocenter: List[float]
     event_time: datetime
-
 
     def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
