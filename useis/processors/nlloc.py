@@ -3,6 +3,9 @@ from uquake.nlloc.nlloc import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin)
 from uquake.core import UTCDateTime
 import numpy as np
+from pydantic import BaseModel
+from ..services import models
+from typing import Optional, List
 
 
 def calculate_uncertainty(point_cloud):
@@ -40,7 +43,20 @@ def calculate_uncertainty(point_cloud):
                              confidence_level=68)
 
 
-class NLLOCResult(object):
+class Rays(BaseModel):
+    pass
+
+
+class NLLOCResult(BaseModel):
+
+    hypocenter: List[float]
+    event_time: datetime
+    scatter_cloud: List[float]
+    rays: List[Rays]
+    observations: models.nlloc.Observations
+    evaluation_mode: models.event.evaluation_mode
+    evaluation_status: models.event.evaluation_status
+
     def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
                  observations: Observations, evaluation_mode: str,

@@ -6,16 +6,18 @@ from loguru import logger
 from useis.processors.nlloc import NLLOC
 from uquake.core import read_inventory
 from uquake.nlloc.nlloc import Observations
+from uquake.grid.nlloc import VelocityGrid3D
 import os
 import json
 from fastapi.security import OAuth2PasswordBearer
 import numpy as np
-from useis.services.models import Observations as ModelObservations
+from useis.services.models.nlloc import Observations as ModelObservations
+from useis.services.models.grid import VelocityGrid3D as ModelVelocityGrid3D
 
 app = FastAPI()
 root_dir = os.environ.setdefault('nll_base_path', '.')
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
 def deserialize_object(file_obj):
@@ -23,19 +25,18 @@ def deserialize_object(file_obj):
     return pickle.load(f_in)
 
 
-@app.post("/velocity/{project}/{network}", status_code=201)
-async def add_velocity(project: str, network: str,
-                       velocity: bytes = File(...),
-                       token: str = Depends(oauth2_scheme),
-                       initialize_travel_times: Optional[bool] = False):
+@app.post("/velocity/{project}/{network}/add/3D/", status_code=201)
+async def add_velocity_3d(project: str, network: str,
+                          velocity: ModelVelocityGrid3D,
+                          initialize_travel_times: Optional[bool] = False):
 
     nll = NLLOC(root_dir, project, network)
-    velocity_grid = deserialize_object(velocity)
-    logger.info(f'adding {velocity_grid.phase} velocity grid '
-                f'to {project}/{network}')
-    nll.add_velocity(velocity_grid,
-                     initialize_travel_times=initialize_travel_times)
-    return str(velocity_grid)
+
+    logger.info(f'adding 3D velocity model to the project:{project} and '
+                f'network: {network}')
+    velocity_grid = velocity.to_uquake(network)
+    return nll.add_velocity(velocity_grid,
+                            initialize_travel_times=initialize_travel_times)
 
 
 @app.post("/inventory/{project}/{network}", status_code=201)
@@ -61,18 +62,18 @@ async def add_srces(project: str, network: str, srces: bytes = File(...),
     return
 
 
-@app.post('/nlloc/{project}/{network}/')
+@app.post('/event/locate/{project}/{network}/')
 async def event_location(project: str, network: str,
-                         observations: bytes = File(...)):
+                         observations: ModelObservations):
     nll = NLLOC(root_dir, project, network)
-    arrival_times = deserialize_object(observations)
-    event = nll.run_location(arrival_times, calculate_rays=False)
-    return event.preferred_origin().loc
+    event = nll.run_location(observations.to_uquake(), calculate_rays=False)
+    print(event.loc)
+    return 'nanana'
 
 
 @app.get('/travel_times/{project}/{network}/init')
-async def initialize_travel_times(project: str, network: str,
-                                  multi_threaded: Optional[bool] = False):
+async def init_travel_times(project: str, network: str,
+                            multi_threaded: Optional[bool] = False):
     nll = NLLOC(root_dir, project, network)
     if multi_threaded:
         thread = 'multi thread'
@@ -85,7 +86,7 @@ async def initialize_travel_times(project: str, network: str,
 
 @app.get("/velocity/{project}/{network}")
 async def list_velocity(project, network):
-    return (project, network)
+    return project, network
 
 
 @app.get("/test/{project}/{network}/random_locations")
@@ -125,13 +126,13 @@ async def generate_random_observations(project: str, network: str,
     """
     nll = NLLOC(root_dir, project, network)
     e_loc = np.array([x, y, z])
+    print(e_loc)
     observations = Observations.generate_observations_event_location(
         nll.travel_times, e_loc=e_loc)
 
-    observations.to_json()
+    print(ModelObservations.from_uquake(observations))
 
-    print(observations)
-    return
+    return ModelObservations.from_uquake(observations)
 
 
 

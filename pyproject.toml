@@ -6,7 +6,7 @@ authors = ["jpmercier <jpmercier01@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 uquake = {path = "libraries/uquake"}
 dynaconf = "^3.1.4"
 tqdm = "^4.59.0"
@@ -21,6 +21,7 @@ fastapi = "^0.68.1"
 uvicorn = "^0.15.0"
 python-multipart = "^0.0.5"
 furl = "^2.1.2"
+pydantic = "^1.8.2"
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
 

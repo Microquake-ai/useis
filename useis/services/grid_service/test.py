@@ -49,4 +49,6 @@ x = points[0][0]
 y = points[0][1]
 z = points[0][2]
 
-response = gc.generate_random_observations(x, y, z)
+response, observations = gc.generate_random_observations(x, y, z)
+
+response = gc.event_location(observations)

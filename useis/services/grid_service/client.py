@@ -8,6 +8,9 @@ from furl import furl
 from typing import Optional, List
 import json
 import numpy as np
+from useis.services.models.grid import VelocityGrid3D as ModelVelocityGrid3D
+from useis.services.models.nlloc import Observations as ModelObservations
+import json
 
 
 def serialize_object(obj, name):
@@ -28,11 +31,16 @@ class GridClient:
 
     def add_3d_velocity(self, velocity: VelocityGrid3D,
                         initialize_travel_times=False):
-        f_out = serialize_object(velocity, 'velocity')
-        url = self.base_url / 'velocity' / self.project / self.network
-        files = {'velocity': f_out}
+        url = self.base_url / 'velocity' / self.project / self.network \
+              / 'add' / '3D'
+
         data = {'initialize_travel_times': initialize_travel_times}
-        return requests.post(url, files=files, data=data)
+
+        velocity_grid = ModelVelocityGrid3D.from_uquake(velocity)
+        params = {'velocity': velocity_grid,
+                  'initialize_travel_times': initialize_travel_times}
+
+        return requests.post(url, params=data, json=velocity_grid.to_dict())
 
     def add_inventory(self, inventory: Inventory,
                       initialize_travel_times=False):
@@ -66,10 +74,11 @@ class GridClient:
         return requests.get(url, data=data)
 
     def event_location(self, observations: Observations):
-        url = self.base_url / 'nlloc' / self.project / self.network
-        f_out = serialize_object(observations, 'observations')
-        files = {'observations': f_out}
-        return requests.post(url, files=files)
+        url = self.base_url / 'event' / 'locate' / self.project / self.network
+        model_observations = ModelObservations.from_uquake(observations)
+        from ipdb import set_trace
+        set_trace()
+        return requests.post(url, json=model_observations.to_dict())
 
     def generate_random_points_in_grid(self, n_points: Optional[int] = 1):
         url = self.base_url / 'test' / self.project / self.network / \
@@ -87,9 +96,10 @@ class GridClient:
             'observations'
         params = {'x': x, 'y': y, 'z': z}
         response = requests.get(url, params=params)
-        return response
+        model_observations = ModelObservations.parse_obj(
+            json.loads(response.content))
 
-
+        return response, model_observations.to_uquake()
 
     def list_3d_velocity(self):
         url = self.base_url / 'velocity' / self.project / self.network

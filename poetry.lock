@@ -1297,11 +1297,11 @@ python-versions = "*"
 
 [[package]]
 name = "uquake"
-version = "0.7.10"
+version = "0.7.12"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
-python-versions = "^3.8"
+python-versions = ">=3.7.1,<4.0"
 develop = false
 
 [package.dependencies]
@@ -1439,7 +1439,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "b7b6f8a40b9555d2f9a4089735f6774878b1a6be292dd645a4320c9b56ebb5bc"
+content-hash = "2621711614c6587389e736f4e94e080cb999e7d45a928c30378777ce84446afe"
 
 [metadata.files]
 aiohttp = [
