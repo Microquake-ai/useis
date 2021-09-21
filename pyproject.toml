@@ -1,13 +1,14 @@
 [tool.poetry]
 name = "useis"
-version = "0.7.1"
+version = "0.7.2"
 description = ""
 authors = ["jpmercier <jpmercier01@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-uquake = {path = "libraries/uquake"}
+# uquake = {path = "libraries/uquake"}
+uquake = "^0.7.12"
 dynaconf = "^3.1.4"
 tqdm = "^4.59.0"
 Sphinx = "^4.1.2"
