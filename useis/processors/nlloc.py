@@ -47,15 +47,15 @@ class Rays(BaseModel):
     pass
 
 
-class NLLOCResult(BaseModel):
+class NLLOCResult:
 
-    hypocenter: List[float]
-    event_time: datetime
-    scatter_cloud: List[float]
-    rays: List[Rays]
-    observations: models.nlloc.Observations
-    evaluation_mode: models.event.evaluation_mode
-    evaluation_status: models.event.evaluation_status
+    # hypocenter: List[float]
+    # event_time: datetime
+    # scatter_cloud: List[float]
+    # rays: List[Rays]
+    # observations: models.nlloc.Observations
+    # evaluation_mode: models.event.evaluation_mode
+    # evaluation_status: models.event.evaluation_status
 
     def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
