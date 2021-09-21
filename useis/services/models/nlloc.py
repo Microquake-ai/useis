@@ -5,6 +5,7 @@ from uquake.nlloc import nlloc
 from enum import Enum
 from datetime import datetime
 import numpy as np
+from uquake.core import UTCDateTime
 
 
 class Coordinates3D(BaseModel):
