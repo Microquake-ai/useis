@@ -150,7 +150,8 @@ class NLLOCResult:
                         creation_info=self.creation_info,
                         arrivals=self.arrivals,
                         origin_uncertainty=self.uncertainty_ellipsoid,
-                        rays=self.rays)
+                        rays=self.rays,
+                        scatters=self.scatter_cloud)
         origin.rays = self.rays
         return origin
 
