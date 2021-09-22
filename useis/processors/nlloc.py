@@ -1,6 +1,6 @@
 from ..core.project_manager import *
 from uquake.nlloc.nlloc import *
-from uquake.core.event import (Catalog, Event, CreationInfo, Origin)
+from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival)
 from uquake.core import UTCDateTime
 import numpy as np
 from pydantic import BaseModel
