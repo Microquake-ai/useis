@@ -151,8 +151,8 @@ class NLLOCResult:
                         arrivals=self.arrivals,
                         origin_uncertainty=self.uncertainty_ellipsoid,
                         rays=self.rays,
-                        scatters=self.scatter_cloud)
-        origin.scatters=self.scatter_cloud
+                        scatter=self.scatter_cloud)
+        origin.scatter = self.scatter_cloud
         origin.rays = self.rays
         return origin
 
