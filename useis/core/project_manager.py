@@ -5,6 +5,7 @@ from uquake.core.logging import logger
 from uquake.nlloc import (Srces)
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
 from uquake.grid import nlloc as nlloc_grid
+from uquake.grid import read_grid
 from time import time
 import numpy as np
 import os
@@ -18,29 +19,29 @@ def read_srces(fname):
         return pickle.load(srces_file)
 
 
-def read_inventory():
-    if self.files.srces.exists() and use_srces:
-        with open(self.files.srces, 'rb') as srces_file:
-            logger.info('srces will be read from the file and not build'
-                        'from the inventory file')
-            self.srces = pickle.load(srces_file)
-
-        if self.files.inventory.exists():
-            self.inventory = read_inventory(str(self.files.inventory))
-
-    elif self.files.inventory.exists():
-        self.inventory = read_inventory(str(self.files.inventory))
-        self.srces = Srces.from_inventory(self.inventory)
-        logger.info('srces will be build from the inventory file. The '
-                    'srces.pickle file will be replaced.')
-        with open(self.files.srces, 'wb') as srces_file:
-            pickle.dump(self.srces, srces_file)
-
-    elif self.files.srces.exists():
-        logger.info('no inventory file in the project. srces file will be '
-                    'used instead.')
-        with open(self.files.srces, 'rb') as srces_file:
-            self.srces = pickle.load(srces_file)
+# def read_inventory():
+#     if self.files.srces.exists() and use_srces:
+#         with open(self.files.srces, 'rb') as srces_file:
+#             logger.info('srces will be read from the file and not build'
+#                         'from the inventory file')
+#             self.srces = pickle.load(srces_file)
+#
+#         if self.files.inventory.exists():
+#             self.inventory = read_inventory(str(self.files.inventory))
+#
+#     elif self.files.inventory.exists():
+#         self.inventory = read_inventory(str(self.files.inventory))
+#         self.srces = Srces.from_inventory(self.inventory)
+#         logger.info('srces will be build from the inventory file. The '
+#                     'srces.pickle file will be replaced.')
+#         with open(self.files.srces, 'wb') as srces_file:
+#             pickle.dump(self.srces, srces_file)
+#
+#     elif self.files.srces.exists():
+#         logger.info('no inventory file in the project. srces file will be '
+#                     'used instead.')
+#         with open(self.files.srces, 'rb') as srces_file:
+#             self.srces = pickle.load(srces_file)
 
 
 class ProjectManager(object):
@@ -188,7 +189,8 @@ class ProjectManager(object):
                       'inventory': root / 'inventory',
                       'config': root / 'config',
                       'velocities': root / 'velocities',
-                      'times': root / 'times'}
+                      'times': root / 'times',
+                      'hdf5_times': root / 'hdf5_times'}
 
         self.paths = AttribDict(self.paths)
 
@@ -198,7 +200,9 @@ class ProjectManager(object):
                       'services_settings': self.paths.config /
                                            'services_settings',
                       'p_velocity': self.paths.velocities / p_vel_base_name,
-                      's_velocity': self.paths.velocities / s_vel_base_name}
+                      's_velocity': self.paths.velocities / s_vel_base_name,
+                      'hdf5_tt': self.paths.hdf5_times /
+                                 'travel_times_tables.h5f'}
 
         self.files = AttribDict(self.files)
 
@@ -238,17 +242,15 @@ class ProjectManager(object):
 
         self.p_velocity = None
         try:
-            self.p_velocity = nlloc_grid.read_grid(p_vel_base_name,
-                                                   path=str(
-                                                       self.paths.velocities))
+            fname = str(self.paths.velocities / p_vel_base_name)
+            self.p_velocity = read_grid(fname, format='NLLOC')
         except Exception as e:
             logger.warning(e)
 
         self.s_velocity = None
         try:
-            self.s_velocity = nlloc_grid.read_grid(s_vel_base_name,
-                                                   path=str(
-                                                       self.paths.velocities))
+            fname = str(self.paths.velocities / s_vel_base_name)
+            self.s_velocity = read_grid(fname, format='NLLOC')
         except Exception as e:
             logger.warning(e)
 
@@ -323,6 +325,7 @@ class ProjectManager(object):
             fle.unlink(missing_ok=True)
 
         self.travel_times.write(self.paths.times)
+        # self.travel_times.write_hdf5(self.paths. / 'test.hf5')
         t1 = time()
         logger.info(f'done initializing the travel time grids in '
                     f'{t1 - t0:0.2f} seconds')

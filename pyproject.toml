@@ -6,9 +6,9 @@ authors = ["jpmercier <jpmercier01@gmail.com>"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.7.1,<4.0"
 # uquake = {path = "libraries/uquake"}
-uquake = "^0.7.12"
+uquake = "^0.8"
 dynaconf = "^3.1.4"
 tqdm = "^4.59.0"
 Sphinx = "^4.1.2"
