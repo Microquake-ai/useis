@@ -1,0 +1,21 @@
+version: '3.5'
+
+#networks:
+#  app-tier:
+#    driver: bridge
+
+services:
+  redisdb:
+    image: redis:4
+    hostname: redisdb
+    container_name: redisdb
+    volumes:
+      - redis:/data
+    ports:
+      - "6379:6379"
+    environment:
+      - HOSTNAME=redisdb
+    command: redis-server
+
+volumes:
+  redis: {}
