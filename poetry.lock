@@ -1333,7 +1333,7 @@ python-versions = "*"
 
 [[package]]
 name = "uquake"
-version = "0.8.15"
+version = "0.8.16"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
@@ -2557,8 +2557,8 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.2.tar.gz", hash = "sha256:49f75d16ff11f1cd258e1b988ccff82a3ca5570217d7ad8c5f48205dd99a677e"},
 ]
 uquake = [
-    {file = "uquake-0.8.15-py3-none-any.whl", hash = "sha256:858a4edd115debf12d181ff96e34c13bf2b51052bc0aaf5f679f9d6df030d791"},
-    {file = "uquake-0.8.15.tar.gz", hash = "sha256:cf01e57a98616723635b24089c6538687720f40dd938fa72a35f350dbacf1b63"},
+    {file = "uquake-0.8.16-py3-none-any.whl", hash = "sha256:ff698f91024c6e4c7d529ebf5b14d168ee983eee3bb17f2a970021c3e2b1e9f2"},
+    {file = "uquake-0.8.16.tar.gz", hash = "sha256:2c0e6eb014a99760f89a57f4bb3187c0e280e50f91711abe5bd6fe72138363a4"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},
