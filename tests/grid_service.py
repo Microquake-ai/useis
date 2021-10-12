@@ -4,8 +4,8 @@ import unittest
 from uquake.grid.nlloc import VelocityGridEnsemble
 from loguru import logger
 import numpy as np
-from useis.services.nlloc import VelocityGrid3D
-from useis.services.grid_server import Server
+from useis.services.models.grid import VelocityGrid3D
+from useis.services.grid_service.server import Server
 
 root_dir = 'projects'
 test_project = 'test_project'
@@ -35,6 +35,7 @@ def velocity_grid_ensemble(p_velocity, s_velocity):
 
     return VelocityGridEnsemble(p_velocity, s_velocity)
     # nll.add_velocities(velocity_grids, initialize_travel_time=False)
+
 
 class MyTestCase(unittest.TestCase):
     def test_convert_to_pb(self):

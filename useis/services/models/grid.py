@@ -1,19 +1,28 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from .nlloc import Coordinates3D
 from uquake.grid.nlloc import VelocityGrid3D as UQVelocityGrid3D
 from uquake.core.event import ResourceIdentifier
 import numpy as np
+from datetime import datetime
+from .nlloc import FloatType
+from uuid import UUID
+from .base import Coordinates3D, Phase
+
+
+class DateRange(BaseModel):
+    start_time: datetime
+    end_time: Optional[datetime]
 
 
 class VelocityGrid3D(BaseModel):
     data: List[float]
-    origin: List[float]
-    spacing: List[float]
-    shape: List[int]
-    phase: str
-    model_id: str
-    float_type: Optional[str] = 'FLOAT'
+    origin: List[Coordinates3D]
+    spacing: List[Coordinates3D]
+    shape: List[Coordinates3D]
+    phase: Phase
+    model_id: Optional[UUID]
+    float_type: Optional[FloatType] = FloatType.FLOAT
+    validity_period: Optional[DateRange]
 
     class Config:
         orm_mode = True

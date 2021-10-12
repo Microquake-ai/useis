@@ -43,10 +43,6 @@ def calculate_uncertainty(point_cloud):
                              confidence_level=68)
 
 
-class Rays(BaseModel):
-    pass
-
-
 class NLLOCResult:
 
     # hypocenter: List[float]
@@ -60,7 +56,7 @@ class NLLOCResult:
     def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
                  observations: Observations, evaluation_mode: str,
-                 evaluation_status: str):
+                 evaluation_status: str, hypocenter_file: str):
         self.hypocenter = hypocenter
         self.event_time = event_time
         self.scatter_cloud = scatter_cloud
@@ -74,6 +70,7 @@ class NLLOCResult:
 
         self.creation_info = CreationInfo(author='uQuake-nlloc',
                                           creation_time=UTCDateTime.now())
+        self.hypocenter_file = hypocenter_file
 
     def __repr__(self):
         out_str = f"""
@@ -374,6 +371,9 @@ class NLLOC(ProjectManager):
         if not (self.paths.outputs / 'last.hyp').exists():
             logger.error(f'event location failed for event {event_time}!')
 
+        with open(self.paths.outputs / 'last.hyp') as hyp_file:
+            hypocenter_file = hyp_file.readlines()
+
         t, x, y, z = read_hypocenter_file(self.paths.outputs / 'last.hyp')
 
         scatters = read_scatter_file(self.paths.outputs / 'last.scat')
@@ -392,7 +392,8 @@ class NLLOC(ProjectManager):
             self.remove_run_directory()
 
         result = NLLOCResult(np.array([x, y, z]), t, scatters, rays,
-                             observations, evaluation_mode, evaluation_status)
+                             observations, evaluation_mode, evaluation_status,
+                             hypocenter_file)
 
         return result
 

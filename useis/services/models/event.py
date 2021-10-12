@@ -4,6 +4,8 @@ from enum import Enum
 from datetime import datetime
 import uquake
 from uquake.core.event import Pick as UQPick
+from .base import Coordinates3D, Angle
+from uuid import UUID
 
 
 # class Phase(BaseModel, Enum):
@@ -117,24 +119,26 @@ class SimpleArrival(BaseModel):
                       evaluation_status=self.evaluation_status)
 
 
-# class Pick(BaseModel):
-#     resource_id: ResourceIdentifier
-#     time: datetime
-#     waveform_id: WaveformStreamID
-#     filter_id: Optional[str]
-#     method_id: Optional[str]
-#     horizontal_slowness: Optional[float]
-#     horizontal_slowness_error: Optional[QuantityError]
-#     backazimuth: Optional[float]
-#     backazimuth_error: Optional[QuantityError]
-#     slowness_method_id: Optional[str]
-#     onset: Optional[PickOnset]
-#     phase_hint: str
-#     polarity: Optional[PickPolarity]
-#     evaluation_mode: EvaluationMode
-#     evaluation_status: EvaluationStatus
-#     creation_info: Optional[CreationInfo]
-#
-#     class Config:
-#         orm_mode = True
+class Ray(BaseModel):
+    nodes: List[Coordinates3D]
+    site_code: Optional[str]
+    arrival_id: Optional[str]
+    phase: Optional[Phase]
+    azimuth: Optional[Angle]
+    takeoff_angle: Optional[Angle]
+    travel_time: Optional[float]
+    earth_model_id: Optional[str]
 
+    class config:
+        from_orm = True
+
+    @classmethod
+    def from_uquake(cls, uq_ray: uquake.core.event.Ray):
+        nodes = []
+        for node in uq_ray.nodes:
+            nodes.append(Coordinates3D(node[0], node[1], node[2]))
+        return cls(nodes=nodes, site_code=uq_ray.site_code,
+                   arrival_id=uq_ray.arrival_id, phase=uq_ray.phase,
+                   azimuth=uq_ray.azimuth, takeoff_angle=uq_ray.takeoff_angle,
+                   travel_time=uq_ray.travel_time,
+                   earth_model_id=uq_ray.earth_model_id)

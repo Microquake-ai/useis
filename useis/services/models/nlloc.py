@@ -6,17 +6,24 @@ from enum import Enum
 from datetime import datetime
 import numpy as np
 from uquake.core import UTCDateTime
-
-
-class Coordinates3D(BaseModel):
-    x: float
-    y: float
-    z: float
+from .base import Coordinates3D
+from .event import Ray
+import useis
+from uquake.core.event import Event
 
 
 class FloatType(str, Enum):
     FLOAT = "FLOAT"
     DOUBLE = "DOUBLE"
+
+
+class Site(BaseModel):
+    label: str
+    location: Coordinates3D
+
+
+class Srces(BaseModel):
+    sites: List[Site]
 
 
 class Observations(BaseModel):
@@ -56,40 +63,30 @@ class Observations(BaseModel):
 
 
 class NLLOCResults(BaseModel):
-    hypocenter: List[float]
+    hypocenter: Coordinates3D
     event_time: datetime
+    scatter_cloud: List[Coordinates3D]
+    rays: List[Ray]
+    observations: Observations
+    uncertainty: float
+    hypocenter_file: str
 
-    def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
-                 scatter_cloud: np.ndarray, rays: list,
-                 observations: Observations, evaluation_mode: str,
-                 evaluation_status: str):
-        self.hypocenter = hypocenter
-        self.event_time = event_time
-        self.scatter_cloud = scatter_cloud
-        self.rays = rays
-        self.observations = observations
-        self.evaluation_mode = evaluation_mode
-        self.evaluation_status = evaluation_status
+    @classmethod
+    def from_nlloc_results(cls, nlloc_results: useis.procesors.NLLocResults):
+        hypocenter = Coordinates3D.from_array(nlloc_results.hypocenter)
 
-        self.uncertainty_ellipsoid = calculate_uncertainty(
-            self.scatter_cloud[:, :-1])
+        scatter_cloud = []
+        for scatter in nlloc_results.scatter_cloud:
+            scatter_cloud.append(Coordinates3D.from_array(scatter))
 
-        self.creation_info = CreationInfo(author='uQuake-nlloc',
-                                          creation_time=UTCDateTime.now())
+        rays = []
+        for ray in nlloc_results.rays:
+            rays.append(Ray.from_uquake(ray))
 
+        observations = Observations.from_uquake(nlloc_results.observations)
 
-    # def __init__(self, **kwargs):
-    #     super().__init__(**kwargs)
-
-    # @classmethod
-    # def from_uq_observations(cls, observations: nlloc.Observations):
-    #     """
-    #     create observation model from uquake observations
-    #     :param observations: observation
-    #     :type observations: uquake.nlloc.nlloc.Observations
-    #     :return:
-    #     """
-    #     picks = []
-    #     for pick in observations.picks:
-    #         picks.append(Pick.from_uq_pick(pick))
-    #     return cls(picks, observations.p_pick_error, observations.s_pick_error)
+        return cls(hypocenter=hypocenter, event_time=nlloc_results.event_time,
+                   scatter_cloud=scatter_cloud, rays=rays,
+                   observations=observations,
+                   uncertainty=nlloc_results.uncertainty,
+                   hypocenter_file=nlloc_results.hypocenter_file)

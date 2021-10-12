@@ -11,11 +11,12 @@ import os
 import json
 from fastapi.security import OAuth2PasswordBearer
 import numpy as np
-from useis.services.models.nlloc import Observations as ModelObservations
-from useis.services.models.grid import VelocityGrid3D as ModelVelocityGrid3D
+from useis.services.models import nlloc
+from useis.services.models import grid
+from pathlib import Path
 
 app = FastAPI()
-root_dir = os.environ.setdefault('nll_base_path', '.')
+root_dir = Path(os.environ.setdefault('nll_base_path', 'projects/'))
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -27,7 +28,7 @@ def deserialize_object(file_obj):
 
 @app.post("/velocity/{project}/{network}/add/3D/", status_code=201)
 async def add_velocity_3d(project: str, network: str,
-                          velocity: ModelVelocityGrid3D,
+                          velocity: grid.VelocityGrid3D,
                           initialize_travel_times: Optional[bool] = False):
 
     nll = NLLOC(root_dir, project, network)
@@ -37,6 +38,16 @@ async def add_velocity_3d(project: str, network: str,
     velocity_grid = velocity.to_uquake(network)
     return nll.add_velocity(velocity_grid,
                             initialize_travel_times=initialize_travel_times)
+
+
+@app.post("/inventory/{project}/{network}/simple", status_code=201)
+async def add_simple_inventory(project: str, network: str, sites: nlloc.Srces):
+    """
+       Add or update the inventory using a simple site description
+
+       - **sites**: a list of sites with coordinates and labels
+       """
+    return
 
 
 @app.post("/inventory/{project}/{network}", status_code=201)
@@ -62,9 +73,10 @@ async def add_srces(project: str, network: str, srces: bytes = File(...),
     return
 
 
-@app.post('/event/locate/{project}/{network}/')
+@app.post('/event/locate/{project}/{network}/',
+          response_model=nlloc.NLLOCResults)
 async def event_location(project: str, network: str,
-                         observations: ModelObservations):
+                         observations: nlloc.Observations):
     nll = NLLOC(root_dir, project, network)
     event = nll.run_location(observations.to_uquake(), calculate_rays=False)
     print(event.loc)
@@ -111,10 +123,10 @@ async def generate_random_locations(project: str, network: str,
 
 
 @app.get("/test/{project}/{network}/observations",
-         response_model=ModelObservations)
+         response_model=nlloc.Observations)
 async def generate_random_observations(project: str, network: str,
                                        x: float, y: float, z: float) \
-        -> ModelObservations:
+        -> nlloc.Observations:
     """
     Generate random observation in grid
 
@@ -130,9 +142,24 @@ async def generate_random_observations(project: str, network: str,
     observations = Observations.generate_observations_event_location(
         nll.travel_times, e_loc=e_loc)
 
-    print(ModelObservations.from_uquake(observations))
+    print(nlloc.Observations.from_uquake(observations))
 
-    return ModelObservations.from_uquake(observations)
+    return nlloc.Observations.from_uquake(observations)
+
+
+@app.get('/projects')
+async def get_project_list() -> List[str]:
+    projects = [str(f).split(os.path.sep)[-1]
+                for f in root_dir.glob('*') if f.is_dir()]
+    return projects
+
+
+@app.get('/network/{project}')
+async def get_network_list(project: str) -> List[str]:
+    networks = [str(f).split(os.path.sep)[-1]
+                for f in root_dir.glob(f'{project}/*') if f.is_dir()]
+    return networks
+
 
 
 
