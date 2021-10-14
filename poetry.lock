@@ -1923,28 +1923,33 @@ python-versions = "*"
 
 [[package]]
 name = "uquake"
-version = "0.8.18"
+version = "0.8.21"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
 python-versions = ">=3.7.1,<4.0"
+develop = false
 
 [package.dependencies]
-dynaconf = ">=3.1.4,<4.0.0"
-h5py = ">=3.2.1,<4.0.0"
-ipython = ">=7.19.0,<8.0.0"
+dynaconf = "^3.1.4"
+h5py = "^3.2.1"
+ipython = "^7.19.0"
 jedi = "0.17.2"
-loguru = ">=0.5.3,<0.6.0"
-numpy = ">=1.18.0,<2.0.0"
-obspy = ">=1.2.2,<2.0.0"
-openpyxl = ">=3.0.6,<4.0.0"
-pandas = ">=1.2.1,<2.0.0"
-pydantic = ">=1.8.2,<2.0.0"
-pytest = ">=6.2.1,<7.0.0"
-scikit-fmm = ">=2021.2.2,<2022.0.0"
-tqdm = ">=4.59.0,<5.0.0"
-utm = ">=0.7.0,<0.8.0"
-vtk = ">=9.0.1,<10.0.0"
+loguru = "^0.5.3"
+numpy = "^1.18.0"
+obspy = "^1.2.2"
+openpyxl = "^3.0.6"
+pandas = "^1.2.1"
+pydantic = "^1.8.2"
+pytest = "^6.2.1"
+scikit-fmm = "^2021.2.2"
+tqdm = "^4.59.0"
+utm = "^0.7.0"
+vtk = "^9.0.1"
+
+[package.source]
+type = "directory"
+url = "libraries/uquake"
 
 [[package]]
 name = "urllib3"
@@ -2095,7 +2100,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4.0"
-content-hash = "962a8479d18d35386bb94d97eaee8521feee670c91fad26cde8cde1424f48328"
+content-hash = "b8979fda37a66619bf885ded97ad1f8a4c5d86b7041d6a71b616c593c4917418"
 
 [metadata.files]
 aiohttp = [
@@ -3495,10 +3500,7 @@ typing-extensions = [
     {file = "typing_extensions-3.10.0.2-py3-none-any.whl", hash = "sha256:f1d25edafde516b146ecd0613dabcc61409817af4766fbbcfb8d1ad4ec441a34"},
     {file = "typing_extensions-3.10.0.2.tar.gz", hash = "sha256:49f75d16ff11f1cd258e1b988ccff82a3ca5570217d7ad8c5f48205dd99a677e"},
 ]
-uquake = [
-    {file = "uquake-0.8.18-py3-none-any.whl", hash = "sha256:e8617de2e97145c5b72bbfed6562c195ebb5e513e5768f10373d9cc9c24926cc"},
-    {file = "uquake-0.8.18.tar.gz", hash = "sha256:823f879876e791ce870a9d4c2fc8142442bc41315e9baa21b92928a7c7a82a3f"},
-]
+uquake = []
 urllib3 = [
     {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},
     {file = "urllib3-1.26.7.tar.gz", hash = "sha256:4987c65554f7a2dbf30c18fd48778ef124af6fab771a377103da0585e2336ece"},
