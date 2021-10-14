@@ -190,7 +190,8 @@ class ProjectManager(object):
                       'config': root / 'config',
                       'velocities': root / 'velocities',
                       'times': root / 'times',
-                      'hdf5_times': root / 'hdf5_times'}
+                      'hdf5_times': root / 'hdf5_times',
+                      'ai_models': root / 'ai_models'}
 
         self.paths = AttribDict(self.paths)
 
@@ -202,7 +203,9 @@ class ProjectManager(object):
                       'p_velocity': self.paths.velocities / p_vel_base_name,
                       's_velocity': self.paths.velocities / s_vel_base_name,
                       'hdf5_tt': self.paths.hdf5_times /
-                                 'travel_times_tables.h5f'}
+                                 'travel_times_tables.h5f',
+                      'classification_model': self.paths.ai_models /
+                                              'classification.pickle'}
 
         self.files = AttribDict(self.files)
 
