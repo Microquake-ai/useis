@@ -1798,6 +1798,17 @@ python-versions = ">=3.6.2"
 typing-extensions = "*"
 
 [[package]]
+name = "torchaudio"
+version = "0.9.1"
+description = "An audio package for PyTorch"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+torch = "1.9.1"
+
+[[package]]
 name = "torchvision"
 version = "0.10.1"
 description = "image and video datasets and models for torch deep learning"
@@ -2084,7 +2095,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<4.0"
-content-hash = "46b50e6db4bf0604df8bc18e59b9ab8dbec467dc553c1588bdc31a68a1d7e94e"
+content-hash = "962a8479d18d35386bb94d97eaee8521feee670c91fad26cde8cde1424f48328"
 
 [metadata.files]
 aiohttp = [
@@ -3375,6 +3386,22 @@ torch = [
     {file = "torch-1.9.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:35ec703bc535bde7e8790ab9500f02d4413d995ac981520501fde95e268781e1"},
     {file = "torch-1.9.1-cp39-cp39-win_amd64.whl", hash = "sha256:e470697006a4c08e4fb6a645e8ca49b0d36c8e7ccf413deef5161335bd7399f1"},
     {file = "torch-1.9.1-cp39-none-macosx_10_9_x86_64.whl", hash = "sha256:a198332e2d344d25e423ae2df98d56d83060f19e9f4cf23164dffc8d403efeb8"},
+]
+torchaudio = [
+    {file = "torchaudio-0.9.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:683067ab51ad0373cca10749272eb81293a158075bc1d4d727b187d62be09002"},
+    {file = "torchaudio-0.9.1-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:52d03b6b6705d84cf4e70a27c06f1d5af7e3bba944d70b2d0c424ca8b2816d5f"},
+    {file = "torchaudio-0.9.1-cp36-cp36m-win_amd64.whl", hash = "sha256:0eece26b56c38720f3a2ed8a5ed6645bb0c3298c7b160ff6b2cceea68b57d4a8"},
+    {file = "torchaudio-0.9.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:9945fd485cfc924d7fc68c666b594abaa205f6aedde8a80a7307088c628b2c19"},
+    {file = "torchaudio-0.9.1-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:56beeb40996dd0e3322ac9c06e08aedbaa6e13ede95b5506f1ef256bfb010b78"},
+    {file = "torchaudio-0.9.1-cp37-cp37m-win_amd64.whl", hash = "sha256:138831d7e3075dd14d37e37fce37095c1f0a29b1f2a8e96be6f03a5f14d186a3"},
+    {file = "torchaudio-0.9.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:60dbe558f634d4dd91d05b3b603d756121b30f93ddb34618e2df8acab60f18f3"},
+    {file = "torchaudio-0.9.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:600f5594099118810bb618cda19d72cb571c70bde845ee559e0aa9801e1b0089"},
+    {file = "torchaudio-0.9.1-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:b5c58c4765077bb1fc8c1f5df6d11a6406f658185889ea2ee1d996f89061f465"},
+    {file = "torchaudio-0.9.1-cp38-cp38-win_amd64.whl", hash = "sha256:c3003aeaf15900db4a8ddbe884ed9564cf1c047c2ac4d25f1ce7740676819dec"},
+    {file = "torchaudio-0.9.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:1cda9e3a4655081152a22e081ec88f39d02c9623b41a3a42c3e99a828647c4d3"},
+    {file = "torchaudio-0.9.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:5919e8c5da7e45982db71113e13b83f66a88d059240cda4a53367f79ff06f0d5"},
+    {file = "torchaudio-0.9.1-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:bf1af536bd3f4061fa123f8ef5b69f64e81da654b344d7916a8778a34126ce14"},
+    {file = "torchaudio-0.9.1-cp39-cp39-win_amd64.whl", hash = "sha256:1ef4563ec15050305a9878b0d7803e65e852ddb6feae5959a7083bca1996c60c"},
 ]
 torchvision = [
     {file = "torchvision-0.10.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:bc99a984b162ee5626787eaee885d9fec1a5f16837f9d0c8223cca3269b9e47d"},

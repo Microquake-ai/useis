@@ -24,6 +24,7 @@ confluent-kafka = "^1.7.0"
 torch = "^1.9.1"
 torchvision = "^0.10.1"
 sklearn = "^0.0"
+torchaudio = "^0.9.1"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
