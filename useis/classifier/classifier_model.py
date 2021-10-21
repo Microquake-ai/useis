@@ -70,11 +70,19 @@ class EventClassifier(object):
         self.validation_targets = None
 
     @classmethod
-    def from_pretrained_model(cls, model):
-        cls_tmp = cls()
-        cls_tmp.model = model.to(cls.device)
+    def from_pretrained_model(cls, model, gpu: bool = True):
+        n_features = model.fc.out_features
+        cls_tmp = cls(n_features, gpu=gpu)
+        cls_tmp.model = model.to(cls_tmp.device)
 
         return cls_tmp
+
+    @classmethod
+    def from_pretrained_model_file(cls, path, gpu: bool = True):
+        with open(path, 'rb') as input_file:
+            model = pickle.load(input_file)
+
+        return cls.from_pretrained_model(model, gpu=gpu)
 
     # @classmethod
     # def load_model(cls, file_name):

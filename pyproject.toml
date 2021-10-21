@@ -7,8 +7,8 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = ">=3.7.1,<4.0"
-uquake = {path = "libraries/uquake"}
-#uquake = ">=0.8"
+#uquake = {path = "libraries/uquake"}
+uquake = ">=0.8"
 dynaconf = "^3.1.4"
 tqdm = "^4.59.0"
 Sphinx = "^4.1.2"
@@ -21,10 +21,8 @@ python-multipart = "^0.0.5"
 furl = "^2.1.2"
 pydantic = "^1.8.2"
 confluent-kafka = "^1.7.0"
-torch = "^1.9.1"
-torchvision = "^0.10.1"
 sklearn = "^0.0"
-torchaudio = "^0.9.1"
+#torch = {url = "https://download.pytorch.org/whl/cu111/torch-1.9.1%2Bcu111-cp38-cp38-linux_x86_64.whl"}
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
