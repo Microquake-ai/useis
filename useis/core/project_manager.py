@@ -361,6 +361,37 @@ class ProjectManager(object):
                            'grids make sure initialize_travel_time is set to '
                            'True')
 
+    def add_inventory_from_file(self, inventory_file: str, format='StationXML',
+                                create_srces_file: bool = True,
+                                initialize_travel_time: bool = True,
+                                xy_from_lat_lon: bool = True,
+                                input_projection=4326,
+                                output_projection=None):
+        """
+        adding a inventory object to the project from a file
+        :param inventory_file: station xml inventory object
+        :type inventory_file: uquake.core.inventory.Inventory
+        :param format: file format for the inventory file
+        :param create_srces_file: if True create or replace the srces file
+        (Default: True)
+        :param initialize_travel_time: if True the travel time grids are
+        initialized (default: True)
+        :param xy_from_lat_lon: convert latitude and longitude in the file to
+        cartesian coordinates
+        :param input_projection: input projection (default=4326 for typical
+        latitude and longitude)
+        :param output_projection: output projection (default None)
+        :return:
+        """
+
+        inventory = read_inventory(inventory_file, format=format,
+                                   xy_from_lat_lon=xy_from_lat_lon,
+                                   input_projection=input_projection,
+                                   output_projection=output_projection)
+
+        self.add_inventory(inventory, create_srces_file=create_srces_file,
+                           initialize_travel_time=initialize_travel_time)
+
     def add_srces(self, srces, force=False, initialize_travel_time: bool=True,
                   multi_threaded: bool=True):
         """

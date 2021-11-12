@@ -2,6 +2,7 @@ from ..core.project_manager import ProjectManager
 import pickle
 from pathlib import Path
 from ..classifier.classifier_model import EventClassifier
+import uquake
 
 
 class Classifier(ProjectManager):
