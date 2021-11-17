@@ -3,9 +3,10 @@ from uquake.nlloc.nlloc import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival)
 from uquake.core import UTCDateTime
 import numpy as np
-from pydantic import BaseModel
-from ..services import models
-from typing import Optional, List
+import toml
+# from pydantic import BaseModel
+# from ..services import models
+# from typing import Optional, List
 
 
 def calculate_uncertainty(point_cloud):
@@ -209,15 +210,15 @@ class NLLOC(ProjectManager):
         self.paths.templates = self.paths.root / 'templates'
         self.paths.templates.mkdir(parents=True, exist_ok=True)
 
-        self.files.template_ctrl = self.paths.templates / \
-                                   'ctrl_template.pickle'
+        # self.files.template_ctrl = self.paths.templates / \
+        #                            'ctrl_template.pickle'
 
-        if self.files.template_ctrl.exists():
-            with open(self.files.template_ctrl, 'rb') as template_ctrl:
-                self.control_template = pickle.load(template_ctrl)
-        else:
-            self.control_template = None
-            self.add_template_control()
+        # if self.files.template_ctrl.exists():
+        #     with open(self.files.template_ctrl, 'rb') as template_ctrl:
+        #         self.control_template = pickle.load(template_ctrl)
+        # else:
+        #     self.control_template = None
+        #     self.add_template_control()
 
         self.files.control = self.paths.current_run / 'run.nll'
 
@@ -226,11 +227,16 @@ class NLLOC(ProjectManager):
 
         self.files.nlloc_settings = self.paths.config / 'nlloc.toml'
 
-        if not self.files.settings.is_file():
-            settings_template = Path(os.path.realpath(__file__)).parent / \
-                                    '../settings/nlloc_settings_template.toml'
+        if not self.files.nlloc_settings.is_file():
+            self.control_template = self.add_template_control()
+            # settings_template = Path(os.path.realpath(__file__)).parent / \
+            #                         '../settings/nlloc_settings_template.toml'
+            #
+            # shutil.copyfile(settings_template, self.files.nlloc_settings)
 
-            shutil.copyfile(settings_template, self.files.nlloc_settings)
+        else:
+            with open(self.files.nlloc_settings, 'r') as template_file:
+                self.control_template = toml.load(template_file)
 
         self.settings = Settings(str(self.paths.config))
 
@@ -301,8 +307,9 @@ class NLLOC(ProjectManager):
                     'locgau': locgau,
                     'locqual2err': locqual2err}
 
-        with open(self.files.template_ctrl, 'wb') as template_ctrl:
-            pickle.dump(dict_out, template_ctrl)
+        with open(self.files.template_ctrl, 'w') as template_ctrl:
+            toml.dump(dict_out, self.files.nlloc_settings)
+            # pickle.dump(dict_out, template_ctrl)
 
         self.control_template = dict_out
 
