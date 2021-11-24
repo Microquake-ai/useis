@@ -3,6 +3,7 @@ from uquake.nlloc.nlloc import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival)
 from uquake.core import UTCDateTime
 import numpy as np
+import sys
 import toml
 # from pydantic import BaseModel
 # from ..services import models
@@ -225,18 +226,23 @@ class NLLOC(ProjectManager):
         self.last_event_hypocenter = None
         self.last_event_time = None
 
-        self.files.nlloc_settings = self.paths.config / 'nlloc.toml'
+        self.files.nlloc_settings = self.paths.config / 'nlloc_settings.py'
+
+        sys.path.append(str(self.paths.config))
+
+        # if not (self.paths.config / '__init__.py').is_file():
+        #     with open(self.paths.config / '__init__.py', 'w') as fp:
+        #         pass
 
         if not self.files.nlloc_settings.is_file():
-            self.control_template = self.add_template_control()
-            # settings_template = Path(os.path.realpath(__file__)).parent / \
-            #                         '../settings/nlloc_settings_template.toml'
-            #
-            # shutil.copyfile(settings_template, self.files.nlloc_settings)
+            # self.add_template_control()
+            settings_template = Path(os.path.realpath(__file__)).parent / \
+                                    '../settings/nlloc_settings_template.py'
 
-        else:
-            with open(self.files.nlloc_settings, 'r') as template_file:
-                self.control_template = toml.load(template_file)
+            shutil.copyfile(settings_template, self.files.nlloc_settings)
+
+        self.nlloc_settings = __import__('nlloc_settings')
+        self.control_template = self.nlloc_settings.nlloc_control
 
         self.settings = Settings(str(self.paths.config))
 
@@ -260,58 +266,64 @@ class NLLOC(ProjectManager):
 
         self.paths.outputs.parent.rmdir()
 
-    def add_template_control(self, control=Control(message_flag=1),
-                             transformation=GeographicTransformation(),
-                             locsig=None, loccom=None,
-                             locsearch=LocSearchOctTree.init_default(),
-                             locmeth=LocationMethod.init_default(),
-                             locgau=GaussianModelErrors.init_default(),
-                             locqual2err=LocQual2Err(0.0001, 0.0001, 0.0001,
-                                                     0.0001, 0.0001),
-                             **kwargs):
-
-        if not isinstance(control, Control):
-            raise TypeError(f'control is type {type(control)}. '
-                            f'control must be type {Control}.')
-
-        if not issubclass(type(transformation), GeographicTransformation):
-            raise TypeError(f'transformation is type {type(transformation)}. '
-                            f'expecting type'
-                            f'{GeographicTransformation}.')
-
-        if not locsearch.type == 'LOCSEARCH':
-            raise TypeError(f'locsearch is type {type(locsearch)}'
-                            f'expecting type '
-                            f'{LocSearchGrid} '
-                            f'{LocSearchMetropolis}, or '
-                            f'{LocSearchOctTree}.')
-
-        if not isinstance(locmeth, LocationMethod):
-            raise TypeError(f'locmeth is type {type(locmeth)}, '
-                            f'expecting type {LocationMethod}')
-
-        if not isinstance(locgau, GaussianModelErrors):
-            raise TypeError(f'locgau is type {type(locgau)}, '
-                            f'expecting type {GaussianModelErrors}')
-
-        if not isinstance(locqual2err, LocQual2Err):
-            raise TypeError(f'locqual2err is type {type(locqual2err)}, '
-                            f'expecting type {LocQual2Err}')
-
-        dict_out = {'control': control,
-                    'transformation': transformation,
-                    'locsig': locsig,
-                    'loccom': loccom,
-                    'locsearch': locsearch,
-                    'locmeth': locmeth,
-                    'locgau': locgau,
-                    'locqual2err': locqual2err}
-
-        with open(self.files.template_ctrl, 'w') as template_ctrl:
-            toml.dump(dict_out, self.files.nlloc_settings)
-            # pickle.dump(dict_out, template_ctrl)
-
-        self.control_template = dict_out
+    # def add_template_control(self, control=Control(message_flag=1),
+    #                          transformation=GeographicTransformation(),
+    #                          locsig=None, loccom=None,
+    #                          locsearch=LocSearchOctTree.init_default(),
+    #                          locmeth=LocationMethod.init_default(),
+    #                          locgau=GaussianModelErrors.init_default(),
+    #                          locqual2err=LocQual2Err(0.0001, 0.0001, 0.0001,
+    #                                                  0.0001, 0.0001),
+    #                          **kwargs):
+    #
+    #     settings_template = Path(os.path.realpath(__file__)).parent / \
+    #         #                         '../settings/nlloc_settings_template.toml'
+    #     #
+    #     # shutil.copyfile(settings_template, self.files.nlloc_settings)
+    #
+    #
+    #
+    #     if not isinstance(control, Control):
+    #         raise TypeError(f'control is type {type(control)}. '
+    #                         f'control must be type {Control}.')
+    #
+    #     if not issubclass(type(transformation), GeographicTransformation):
+    #         raise TypeError(f'transformation is type {type(transformation)}. '
+    #                         f'expecting type'
+    #                         f'{GeographicTransformation}.')
+    #
+    #     if not locsearch.type == 'LOCSEARCH':
+    #         raise TypeError(f'locsearch is type {type(locsearch)}'
+    #                         f'expecting type '
+    #                         f'{LocSearchGrid} '
+    #                         f'{LocSearchMetropolis}, or '
+    #                         f'{LocSearchOctTree}.')
+    #
+    #     if not isinstance(locmeth, LocationMethod):
+    #         raise TypeError(f'locmeth is type {type(locmeth)}, '
+    #                         f'expecting type {LocationMethod}')
+    #
+    #     if not isinstance(locgau, GaussianModelErrors):
+    #         raise TypeError(f'locgau is type {type(locgau)}, '
+    #                         f'expecting type {GaussianModelErrors}')
+    #
+    #     if not isinstance(locqual2err, LocQual2Err):
+    #         raise TypeError(f'locqual2err is type {type(locqual2err)}, '
+    #                         f'expecting type {LocQual2Err}')
+    #
+    #     dict_out = {'control': control,
+    #                 'transformation': transformation,
+    #                 'locsig': locsig,
+    #                 'loccom': loccom,
+    #                 'locsearch': locsearch,
+    #                 'locmeth': locmeth,
+    #                 'locgau': locgau,
+    #                 'locqual2err': locqual2err}
+    #
+    #     # with open(self.files.nlloc_settings, 'w') as nlloc_settings:
+    #     #     toml.dump(dict_out, nlloc_settings)
+    #
+    #     self.control_template = dict_out
 
     def write_control_file(self):
         with open(self.files.control, 'w') as control_file:
@@ -359,6 +371,9 @@ class NLLOC(ProjectManager):
         logger.info('locating event using NonLinLoc')
         t0 = time()
         output, error = process.communicate()
+        if error:
+            raise Exception(error.decode('ascii'))
+        logger.info(output.decode('ascii'))
         t1 = time()
         logger.info(f'done locating event in {t1 - t0:0.2f} seconds')
 

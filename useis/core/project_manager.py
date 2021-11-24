@@ -59,7 +59,7 @@ class ProjectManager(object):
         :type project_name: str
         :param network_code: network name or id
         :type network_code: str
-        :program use_srces: if True use the srces files instead of the the
+        :param use_srces: if True use the srces files instead of the the
         inventory file should both files be present (default=False)
         :Example:
         >>> from uquake.grid import nlloc as nlloc_grid
