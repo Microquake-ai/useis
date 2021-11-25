@@ -382,7 +382,7 @@ class Conv1DModel(nn.Module):
         return out
 
 
-class Picker(EventClassifier):
+class AIPicker(EventClassifier):
     def __init__(self, in_channels: int = 1, base_filters: int = 64,
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
                  groups: int = 1, n_block: int = 16, learning_rate=1e-3,
@@ -520,7 +520,7 @@ class Picker(EventClassifier):
 
 
 def read_picker(file_name):
-    return Picker.read(file_name)
+    return AIPicker.read(file_name)
 
 
 

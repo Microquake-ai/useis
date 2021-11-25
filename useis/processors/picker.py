@@ -1,3 +1,5 @@
+import pandas as pd
+
 from ..core.project_manager import ProjectManager
 from pathlib import Path
 import os
@@ -8,29 +10,43 @@ from uquake.core.event import (Pick, WaveformStreamID, ResourceIdentifier,
                                Arrival, Origin, Event)
 from uquake.core import UTCDateTime
 import uquake
-from pydantic import BaseModel, validator, ValidationError
-from typing import Optional, List
+from ..ai.model import AIPicker
+from datetime import datetime
 
 
-class ResultRepickerSNR(object):
-    def __init__(self, new_picks, original_picks):
+class PickerResult(object):
+    def __init__(self, new_picks, initial_picks):
         self.new_picks = new_picks
-        self.original_picks = original_picks
+        self.initial_picks = initial_picks
 
-    def append_events(self, event: uquake.core.event.Event = None,
-                      snr_threshold: float=None):
+    def export_event(self, snr_threshold: float = None):
+        return self.append_event(snr_threshold)
+
+    def append_event(self, event: uquake.core.event.Event = None,
+                     snr_threshold: float = 0):
 
         arrivals = []
+        picks = []
+
         for pick in self.new_picks:
+            picks.append(pick)
+
+        for pick in self.initial_picks:
+            picks.append(pick)
+
+        for pick in self.new_picks:
+
+            if pick.snr < snr_threshold:
+                continue
 
             arrival = Arrival(pick_id=pick.resource_id,
                               phase=pick.phase_hint)
             arrivals.append(arrival)
 
-            origin = Origin(arrivals=arrivals)
+            origin = Origin(arrivals=arrivals, x=0, y=0, z=0)
 
         if event is None:
-            event = Event(picks=self.picks, origin=origin)
+            event = Event(picks=picks, origins=[origin])
 
             return event
 
@@ -49,7 +65,7 @@ class ResultRepickerSNR(object):
             return event
 
 
-class RepickerSNR(ProjectManager):
+class Picker(ProjectManager):
 
     def __init__(self, base_projects_path: Path, project_name: str,
                  network_code: str):
@@ -65,22 +81,35 @@ class RepickerSNR(ProjectManager):
 
         super().__init__(base_projects_path, project_name, network_code)
 
-        self.files.snr_repicker_settings = self.paths.config / \
-                                        'snr_repicker_settings.toml'
+        self.files.picker_settings = self.paths.config / 'picker_settings.toml'
 
-        if not self.files.snr_repicker_settings.is_file():
+        if not self.files.picker_settings.is_file():
             settings_template = Path(os.path.realpath(__file__)).parent / \
-                            '../settings/snr_repicker_settings_template.toml'
+                            '../settings/picker_settings_template.toml'
 
             shutil.copyfile(settings_template,
-                            self.files.snr_repicker_settings)
+                            self.files.picker_settings)
 
         self.settings = Settings(settings_location=self.paths.config,
                                  settings_file=
-                                 self.files.snr_repicker_settings.name)
+                                 self.files.picker_settings.name)
+
+        self.files.ai_picker_model = self.paths.ai_models / \
+                                     'picker_model.pickle'
+
+        if self.files.ai_picker_model.is_file():
+            if self.files.ai_picker_model.is_file():
+                self.ai_picker = AIPicker.read(
+                    self.files.ai_picker_model)
 
     @staticmethod
-    def convert_nmx_picks(nmx_picks):
+    def read_nmx_pick(pick_file: str):
+
+        nmx_picks = pd.read_csv(pick_file,
+                                names=['site_id', 'phase', 'timestamp'])
+
+        nmx_picks['datetime'] = [datetime.utcfromtimestamp(
+            pick[1]['timestamp']) for pick in nmx_picks.iterrows()]
         out_picks = []
         for pick in nmx_picks.iterrows():
             pick = pick[1]
@@ -101,8 +130,12 @@ class RepickerSNR(ProjectManager):
 
         return out_picks
 
-    def re_pick(self, stream: uquake.core.stream.Stream,
-                picks: uquake.core.event.Pick):
+    def add_ai_picker_from_file(self, file_path):
+        shutil.copyfile(file_path, self.files.ai_picker_model)
+        self.ai_picker = AIPicker.read(self.files.ai_picker_model)
+
+    def snr_repick(self, stream: uquake.core.stream.Stream,
+               picks: uquake.core.event.Pick):
 
         """
         Repick using a snr based ensemble picker
@@ -147,11 +180,11 @@ class RepickerSNR(ProjectManager):
                                               location=location)[0],
                                 new_pick.time, pre_wl=pre_wl, post_wl=post_wl)
 
-            if snr < self.settings.snr_repicker.snr_threshold:
-                continue
+            # if snr < self.settings.snr_repicker.snr_threshold:
+            #     continue
 
             new_pick.snr = snr
             out_picks.append(new_pick)
 
-        return ResultRepickerSNR(new_picks=out_picks,
-                                 origin_picks=picks)
+        return PickerResult(new_picks=out_picks,
+                            initial_picks=picks)

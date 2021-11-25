@@ -1,7 +1,7 @@
 from ..core.project_manager import ProjectManager
 import pickle
 from pathlib import Path
-from ..classifier.classifier_model import EventClassifier
+from ..ai.model import EventClassifier
 import uquake
 
 
