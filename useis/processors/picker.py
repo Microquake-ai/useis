@@ -43,7 +43,7 @@ class PickerResult(object):
                               phase=pick.phase_hint)
             arrivals.append(arrival)
 
-            origin = Origin(arrivals=arrivals, x=0, y=0, z=0)
+            origin = Origin(arrivals=arrivals)
 
         if event is None:
             event = Event(picks=picks, origins=[origin])
@@ -113,8 +113,7 @@ class Picker(ProjectManager):
         out_picks = []
         for pick in nmx_picks.iterrows():
             pick = pick[1]
-            network, station, _ = pick.site_id.split('.')
-            location = '00'
+            network, station, location, channel = pick.site_id.split('.')
 
             waveform_id = WaveformStreamID(network_code=network,
                                            station_code=station,
