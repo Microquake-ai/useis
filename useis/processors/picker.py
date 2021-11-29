@@ -12,19 +12,22 @@ from uquake.core import UTCDateTime
 import uquake
 from ..ai.model import AIPicker
 from datetime import datetime
+from uquake.core.stream import Stream
+from uquake.core.inventory import Inventory
 
 
 class PickerResult(object):
-    def __init__(self, new_picks, initial_picks):
+    def __init__(self, new_picks, initial_picks, snr_threshold):
         self.new_picks = new_picks
         self.initial_picks = initial_picks
+        self.snr_threshold = snr_threshold
 
-    def export_event(self, snr_threshold: float = None):
-        return self.append_event(snr_threshold)
+    def export_event(self):
+        return self.append_event()
 
-    def append_event(self, event: uquake.core.event.Event = None,
-                     snr_threshold: float = 0):
+    def append_event(self, event: uquake.core.event.Event = None):
 
+        snr_threshold = self.snr_threshold
         arrivals = []
         picks = []
 
@@ -63,6 +66,11 @@ class PickerResult(object):
                 event.picks.append(pick)
 
             return event
+
+    def measure_incidence(self, stream: Stream,
+                          inventory: Inventory):
+
+        pass
 
 
 class Picker(ProjectManager):
@@ -186,4 +194,5 @@ class Picker(ProjectManager):
             out_picks.append(new_pick)
 
         return PickerResult(new_picks=out_picks,
-                            initial_picks=picks)
+                            initial_picks=picks,
+                            snr_threshold=self.settings.snr_threshold)

@@ -1,3 +1,6 @@
+import openpyxl.styles.stylesheet
+import uquake.core.inventory
+
 from ..core.project_manager import *
 from uquake.nlloc.nlloc import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival)
@@ -45,7 +48,7 @@ def calculate_uncertainty(point_cloud):
                              confidence_level=68)
 
 
-class NLLOCResult:
+class NLLOCResult(object):
 
     # hypocenter: List[float]
     # event_time: datetime
@@ -178,6 +181,117 @@ class NLLOCResult:
         e.preferred_origin_id = o.resource_id
         return e
 
+    def to_2d(self, inventory, station):
+        return NLLOCResults2DCylindrical.from_nlloc_result(self, inventory,
+                                                           station)
+
+
+class NLLOCResults2DCylindrical(NLLOCResult):
+    """
+    Transform a NLLOCResult object into 2D Cylindrical solution with more
+    appropriate measurement of the uncertainty.
+    This object is used mainly in the case of a single borehole array.
+    It is assumed that the borehole is nearly vertical and that the deviation
+    can be neglected
+    """
+
+    def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
+                 scatter_cloud: np.ndarray, rays: list,
+                 observations: Observations, evaluation_mode: str,
+                 evaluation_status: str, hypocenter_file: str,
+                 inventory: uquake.core.inventory.Inventory, station: str):
+
+        """
+
+        :param hypocenter: event hypocenter location
+        :param event_time: event time
+        :param scatter_cloud: cloud of probable location
+        :param rays: a list of ray
+        :param observations: travel time observations used to calculate the
+        location
+        :param evaluation_mode: evaluation mode as defined by the QuakeML
+        standard
+        :param evaluation_status: evaluation status as defined by the QuakeML
+        standard
+        :param hypocenter_file: The hypocenter files output by NLLoc
+        :param inventory: an inventory file
+        :param station: station name
+        """
+
+        inv = inventory.select(station=station)
+        xs = []
+        ys = []
+        for site in inv.sites:
+            xs.append(site.x)
+            ys.append(site.y)
+
+        self.reference_x = np.mean(xs)
+        self.reference_y = np.mean(ys)
+
+        super().__init__(hypocenter, event_time, scatter_cloud, rays,
+                         observations, evaluation_mode, evaluation_status,
+                         hypocenter_file)
+
+    @classmethod
+    def from_nlloc_result(cls, nlloc_result: NLLOCResult,
+                          inventory: uquake.core.inventory.Inventory,
+                          station: str):
+        return cls(nlloc_result.hypocenter, nlloc_result.event_time,
+                   nlloc_result.scatter_cloud, nlloc_result.rays,
+                   nlloc_result.observations, nlloc_result.evaluation_mode,
+                   nlloc_result.evaluation_status,
+                   nlloc_result.hypocenter_file, inventory, station)
+
+    @property
+    def uncertainty_h(self):
+        xs = self.scatter_cloud[:, 0] - self.reference_x
+        ys = self.scatter_cloud[:, 1] - self.reference_y
+        return np.std(np.sqrt(xs ** 2 + ys ** 2))
+
+    @property
+    def uncertainty_z(self):
+        return np.std(self.scatter_cloud[:, -1])
+
+    @property
+    def uncertainty(self):
+        return np.sqrt(self.uncertainty_h ** 2 + self.uncertainty_z ** 2)
+
+    @property
+    def r(self):
+        return np.linalg.norm([self.x - self.reference_x,
+                               self.y - self.reference_y])
+
+    @property
+    def origin(self):
+
+        uncertainty = OriginUncertainty(horizontal_uncertainty=
+                                        self.uncertainty_h,
+                                        )
+
+        origin = Origin(x=self.r, y=0, z=self.z, time=self.t,
+                        evaluation_mode=self.evaluation_mode,
+                        evaluation_status=self.evaluation_status,
+                        epicenter_fixed=False, method_id='uQuake-NLLOC',
+                        creation_info=self.creation_info,
+                        arrivals=self.arrivals,
+                        origin_uncertainty=uncertainty,
+                        rays=self.rays,
+                        scatter=self.scatter_cloud)
+        origin.scatter = self.scatter_cloud
+        origin.rays = self.rays
+        return origin
+
+    def __repr__(self):
+        out_str = f"""
+        time (UTC)             : {self.t}
+        location               : r- {self.r:>10.1f} (m)
+                                 z- {self.z:>10.1f} (m)
+        uncertainty Horizontal : {self.uncertainty_h:0.1f} (1 std - m)
+        uncertainty Vertical   : {self.uncertainty_z:0.1f} (1 std - m)
+        uncertainty            : {self.uncertainty:0.1f} (1 std - m)
+        """
+        return out_str
+
 
 class NLLOC(ProjectManager):
     def __init__(self, base_projects_path: Path, project_name: str,
@@ -211,16 +325,6 @@ class NLLOC(ProjectManager):
         self.paths.templates = self.paths.root / 'templates'
         self.paths.templates.mkdir(parents=True, exist_ok=True)
 
-        # self.files.template_ctrl = self.paths.templates / \
-        #                            'ctrl_template.pickle'
-
-        # if self.files.template_ctrl.exists():
-        #     with open(self.files.template_ctrl, 'rb') as template_ctrl:
-        #         self.control_template = pickle.load(template_ctrl)
-        # else:
-        #     self.control_template = None
-        #     self.add_template_control()
-
         self.files.control = self.paths.current_run / 'run.nll'
 
         self.last_event_hypocenter = None
@@ -230,12 +334,7 @@ class NLLOC(ProjectManager):
 
         sys.path.append(str(self.paths.config))
 
-        # if not (self.paths.config / '__init__.py').is_file():
-        #     with open(self.paths.config / '__init__.py', 'w') as fp:
-        #         pass
-
         if not self.files.nlloc_settings.is_file():
-            # self.add_template_control()
             settings_template = Path(os.path.realpath(__file__)).parent / \
                                     '../settings/nlloc_settings_template.py'
 
@@ -265,65 +364,6 @@ class NLLOC(ProjectManager):
             fle.unlink()
 
         self.paths.outputs.parent.rmdir()
-
-    # def add_template_control(self, control=Control(message_flag=1),
-    #                          transformation=GeographicTransformation(),
-    #                          locsig=None, loccom=None,
-    #                          locsearch=LocSearchOctTree.init_default(),
-    #                          locmeth=LocationMethod.init_default(),
-    #                          locgau=GaussianModelErrors.init_default(),
-    #                          locqual2err=LocQual2Err(0.0001, 0.0001, 0.0001,
-    #                                                  0.0001, 0.0001),
-    #                          **kwargs):
-    #
-    #     settings_template = Path(os.path.realpath(__file__)).parent / \
-    #         #                         '../settings/nlloc_settings_template.toml'
-    #     #
-    #     # shutil.copyfile(settings_template, self.files.nlloc_settings)
-    #
-    #
-    #
-    #     if not isinstance(control, Control):
-    #         raise TypeError(f'control is type {type(control)}. '
-    #                         f'control must be type {Control}.')
-    #
-    #     if not issubclass(type(transformation), GeographicTransformation):
-    #         raise TypeError(f'transformation is type {type(transformation)}. '
-    #                         f'expecting type'
-    #                         f'{GeographicTransformation}.')
-    #
-    #     if not locsearch.type == 'LOCSEARCH':
-    #         raise TypeError(f'locsearch is type {type(locsearch)}'
-    #                         f'expecting type '
-    #                         f'{LocSearchGrid} '
-    #                         f'{LocSearchMetropolis}, or '
-    #                         f'{LocSearchOctTree}.')
-    #
-    #     if not isinstance(locmeth, LocationMethod):
-    #         raise TypeError(f'locmeth is type {type(locmeth)}, '
-    #                         f'expecting type {LocationMethod}')
-    #
-    #     if not isinstance(locgau, GaussianModelErrors):
-    #         raise TypeError(f'locgau is type {type(locgau)}, '
-    #                         f'expecting type {GaussianModelErrors}')
-    #
-    #     if not isinstance(locqual2err, LocQual2Err):
-    #         raise TypeError(f'locqual2err is type {type(locqual2err)}, '
-    #                         f'expecting type {LocQual2Err}')
-    #
-    #     dict_out = {'control': control,
-    #                 'transformation': transformation,
-    #                 'locsig': locsig,
-    #                 'loccom': loccom,
-    #                 'locsearch': locsearch,
-    #                 'locmeth': locmeth,
-    #                 'locgau': locgau,
-    #                 'locqual2err': locqual2err}
-    #
-    #     # with open(self.files.nlloc_settings, 'w') as nlloc_settings:
-    #     #     toml.dump(dict_out, nlloc_settings)
-    #
-    #     self.control_template = dict_out
 
     def write_control_file(self):
         with open(self.files.control, 'w') as control_file:
@@ -439,7 +479,7 @@ class NLLOC(ProjectManager):
                              'add_inventory methods.')
 
         if self.observations is None:
-            raise ValueError('The current run does not contain travel time'
+            raise ValueError('The current run does not contain travel time '
                              'observations. Observations should be added to '
                              'the current run using the add_observations '
                              'method.')
