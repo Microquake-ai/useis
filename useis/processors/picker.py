@@ -17,10 +17,11 @@ from uquake.core.inventory import Inventory
 
 
 class PickerResult(object):
-    def __init__(self, new_picks, initial_picks, snr_threshold):
+    def __init__(self, new_picks, initial_picks, snr_threshold, stream):
         self.new_picks = new_picks
         self.initial_picks = initial_picks
         self.snr_threshold = snr_threshold
+        self.stream = stream
 
     def export_event(self):
         return self.append_event()
@@ -67,10 +68,32 @@ class PickerResult(object):
 
             return event
 
-    def measure_incidence(self, stream: Stream,
-                          inventory: Inventory):
+    # def measure_incidence(self, stream: Stream,
+    #                       inventory: Inventory):
+    #
+    #     pass
 
-        pass
+    def write_simple_pick_file(self, filename):
+        with open(filename, 'w') as pick_file_out:
+            for new_pick in self.new_picks:
+                network = new_pick.waveform_id.network_code
+                station = new_pick.waveform_id.station_code
+                location = new_pick.waveform_id.location_code
+                channel = new_pick.waveform_id.channel_code[0:2]
+
+                snr = calculate_snr(self.stream.select(network=network,
+                                                       station=station,
+                                                       location=location)[0],
+                                    new_pick.time,
+                                    pre_wl=0.05, post_wl=0.02)
+
+                if snr < self.snr_threshold:
+                    continue
+
+                station_string = f'{network}.{station}.{location}.{channel}*'
+                line_out = f'{station_string},{new_pick.phase_hint.upper()},' \
+                           f'{new_pick.time.timestamp}\n'
+                pick_file_out.write(line_out)
 
 
 class Picker(ProjectManager):
@@ -195,4 +218,6 @@ class Picker(ProjectManager):
 
         return PickerResult(new_picks=out_picks,
                             initial_picks=picks,
-                            snr_threshold=self.settings.snr_threshold)
+                            snr_threshold=
+                            self.settings.snr_repicker.snr_threshold,
+                            stream=stream)
