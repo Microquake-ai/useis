@@ -30,7 +30,7 @@ class PickerResult(object):
     def picks(self):
         snr_threshold = self.snr_threshold
         picks = []
-        for pick in new_picks:
+        for pick in self.new_picks:
             if pick.snr < snr_threshold:
                 continue
 
