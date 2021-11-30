@@ -23,16 +23,30 @@ class PickerResult(object):
         self.snr_threshold = snr_threshold
         self.stream = stream
 
+        for k, pick in enumerate(self.new_picks):
+            network = pick.waveform_id.network_code
+            station = pick.waveform_id.station_code
+            location = pick.waveform_id.location_code
+
+            snr = calculate_snr(self.stream.select(network=network,
+                                                   station=station,
+                                                   location=location
+                                                   )[0],
+                                pick.time,
+                                pre_wl=0.05, post_wl=0.02)
+
+            self.new_picks[k].snr = snr
+
     def export_event(self):
         return self.append_event()
 
     @property
     def picks(self):
-        snr_threshold = self.snr_threshold
         picks = []
         for pick in self.new_picks:
-            if pick.snr < snr_threshold:
+            if pick.snr < self.snr_threshold:
                 continue
+            picks.append(pick)
 
         return picks
 
@@ -47,11 +61,6 @@ class PickerResult(object):
 
         for pick in self.initial_picks:
             picks.append(pick)
-
-        for pick in self.new_picks:
-
-            if pick.snr < snr_threshold:
-                continue
 
             arrival = Arrival(pick_id=pick.resource_id,
                               phase=pick.phase_hint)
@@ -85,24 +94,20 @@ class PickerResult(object):
 
     def write_simple_pick_file(self, filename):
         with open(filename, 'w') as pick_file_out:
-            for new_pick in self.new_picks:
-                network = new_pick.waveform_id.network_code
-                station = new_pick.waveform_id.station_code
-                location = new_pick.waveform_id.location_code
-                channel = new_pick.waveform_id.channel_code[0:2]
+            for pick in self.picks:
+                network = pick.waveform_id.network_code
+                station = pick.waveform_id.station_code
+                location = pick.waveform_id.location_code
+                channel = None
+                if pick.waveform_id.channel_code is not None:
+                    channel = pick.waveform_id.channel_code[0:2]
 
-                snr = calculate_snr(self.stream.select(network=network,
-                                                       station=station,
-                                                       location=location)[0],
-                                    new_pick.time,
-                                    pre_wl=0.05, post_wl=0.02)
-
-                if snr < self.snr_threshold:
+                if pick.snr < self.snr_threshold:
                     continue
 
                 station_string = f'{network}.{station}.{location}.{channel}*'
-                line_out = f'{station_string},{new_pick.phase_hint.upper()},' \
-                           f'{new_pick.time.timestamp}\n'
+                line_out = f'{station_string},{pick.phase_hint.upper()},' \
+                           f'{pick.time.timestamp}\n'
                 pick_file_out.write(line_out)
 
 
@@ -158,7 +163,8 @@ class Picker(ProjectManager):
 
             waveform_id = WaveformStreamID(network_code=network,
                                            station_code=station,
-                                           location_code=location)
+                                           location_code=location,
+                                           channel_code=channel)
 
             out_picks.append(
                 Pick(waveform_id=waveform_id, phase_hint=pick.phase,
@@ -212,6 +218,7 @@ class Picker(ProjectManager):
             network = new_pick.waveform_id.network_code
             station = new_pick.waveform_id.station_code
             location = new_pick.waveform_id.location_code
+            channel = new_pick.waveform_id.channel_code
 
             pre_wl = self.settings.snr_repicker.snr_pre_pick_window
             post_wl = self.settings.snr_repicker.snr_post_pick_window
