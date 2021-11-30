@@ -26,6 +26,16 @@ class PickerResult(object):
     def export_event(self):
         return self.append_event()
 
+    @property
+    def picks(self):
+        snr_threshold = self.snr_threshold
+        picks = []
+        for pick in new_picks:
+            if pick.snr < snr_threshold:
+                continue
+
+        return picks
+
     def append_event(self, event: uquake.core.event.Event = None):
 
         snr_threshold = self.snr_threshold
