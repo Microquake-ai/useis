@@ -1209,14 +1209,6 @@ python-versions = ">=3.6.2"
 wcwidth = "*"
 
 [[package]]
-name = "psycopg2"
-version = "2.9.2"
-description = "psycopg2 - Python-PostgreSQL Database Adapter"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
 name = "ptyprocess"
 version = "0.7.0"
 description = "Run a subprocess in a pseudo terminal"
@@ -1875,7 +1867,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "uquake"
-version = "0.9.27"
+version = "0.9.28"
 description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
@@ -1891,7 +1883,6 @@ numpy = ">=1.18.0,<2.0.0"
 obspy = ">=1.2.2,<2.0.0"
 openpyxl = ">=3.0.6,<4.0.0"
 pandas = ">=1.2.1,<2.0.0"
-psycopg2 = ">=2.9.1,<3.0.0"
 pydantic = ">=1.8.2,<2.0.0"
 pyproj = ">=3.2.1,<4.0.0"
 pytest = ">=6.2.1,<7.0.0"
@@ -2026,7 +2017,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.11"
-content-hash = "bed2b0675c49f703b5d127bae0c9ef9e657770d41bb04d69de841e9f42b7bd63"
+content-hash = "4d6e793777f8e10fabfaaae8c356a5ec97481a298efcf98974de9b8224684a54"
 
 [metadata.files]
 aiohttp = [
@@ -3059,19 +3050,6 @@ prompt-toolkit = [
     {file = "prompt_toolkit-3.0.23-py3-none-any.whl", hash = "sha256:5f29d62cb7a0ecacfa3d8ceea05a63cd22500543472d64298fc06ddda906b25d"},
     {file = "prompt_toolkit-3.0.23.tar.gz", hash = "sha256:7053aba00895473cb357819358ef33f11aa97e4ac83d38efb123e5649ceeecaf"},
 ]
-psycopg2 = [
-    {file = "psycopg2-2.9.2-cp310-cp310-win32.whl", hash = "sha256:6796ac614412ce374587147150e56d03b7845c9e031b88aacdcadc880e81bb38"},
-    {file = "psycopg2-2.9.2-cp310-cp310-win_amd64.whl", hash = "sha256:dfc32db6ce9ecc35a131320888b547199f79822b028934bb5b332f4169393e15"},
-    {file = "psycopg2-2.9.2-cp36-cp36m-win32.whl", hash = "sha256:77d09a79f9739b97099d2952bbbf18eaa4eaf825362387acbb9552ec1b3fa228"},
-    {file = "psycopg2-2.9.2-cp36-cp36m-win_amd64.whl", hash = "sha256:f65cba7924363e0d2f416041b48ff69d559548f2cb168ff972c54e09e1e64db8"},
-    {file = "psycopg2-2.9.2-cp37-cp37m-win32.whl", hash = "sha256:b8816c6410fa08d2a022e4e38d128bae97c1855e176a00493d6ec62ccd606d57"},
-    {file = "psycopg2-2.9.2-cp37-cp37m-win_amd64.whl", hash = "sha256:26322c3f114de1f60c1b0febf8fdd595c221b4f624524178f515d07350a71bd1"},
-    {file = "psycopg2-2.9.2-cp38-cp38-win32.whl", hash = "sha256:77b9105ef37bc005b8ffbcb1ed6d8685bb0e8ce84773738aa56421a007ec5a7a"},
-    {file = "psycopg2-2.9.2-cp38-cp38-win_amd64.whl", hash = "sha256:91c7fd0fe9e6c118e8ff5b665bc3445781d3615fa78e131d0b4f8c85e8ca9ec8"},
-    {file = "psycopg2-2.9.2-cp39-cp39-win32.whl", hash = "sha256:a761b60da0ecaf6a9866985bcde26327883ac3cdb90535ab68b8d784f02b05ef"},
-    {file = "psycopg2-2.9.2-cp39-cp39-win_amd64.whl", hash = "sha256:fd7ddab7d6afee4e21c03c648c8b667b197104713e57ec404d5b74097af21e31"},
-    {file = "psycopg2-2.9.2.tar.gz", hash = "sha256:a84da9fa891848e0270e8e04dcca073bc9046441eeb47069f5c0e36783debbea"},
-]
 ptyprocess = [
     {file = "ptyprocess-0.7.0-py2.py3-none-any.whl", hash = "sha256:4b41f3967fce3af57cc7e94b888626c18bf37a083e3651ca8feeb66d492fef35"},
     {file = "ptyprocess-0.7.0.tar.gz", hash = "sha256:5c5d0a3b48ceee0b48485e0c26037c0acd7d29765ca3fbb5cb3831d347423220"},
@@ -3601,8 +3579,8 @@ typing-extensions = [
     {file = "typing_extensions-4.0.1.tar.gz", hash = "sha256:4ca091dea149f945ec56afb48dae714f21e8692ef22a395223bcd328961b6a0e"},
 ]
 uquake = [
-    {file = "uquake-0.9.27-py3-none-any.whl", hash = "sha256:cc472d3dc0ab188acb51b593f450d605a0abb256dfee06530fcd66badb90627c"},
-    {file = "uquake-0.9.27.tar.gz", hash = "sha256:a172370a5a7054124f13faf82e541f83f7d958b89e3d1742a6d78da86cc0d8dd"},
+    {file = "uquake-0.9.28-py3-none-any.whl", hash = "sha256:ba2283a62cd3f14a9fbcccf45811dc05a97614dbaeb85c9c5304263fb37fc931"},
+    {file = "uquake-0.9.28.tar.gz", hash = "sha256:a8ef930b88f71ba2e756d44f5508bf2798798f0546fe64deca9dcea7797b2f4d"},
 ]
 urllib3 = [
     {file = "urllib3-1.26.7-py2.py3-none-any.whl", hash = "sha256:c4fdf4019605b6e5423637e01bc9fe4daef873709a7973e195ceba0a62bbc844"},

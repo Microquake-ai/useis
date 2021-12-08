@@ -23,10 +23,10 @@ sklearn = "^0.0"
 #torch = {url = "https://download.pytorch.org/whl/cu111/torch-1.9.1%2Bcu111-cp38-cp38-linux_x86_64.whl"}
 scikit-learn = "^1.0.1"
 numpy = "^1.21.3"
-uquake = "^0.9.6"
 torch = "^1.10.0"
 torchaudio = "^0.10.0"
 torchvision = "^0.11.1"
+uquake = "^0.9.28"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
