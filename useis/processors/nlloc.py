@@ -262,6 +262,10 @@ class NLLOCResults2DCylindrical(NLLOCResult):
                                self.y - self.reference_y])
 
     @property
+    def time(self):
+        return self.event_time
+
+    @property
     def origin(self):
 
         uncertainty = OriginUncertainty(horizontal_uncertainty=
@@ -363,7 +367,11 @@ class NLLOC(ProjectManager):
         for fle in self.paths.outputs.parent.glob('*'):
             fle.unlink()
 
-        self.paths.outputs.parent.rmdir()
+        if self.paths.outputs.parent.exists():
+            self.paths.outputs.parent.rmdir()
+        else:
+            logger.info(f'{self.paths.outputs.parent} was already deleted...'
+                        f'nothing to do')
 
     def write_control_file(self):
         with open(self.files.control, 'w') as control_file:
