@@ -356,13 +356,16 @@ class NLLOC(ProjectManager):
         for fle in self.paths.observations.glob('*'):
             fle.unlink()
 
-        self.paths.observations.rmdir()
+        if self.paths.observations.exists():
+            self.paths.observations.rmdir()
 
         output_dir = self.paths.outputs
 
         for fle in output_dir.glob('*'):
             fle.unlink()
-        output_dir.rmdir()
+
+        if output_dir.exists():
+            output_dir.rmdir()
 
         for fle in self.paths.outputs.parent.glob('*'):
             fle.unlink()
