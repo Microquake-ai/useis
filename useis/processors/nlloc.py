@@ -115,6 +115,10 @@ class NLLOCResult(object):
         return self.event_time
 
     @property
+    def time(self):
+        return self.event_time
+
+    @property
     def arrivals(self) -> list:
         arrivals = []
         for pick in self.observations.picks:
@@ -260,10 +264,6 @@ class NLLOCResults2DCylindrical(NLLOCResult):
     def r(self):
         return np.linalg.norm([self.x - self.reference_x,
                                self.y - self.reference_y])
-
-    @property
-    def time(self):
-        return self.event_time
 
     @property
     def origin(self):
