@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from ..core.project_manager import ProjectManager
@@ -177,8 +178,9 @@ class Picker(ProjectManager):
         return out_picks
 
     def add_ai_picker_from_file(self, file_path):
-        shutil.copyfile(file_path, self.files.ai_picker_model)
-        self.ai_picker = AIPicker.read(self.files.ai_picker_model)
+        # shutil.copyfile(file_path, self.files.ai_picker_model)
+        self.ai_picker = AIPicker.read(file_path)
+        self.ai_picker.write(self.files.ai_picker_model)
 
     def snr_repick(self, stream: uquake.core.stream.Stream,
                    picks: uquake.core.event.Pick):
@@ -203,10 +205,15 @@ class Picker(ProjectManager):
         post_pick_window_len = self.settings.snr_repicker.post_pick_window_len
 
         snrs, new_picks = snr_ensemble_re_picker(stream, picks,
+                                                 start_search_window=
                                                  start_search_window,
+                                                 end_search_window=
                                                  end_search_window,
+                                                 start_refined_search_window=
                                                  start_refined_search_window,
+                                                 end_refined_search_window=
                                                  end_refined_search_window,
+                                                 search_resolution=
                                                  search_resolution,
                                                  snr_calc_pre_pick_window_len
                                                  =pre_pick_window_len,
@@ -241,18 +248,43 @@ class Picker(ProjectManager):
 
     def ai_pick(self, st: Stream, picks: list):
 
-        for pick in picks:
-            network = pick.waveform_id.network_code
-            station = pick.waveform_id.station_code
-            location = pick.waveform_id.location_code
+        picks_out = []
 
-            pick_time = pick.time
+        start_search_window = self.settings.ai_picker.start_search_window
+        end_search_window = self.settings.ai_picker.end_search_window
+        search_window_resolution = \
+            self.settings.ai_picker.search_window_resolution
 
-            tr = st.select(network=network, station=station,
-                           location=location).composite()[0]
+        biases = np.arange(start_search_window, end_search_window,
+                           search_window_resolution)
 
-            predicted_time = self.ai_picker.predict_trace(tr, pick_time)
-            kaboum
+        for bias in biases:
+            for pick in picks:
+                out_pick = pick.copy()
+                network = pick.waveform_id.network_code
+                station = pick.waveform_id.station_code
+                location = pick.waveform_id.location_code
+
+                pick_time = pick.time
+
+                tr = st.select(network=network, station=station,
+                               location=location).detrend(
+                    'demean').detrend('linear').composite()[0].taper(
+                    max_length=0.01, max_percentage=0.1)
+
+                predicted_time = self.ai_picker.predict_trace(tr, pick_time)
+
+                print(predicted_time)
+
+                out_pick_time = pick_time + (predicted_time[0] /
+                                             self.ai_picker.sampling_rate)
+
+                out_pick = Pick(pick)
+                out_pick.time = out_pick_time
+
+                picks_out.append(out_pick)
+
+        return picks_out
 
 
 

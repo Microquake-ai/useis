@@ -62,7 +62,7 @@ class EventClassifier(object):
         self.device = device
 
         self.model = self.model.to(self.device)
-        self.display_memory()
+        # self.display_memory()
         self.accuracies = []
         self.losses = []
 
@@ -281,7 +281,7 @@ class EventClassifier1D(EventClassifier):
         #                                  lr=learning_rate)
         self.criterion = nn.CrossEntropyLoss()
 
-        self.display_memory()
+        # self.display_memory()
         self.losses = []
 
         self.validation_predictions = None
@@ -386,7 +386,8 @@ class AIPicker(EventClassifier):
     def __init__(self, in_channels: int = 1, base_filters: int = 64,
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
                  groups: int = 1, n_block: int = 16, learning_rate=1e-3,
-                 gpu: bool = True, n_sample: int = 256):
+                 gpu: bool = True, n_sample: int = 256,
+                 sampling_rate: int=6000):
         self.in_channels = in_channels
         self.base_filters = base_filters
         self.kernel_size = kernel_size
@@ -396,6 +397,7 @@ class AIPicker(EventClassifier):
         self.n_block = n_block
         self.gpu = gpu
         self.n_sample = n_sample
+        self.sampling_rate = sampling_rate
 
         if gpu:
             device = torch.device("cuda:0" if
@@ -435,7 +437,7 @@ class AIPicker(EventClassifier):
         #                                  lr=learning_rate)
         self.criterion = nn.MSELoss()
 
-        self.display_memory()
+        # self.display_memory()
         self.losses = []
 
         self.validation_predictions = None
@@ -490,16 +492,21 @@ class AIPicker(EventClassifier):
 
     def predict_trace(self, trace: Trace, pick_time: UTCDateTime):
 
+        trace = trace.resample(sampling_rate=int(self.sampling_rate))
+
         n_sample = int((pick_time - trace.stats.starttime)
                        * trace.stats.sampling_rate)
 
-        n_sample_start = int(n_sample - self.n_sample / 2)
+        n_sample_start = int(n_sample - self.n_sample / 4)
         n_sample_end = int(n_sample_start + self.n_sample)
 
         data = trace.data[n_sample_start: n_sample_end]
         data -= np.mean(data)
 
-        self.predict(data)
+        return self.predict(data)
+
+    def predict_stream(self, st: Stream, pick_times):
+        pass
 
     def validate(self, dataset: PickingDataset, batch_size):
         predictions = []
@@ -528,9 +535,28 @@ class AIPicker(EventClassifier):
             pickle.dump(self, f_out)
 
     @classmethod
-    def read(cls, file_name):
+    def read(cls, file_name, gpu: bool = False):
+        ai_picker = cls(gpu=gpu)
         with(open(file_name, 'rb')) as f_in:
-            return pickle.load(f_in)
+            picker = pickle.load(f_in)
+            ai_picker.model = picker.model
+            ai_picker.model.to(ai_picker.device)
+            ai_picker.model = ai_picker.model.double()
+            ai_picker.model = ai_picker.model.eval()
+
+        # if device == 'gpu':
+        #     device = torch.device("cuda:0" if
+        #                           torch.cuda.is_available() else "cpu")
+        #     if device == "cpu":
+        #         logger.warning('GPU is not available, '
+        #                        'the CPU will be used')
+        #     else:
+        #         logger.info('GPU will be used')
+        # else:
+        #     device = 'cpu'
+        #     logger.info('The CPU will be used')
+
+        return ai_picker
 
 
 def read_picker(file_name):

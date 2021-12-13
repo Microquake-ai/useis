@@ -141,15 +141,14 @@ class ContinuousWaveformDataExtractor(ProjectManager):
 
         end_time = start_time + duration
         it = self.waveform_file_index[
-            (self.waveform_file_index['end_time_timestamp']
+            (self.waveform_file_index['start_time_timestamp']
                                        < end_time.timestamp)]
         it2 = it[it['end_time_timestamp'] > start_time.timestamp]
 
         mseed_files = np.unique(it2['mseed_file'])
 
         if len(mseed_files) == 0:
-            logger.warning('the request did not match any file in the index')
-            return
+            raise Exception('the request did not match any file in the index')
 
         trs = []
         for mseed_file in mseed_files:
@@ -157,10 +156,10 @@ class ContinuousWaveformDataExtractor(ProjectManager):
             for tr in st:
                 trs.append(tr)
 
-        st_out = Stream(traces=trs)
+        st_out = Stream(traces=trs).merge()
 
-        st2 = st_out.select(network=network, station=station, location=location,
-                            channel=channel)
+        st2 = st_out.select(network=network, station=station,
+                            location=location, channel=channel)
 
         return st2.trim(starttime=start_time, endtime=end_time)
 
