@@ -10,7 +10,7 @@ from tqdm import tqdm
 import pickle
 from sklearn.metrics import confusion_matrix
 # from plotcm import plot_confusion_matrix
-from uquake.core import Stream, Trace
+from uquake.core import Stream, Trace, UTCDateTime
 # from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 from PIL import Image, ImageOps
 from torch import nn
@@ -386,7 +386,7 @@ class AIPicker(EventClassifier):
     def __init__(self, in_channels: int = 1, base_filters: int = 64,
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
                  groups: int = 1, n_block: int = 16, learning_rate=1e-3,
-                 gpu: bool = True):
+                 gpu: bool = True, n_sample: int = 256):
         self.in_channels = in_channels
         self.base_filters = base_filters
         self.kernel_size = kernel_size
@@ -395,6 +395,7 @@ class AIPicker(EventClassifier):
         self.groups = groups
         self.n_block = n_block
         self.gpu = gpu
+        self.n_sample = n_sample
 
         if gpu:
             device = torch.device("cuda:0" if
@@ -486,6 +487,19 @@ class AIPicker(EventClassifier):
 
         outputs = [out.item() for out in outputs_tensor.cpu()]
         return outputs
+
+    def predict_trace(self, trace: Trace, pick_time: UTCDateTime):
+
+        n_sample = int((pick_time - trace.stats.starttime)
+                       * trace.stats.sampling_rate)
+
+        n_sample_start = int(n_sample - self.n_sample / 2)
+        n_sample_end = int(n_sample_start + self.n_sample)
+
+        data = trace.data[n_sample_start: n_sample_end]
+        data -= np.mean(data)
+
+        self.predict(data)
 
     def validate(self, dataset: PickingDataset, batch_size):
         predictions = []

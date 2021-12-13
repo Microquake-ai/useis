@@ -314,3 +314,15 @@ class ResNet1D(nn.Module):
             print('softmax', out.shape)
 
         return out
+
+    @classmethod
+    def from_resnet_1d(cls, resnet1d):
+        # in_channels: int = 1, base_filters: int = 64,
+        # kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
+        # groups: int = 1, n_block: int = 16, learning_rate = 1e-3,
+        # gpu: bool = True
+        out_obj = cls(in_channels=1, base_filters=64, kernel_size=15,
+                      stride=3, n_classes=1, groups=1, n_block=16)
+        for key in resnet1d.__dict__.keys():
+            out_obj.__dict__[key] = resnet1d.__dict__[key]
+        return out_obj

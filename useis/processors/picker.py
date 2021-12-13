@@ -181,7 +181,7 @@ class Picker(ProjectManager):
         self.ai_picker = AIPicker.read(self.files.ai_picker_model)
 
     def snr_repick(self, stream: uquake.core.stream.Stream,
-               picks: uquake.core.event.Pick):
+                   picks: uquake.core.event.Pick):
 
         """
         Repick using a snr based ensemble picker
@@ -238,3 +238,25 @@ class Picker(ProjectManager):
                             snr_threshold=
                             self.settings.snr_repicker.snr_threshold,
                             stream=stream)
+
+    def ai_pick(self, st: Stream, picks: list):
+
+        for pick in picks:
+            network = pick.waveform_id.network_code
+            station = pick.waveform_id.station_code
+            location = pick.waveform_id.location_code
+
+            pick_time = pick.time
+
+            tr = st.select(network=network, station=station,
+                           location=location).composite()[0]
+
+            predicted_time = self.ai_picker.predict_trace(tr, pick_time)
+            kaboum
+
+
+
+
+
+
+

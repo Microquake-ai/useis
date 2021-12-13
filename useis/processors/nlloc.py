@@ -1,16 +1,158 @@
 import openpyxl.styles.stylesheet
 import uquake.core.inventory
+from uquake.core.inventory import Inventory
 
 from ..core.project_manager import *
 from uquake.nlloc.nlloc import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival)
 from uquake.core import UTCDateTime
+from uquake.core.stream import Stream
 import numpy as np
 import sys
 import toml
 # from pydantic import BaseModel
 # from ..services import models
 # from typing import Optional, List
+import matplotlib.pyplot as plt
+
+def measure_incidence_angle_hodogram(st: Stream, event: Event,
+                                     inventory: Inventory,
+                                     window_length: float = 50e-3):
+    """
+    measure the incidence angle from hodogram
+    :param st: a stream object containing the waveforms
+    :type st: uquake.core.stream.Stream
+    :param picks: a list of picks associated the the waveforms
+    :type picks: list of uquake.core.event.Picks
+    :param inventory: inventory file
+    :type inventory: uquake.core.inventory.Inventory
+    :param window_length: lenght of the window within which the hodogram is
+    measured
+    :return:
+    """
+
+    # Rotate the stream in "E", "N", "Z" if that is not yet the case
+    st_zne = st.copy().rotate('->ZNE', inventory=inventory)
+    st_zne = st_zne.filter('highpass', freq=10)
+
+    # for each pick measure the incidence angle using the hodogram
+    if event.preferred_origin() is not None:
+        origin = event.preferred_origin()
+    else:
+        origin = event.origins[-1]
+
+    azimuths = []
+    plunges = []
+    linearities = []
+    phases = []
+    for arrival in origin.arrivals:
+        pick = arrival.pick
+        network = pick.waveform_id.network_code
+        station = pick.waveform_id.station_code
+        location = pick.waveform_id.location_code
+
+        start_time = pick.time
+        end_time = pick.time + window_length
+
+        st_tmp = st_zne.copy().select(network=network, station=station,
+                                      location=location).trim(
+            starttime=start_time, endtime=end_time)
+
+        wave_mat = []
+        for component in ['N', 'E', 'Z']:
+            tr = st_tmp.select(component=component)[0]
+            wave_mat.append(tr.data)
+
+        wave_mat = np.array(wave_mat)
+        plt.close('all')
+        plt.clf()
+        plt.plot(wave_mat[1, :] / np.max(wave_mat[1, :]),
+                 wave_mat[0, :] / np.max(wave_mat[0, :]), 'k')
+
+        cov_mat = np.cov(np.array(wave_mat))
+
+        e = None
+
+        eig_vals, eig_vects = np.linalg.eig(cov_mat)
+        i_ = np.argsort(eig_vals)
+
+        if arrival.phase == 'P':
+            eig_vect = eig_vects[i_[-1]]
+            linearity =  (1 - np.linalg.norm(eig_vals[i_[:2]]) /
+                          eig_vals[i_[2]])
+            # input(f'grossomodo P {linearity}')
+            color = 'b'
+        elif arrival.phase == 'S':
+            eig_vect = eig_vects[i_[0]]
+            linearity = (1 - eig_vals[i_[0]] /
+                        np.linalg.norm(eig_vals[i_[1:]]))
+            color = 'r'
+
+
+        sta = inventory.select(network=network,
+                               station=station,
+                               location=location)[0][0]
+
+        r = np.linalg.norm(eig_vect[0:2])
+        v = np.linalg.norm(eig_vect[2])
+
+        v_vect = sta.loc[2] - origin.loc[2]
+        r_vect = origin.loc[0]
+        sign = np.sign(np.dot([r, v], [r_vect, v_vect]))
+        eig_vect *= sign
+
+
+
+        # plt.plot([0, eig_vect[1]] / r,
+        #          [0, eig_vect[0]] / r, color)
+        #
+        # plt.show()
+        # input(f'grossomodo {arrival.phase} {linearity}')
+
+        linearities.append(linearity)
+
+        azimuth = np.arctan2(eig_vect[1], eig_vect[0]) * 180 / np.pi
+        if azimuth < 0:
+            azimuth += 360
+
+        plunges.append(np.arctan2(eig_vect[-1],
+                                  sign * np.linalg.norm(eig_vect[0:2])))
+        azimuths.append(azimuth)
+        phases.append(arrival.phase)
+
+    azimuths = np.array(azimuths)
+    linearities = np.array(linearities)
+    phases = np.array(phases)
+    plunges = np.array(plunges)
+
+    i_ = np.nonzero(linearities > 0.9)[0]
+
+    return azimuths
+    #
+    #
+    #
+    # wave_mat = np.array(
+    #     [waveform[c] - np.mean(waveform[c]) for c in ["E", "N", "Z"]])
+    # eig_vals, eig_vecs = np.linalg.eig(
+    #     wave_mat @ wave_mat.T)  # eigenvalue decomp of covariance
+    # i_sort = np.argsort(eig_vals)
+    # linearity = 1 - eig_vals[i_sort[1]] / eig_vals[i_sort[2]]
+    # trend, plunge = unit_vector_to_trend_plunge(eig_vecs[:, i_sort[2]])
+    # wave_mat_2d = np.array(
+    #     [waveform[c] - np.mean(waveform[c]) for c in ["E", "N"]])
+    # eig_vals_2d, eig_vecs_2d = np.linalg.eig(wave_mat_2d @ wave_mat_2d.T)
+    # i_sort_2d = np.argsort(eig_vals_2d)
+    # linearity_2d = 1 - eig_vals_2d[i_sort_2d[0]] / eig_vals_2d[
+    #     i_sort_2d[1]]
+    # trend_2d, _ = unit_vector_to_trend_plunge(
+    #     [*eig_vecs_2d[:, i_sort_2d[1]], 0])
+    # return {
+    #     "trend": float(trend % 360),
+    #     "plunge": float(plunge),
+    #     "linearity": linearity,
+    #     "2D trend": trend_2d % 360,
+    #     "2D linearity": linearity_2d,
+    # }
 
 
 def calculate_uncertainty(point_cloud):
@@ -73,6 +215,8 @@ class NLLOCResult(object):
         self.uncertainty_ellipsoid = calculate_uncertainty(
             self.scatter_cloud[:, :-1])
 
+        self.origin_uncertainty = OriginUncertainty()
+
         self.creation_info = CreationInfo(author='uQuake-nlloc',
                                           creation_time=UTCDateTime.now())
         self.hypocenter_file = hypocenter_file
@@ -125,6 +269,7 @@ class NLLOCResult(object):
             travel_time = pick.time - self.t
             phase = pick.phase_hint
             site_code = pick.site
+            # if self.rays is not None:
             for ray in self.rays:
                 if (ray.site_code == site_code) & (ray.phase == phase):
                     break
@@ -155,7 +300,8 @@ class NLLOCResult(object):
                         epicenter_fixed=False, method_id='uQuake-NLLOC',
                         creation_info=self.creation_info,
                         arrivals=self.arrivals,
-                        origin_uncertainty=self.uncertainty_ellipsoid,
+                        origin_uncertainty=self.origin_uncertainty,
+                        uncertainty=uncertainty,
                         rays=self.rays,
                         scatter=self.scatter_cloud)
         origin.scatter = self.scatter_cloud
@@ -186,11 +332,11 @@ class NLLOCResult(object):
         return e
 
     def to_2d(self, inventory, station):
-        return NLLOCResults2DCylindrical.from_nlloc_result(self, inventory,
-                                                           station)
+        return NLLOCResult2DCylindrical.from_nlloc_result(self, inventory,
+                                                          station)
 
 
-class NLLOCResults2DCylindrical(NLLOCResult):
+class NLLOCResult2DCylindrical(NLLOCResult):
     """
     Transform a NLLOCResult object into 2D Cylindrical solution with more
     appropriate measurement of the uncertainty.
@@ -268,9 +414,7 @@ class NLLOCResults2DCylindrical(NLLOCResult):
     @property
     def origin(self):
 
-        uncertainty = OriginUncertainty(horizontal_uncertainty=
-                                        self.uncertainty_h,
-                                        )
+        self.origin_uncertainty.horizontal_uncertainty = self.uncertainty_h
 
         origin = Origin(x=self.r, y=0, z=self.z, time=self.t,
                         evaluation_mode=self.evaluation_mode,
@@ -278,7 +422,7 @@ class NLLOCResults2DCylindrical(NLLOCResult):
                         epicenter_fixed=False, method_id='uQuake-NLLOC',
                         creation_info=self.creation_info,
                         arrivals=self.arrivals,
-                        origin_uncertainty=uncertainty,
+                        origin_uncertainty=self.origin_uncertainty,
                         rays=self.rays,
                         scatter=self.scatter_cloud)
         origin.scatter = self.scatter_cloud
@@ -295,6 +439,10 @@ class NLLOCResults2DCylindrical(NLLOCResult):
         uncertainty            : {self.uncertainty:0.1f} (1 std - m)
         """
         return out_str
+
+    def to_3d(self, stream: Stream) -> NLLOCResult:
+        pass
+
 
 
 class NLLOC(ProjectManager):
