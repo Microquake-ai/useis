@@ -382,10 +382,11 @@ class Conv1DModel(nn.Module):
         return out
 
 
-class AIPicker(EventClassifier):
+# class AIPicker(EventClassifier):
+class AIPicker(object):
     def __init__(self, in_channels: int = 1, base_filters: int = 64,
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
-                 groups: int = 1, n_block: int = 16, learning_rate=1e-3,
+                 groups: int = 1, n_block: int = 16, learning_rate=1e-5,
                  gpu: bool = True, n_sample: int = 256,
                  sampling_rate: int=6000):
         self.in_channels = in_channels
@@ -416,34 +417,18 @@ class AIPicker(EventClassifier):
                               stride, groups, n_block,
                               n_classes).to(self.device)
 
-        # self.model = PickerModel().to(device)
-
-        # self.model = nn.Sequential(
-        #     nn.Conv1d(1, 64, 16),
-        #     nn.Conv1d(64, 64, 16),
-        #     nn.Conv1d(64, 64, 16),
-        #     nn.Conv1d(64, 128, 16),
-        #     nn.Conv1d(128, 128, 16),
-        #     nn.Conv1d(128, 128, 16),
-        #     nn.Linear(in_features=12 * 15, out_features=120),
-        #     nn.Linear(in_features=120, out_features=60),
-        #     nn.Linear(in_features=60, out_features=30),
-        #     nn.Linear(in_features=30, out_features=1)
-        # ).to(device)
-
         self.optimizer = torch.optim.Adam(self.model.parameters(),
                                           lr=learning_rate)
-        # self.optimizer = torch.optim.SGD(self.model.parameters(),
-        #                                  lr=learning_rate)
         self.criterion = nn.MSELoss()
 
-        # self.display_memory()
         self.losses = []
 
         self.validation_predictions = None
         self.validation_targets = None
 
     def train(self, dataset: PickingDataset, batch_size: int):
+
+        self.model.train()
 
         training_loader = DataLoader(dataset, batch_size=batch_size,
                                      shuffle=True)
@@ -459,7 +444,6 @@ class AIPicker(EventClassifier):
 
         inputs = inputs.to(self.device)
         targets = targets.to(self.device)
-
         predictions = self.model(inputs)
 
         loss = self.criterion(predictions, targets.view(len(targets), -1))
@@ -491,19 +475,36 @@ class AIPicker(EventClassifier):
         return outputs
 
     def predict_trace(self, trace: Trace, pick_time: UTCDateTime):
+        # import matplotlib.pyplot as plt
 
         trace = trace.resample(sampling_rate=int(self.sampling_rate))
 
         n_sample = int((pick_time - trace.stats.starttime)
                        * trace.stats.sampling_rate)
 
-        n_sample_start = int(n_sample - self.n_sample / 4)
+        n_sample_start = int(n_sample - self.n_sample / 2)
         n_sample_end = int(n_sample_start + self.n_sample)
 
         data = trace.data[n_sample_start: n_sample_end]
         data -= np.mean(data)
+        data /= np.max(np.abs(data))
 
-        return self.predict(data)
+        predicted_arrival = self.predict(data)[0]
+
+        # import matplotlib.pyplot as plt
+        # plt.clf()
+        # plt.plot(data)
+        # plt.axvline(predicted_arrival)
+        # plt.show()
+        # input(predicted_arrival)
+
+        # return n_sample_start + predicted_arrival * self.n_sample
+
+        new_pick_time = trace.stats.starttime + \
+                        (n_sample_start + predicted_arrival *
+                        self.n_sample) / self.sampling_rate
+
+        return new_pick_time
 
     def predict_stream(self, st: Stream, pick_times):
         pass

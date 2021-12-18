@@ -1,0 +1,8 @@
+# parameter of the PPV vs Magnitude relationship
+[MwPE]
+# Moment Magnitude Prediction equation parameters
+a = 1.2
+c = 1.1
+water_level = 1e-5
+max_frequency = 1e3
+multithreding = true

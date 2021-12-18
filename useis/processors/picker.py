@@ -144,6 +144,8 @@ class Picker(ProjectManager):
         self.files.ai_picker_model = self.paths.ai_models / \
                                      'picker_model.pickle'
 
+        self.ai_picker = None
+
         if self.files.ai_picker_model.is_file():
             if self.files.ai_picker_model.is_file():
                 self.ai_picker = AIPicker.read(
@@ -183,7 +185,7 @@ class Picker(ProjectManager):
         self.ai_picker.write(self.files.ai_picker_model)
 
     def snr_repick(self, stream: uquake.core.stream.Stream,
-                   picks: uquake.core.event.Pick):
+                   picks: uquake.core.event.Pick, ai_enhanced=True):
 
         """
         Repick using a snr based ensemble picker
@@ -204,8 +206,8 @@ class Picker(ProjectManager):
         pre_pick_window_len = self.settings.snr_repicker.pre_pick_window_len
         post_pick_window_len = self.settings.snr_repicker.post_pick_window_len
 
-        snrs, new_picks = snr_ensemble_re_picker(stream, picks,
-                                                 start_search_window=
+        snrs, new_picks = \
+            snr_ensemble_re_picker(stream, picks, start_search_window=
                                                  start_search_window,
                                                  end_search_window=
                                                  end_search_window,
@@ -213,7 +215,7 @@ class Picker(ProjectManager):
                                                  start_refined_search_window,
                                                  end_refined_search_window=
                                                  end_refined_search_window,
-                                                 search_resolution=
+                                                 refined_window_search_resolution=
                                                  search_resolution,
                                                  snr_calc_pre_pick_window_len
                                                  =pre_pick_window_len,
@@ -239,52 +241,90 @@ class Picker(ProjectManager):
 
             new_pick.snr = snr
             out_picks.append(new_pick)
+            
+        if ai_enhanced:
+            if self.ai_picker is None:
+                logger.error('no ai picker model in the project\n'
+                             'to add a ai picker model please use the'
+                             'add_ai_picker_from_file method')
+            else:
+                self.ai_pick(stream.copy(), out_picks)
+                
 
         return PickerResult(new_picks=out_picks,
                             initial_picks=picks,
                             snr_threshold=
                             self.settings.snr_repicker.snr_threshold,
                             stream=stream)
+    
+    
 
     def ai_pick(self, st: Stream, picks: list):
+        import matplotlib.pyplot as plt
+
+        st2 = st.copy()
+        st2 = st2.detrend('demean').detrend('linear').taper(max_length=0.01,
+                                                            max_percentage=1)
+
+        st2 = st2.resample(sampling_rate=
+                           (self.settings.ai_picker.sampling_rate))
 
         picks_out = []
+        for pick in picks:
+            out_pick = pick.copy()
+            network = pick.waveform_id.network_code
+            station = pick.waveform_id.station_code
+            location = pick.waveform_id.location_code
+            phase = pick.phase_hint
 
-        start_search_window = self.settings.ai_picker.start_search_window
-        end_search_window = self.settings.ai_picker.end_search_window
-        search_window_resolution = \
-            self.settings.ai_picker.search_window_resolution
+            pick_time = pick.time
 
-        biases = np.arange(start_search_window, end_search_window,
-                           search_window_resolution)
+            st3 = st2.copy().select(network=network, station=station,
+                                    location=location)
 
-        for bias in biases:
-            for pick in picks:
-                out_pick = pick.copy()
-                network = pick.waveform_id.network_code
-                station = pick.waveform_id.station_code
-                location = pick.waveform_id.location_code
+            tr = st2.copy().select(network=network, station=station,
+                                   location=location).composite()[0]
 
-                pick_time = pick.time
+            predicted_time = self.ai_picker.predict_trace(tr.copy(),
+                                                          pick_time)
 
-                tr = st.select(network=network, station=station,
-                               location=location).detrend(
-                    'demean').detrend('linear').composite()[0].taper(
-                    max_length=0.01, max_percentage=0.1)
-
-                predicted_time = self.ai_picker.predict_trace(tr, pick_time)
-
-                print(predicted_time)
-
-                out_pick_time = pick_time + (predicted_time[0] /
-                                             self.ai_picker.sampling_rate)
-
-                out_pick = Pick(pick)
-                out_pick.time = out_pick_time
-
-                picks_out.append(out_pick)
+            pick.time = predicted_time
+            picks_out.append(pick)
 
         return picks_out
+
+def measure_linearity_planarity(st: Stream, pick: Pick, window_length: float):
+    network = pick.waveform_id.network_code
+    station = pick.waveform_id.station_code
+    location = pick.waveform_id.location_code
+
+    st2 = st.select(network=network, station=station, location=location)
+
+    wave_mat = []
+    for tr in st2:
+        window_start_sample = int((pick.time - tr.stats.starttime)
+                                  * tr.stats.sampling_rate)
+        window_end_sample = int(window_start_sample +
+                                window_length * tr.stats.sampling_rate)
+
+        wave_mat.append(tr.data[window_start_sample: window_end_sample])
+
+    cov_mat = np.cov(np.array(wave_mat))
+
+    eig_vals, eig_vects = np.linalg.eig(cov_mat)
+    vals = np.sort(eig_vals)
+
+    if pick.phase_hint == 'P':
+        out_value = 1 - np.linalg.norm([vals[0], vals[1]]) / vals[2]
+    else:
+        out_value = 1 - vals[0] / np.linalg.norm([vals[1], vals[2]])
+    return out_value
+
+
+
+# def measure_planarity(st: Stream, pick: Pick, window_length):
+#     st.rotate('->')
+#     pass
 
 
 

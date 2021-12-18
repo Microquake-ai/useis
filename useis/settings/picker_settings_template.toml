@@ -8,7 +8,18 @@ end_refined_search_window = 10e-3
 search_resolution = 0.5e-4
 pre_pick_window_len = 20e-3
 post_pick_window_len = 20e-3
+
 # to calculate a more accurate SNR
 snr_pre_pick_window = 50e-3
 snr_post_pick_window = 20e-3
 snr_threshold = 6
+
+[ai_picker]
+freq_min = 50
+start_search_window = -200e-3
+end_search_window = -50e-3
+search_window_resolution = 30e-3
+snr_pre_pick_window = 20e-3
+snr_post_pick_window = 20e-3
+snr_threshold = -10
+sampling_rate = 6000

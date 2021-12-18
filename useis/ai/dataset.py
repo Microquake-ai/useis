@@ -285,7 +285,7 @@ class ClassifierDataset1D(Dataset):
             data_out = data
 
         data_out -= np.mean(data_out)
-        data_out /= np.max(data_out)
+        data_out /= np.max(np.abs(data_out))
 
         data_out = torch.from_numpy((np.array(data_out).astype(np.float32)))
 
@@ -324,12 +324,18 @@ class PickingDataset(Dataset):
             data = pickle.load(f_in)
 
         signal = data['data'].astype(np.float32)
+        # signal += np.min(signal)
+        # signal = np.abs(signal) / np.abs(signal)
 
         # ensuring the signal is between -1 and 1
         signal = signal - np.mean(signal)
-        signal = signal / np.max(signal)
+        signal = signal / np.max(np.abs(signal))
+
+        signal[np.isnan(signal)] = 0
 
         target = data['pick']
+        if np.isnan(target):
+            targer = 0
 
         return signal.astype(np.float32), np.float32(target)
 

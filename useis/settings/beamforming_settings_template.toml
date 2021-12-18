@@ -1,0 +1,9 @@
+[beamforming]
+nthreads = 4
+samplerate_decimated = 3000.0
+fixed_wlen_sec = 2.0
+whiten_corner_freqs = [40.0, 50.0, 350.0, 360.0]
+pair_dist_min = 0.0
+pair_dist_max = 2000.0
+cc_smooth_length_sec = 0.005
+detection_threshold = 0.2
