@@ -12,6 +12,7 @@ import os
 import shutil
 from ..settings.settings import Settings
 from uquake.core.event import AttribDict
+from .h5f import H5TTable
 
 
 def read_srces(fname):
@@ -273,6 +274,14 @@ class ProjectManager(object):
         except Exception as e:
             logger.error(e)
 
+        # reading h5f if the file exists
+        self.hdf5_tt = None
+        if self.files.hdf5_tt.exists():
+            self.hdf5_tt = H5TTable(self.files.hdf5_tt)
+        elif self.travel_times is not None:
+            self.travel_times.write_hdf5(self.files.hdf5_tt)
+            self.hdf5_tt = H5TTable(self.files.hdf5_tt)
+
     @staticmethod
     def exists(project_path, project_name, network_code):
         project_path = Path(project_path) / project_name / network_code
@@ -310,25 +319,11 @@ class ProjectManager(object):
 
         self.travel_times = tt
 
-        # if self.has_p_velocity():
-        #     tt_gs_p = self.p_velocity.to_time(seeds, seed_labels,
-        #                                       multi_threaded=multi_threaded)
-        #     self.travel_times = tt_gs_p
-        # if self.has_s_velocity():
-        #     tt_gs_s = self.s_velocity.to_time(seeds, seed_labels,
-        #                                       multi_threaded=multi_threaded)
-        #     self.travel_times = tt_gs_s
-        #
-        # if self.p_velocity and self.s_velocity:
-        #     self.travel_times = tt_gs_p + tt_gs_s
-
-        # cleaning the directory before writing the new files
-
         for fle in self.paths.times.glob('*time*'):
             fle.unlink(missing_ok=True)
 
         self.travel_times.write(self.paths.times)
-        # self.travel_times.write_hdf5(self.paths. / 'test.hf5')
+        self.travel_times.write_hdf5(self.files.hdf5_tt)
         t1 = time()
         logger.info(f'done initializing the travel time grids in '
                     f'{t1 - t0:0.2f} seconds')

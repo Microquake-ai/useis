@@ -51,7 +51,7 @@ class PickerResult(object):
 
         return picks
 
-    def append_event(self, event: uquake.core.event.Event = None):
+    def append_event(self, event: Event = None):
 
         snr_threshold = self.snr_threshold
         arrivals = []
