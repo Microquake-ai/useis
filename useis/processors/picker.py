@@ -127,7 +127,6 @@ class Picker(ProjectManager):
         """
 
         super().__init__(base_projects_path, project_name, network_code)
-
         self.files.picker_settings = self.paths.config / 'picker_settings.toml'
 
         if not self.files.picker_settings.is_file():
@@ -136,10 +135,7 @@ class Picker(ProjectManager):
 
             shutil.copyfile(settings_template,
                             self.files.picker_settings)
-
-        self.settings = Settings(settings_location=self.paths.config,
-                                 settings_file=
-                                 self.files.picker_settings.name)
+            super().__init__(base_projects_path, project_name, network_code)
 
         self.files.ai_picker_model = self.paths.ai_models / \
                                      'picker_model.pickle'
@@ -185,7 +181,8 @@ class Picker(ProjectManager):
         self.ai_picker.write(self.files.ai_picker_model)
 
     def snr_repick(self, stream: uquake.core.stream.Stream,
-                   picks: uquake.core.event.Pick, ai_enhanced=True):
+                   picks: uquake.core.event.Pick, ai_enhanced=True,
+                   setting_section='snr_repicker'):
 
         """
         Repick using a snr based ensemble picker
@@ -196,15 +193,18 @@ class Picker(ProjectManager):
         :return:
         """
 
-        start_search_window = self.settings.snr_repicker.start_search_window
-        end_search_window = self.settings.snr_repicker.end_search_window
+        start_search_window = self.settings[
+            setting_section].start_search_window
+        end_search_window = self.settings[setting_section].end_search_window
         start_refined_search_window = \
-            self.settings.snr_repicker.start_refined_search_window
+            self.settings[setting_section].start_refined_search_window
         end_refined_search_window = \
-            self.settings.snr_repicker.end_refined_search_window
-        search_resolution = self.settings.snr_repicker.search_resolution
-        pre_pick_window_len = self.settings.snr_repicker.pre_pick_window_len
-        post_pick_window_len = self.settings.snr_repicker.post_pick_window_len
+            self.settings[setting_section].end_refined_search_window
+        search_resolution = self.settings[setting_section].search_resolution
+        pre_pick_window_len = self.settings[
+            setting_section].pre_pick_window_len
+        post_pick_window_len = self.settings[
+            setting_section].post_pick_window_len
 
         snrs, new_picks = \
             snr_ensemble_re_picker(stream, picks, start_search_window=
@@ -286,7 +286,8 @@ class Picker(ProjectManager):
                                    location=location).composite()[0]
 
             predicted_time = self.ai_picker.predict_trace(tr.copy(),
-                                                          pick_time)
+                                                          pick_time,
+                                                          phase)
 
             pick.time = predicted_time
             picks_out.append(pick)

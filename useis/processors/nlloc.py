@@ -4,7 +4,8 @@ from uquake.core.inventory import Inventory
 
 from ..core.project_manager import *
 from uquake.nlloc.nlloc import *
-from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival)
+from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival,
+                               Pick, WaveformStreamID)
 from uquake.core import UTCDateTime
 from uquake.core.stream import Stream
 import numpy as np
@@ -15,9 +16,8 @@ import toml
 # from typing import Optional, List
 import matplotlib.pyplot as plt
 
-def measure_incidence_angle_hodogram(st: Stream, event: Event,
-                                     inventory: Inventory,
-                                     window_length: float = 50e-3):
+def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
+                    window_length: float = 20e-3, linearity_threshold=0.7):
     """
     measure the incidence angle from hodogram
     :param st: a stream object containing the waveforms
@@ -45,6 +45,8 @@ def measure_incidence_angle_hodogram(st: Stream, event: Event,
     plunges = []
     linearities = []
     phases = []
+    scatters = event.preferred_origin().scatter
+    dot_prod = np.zeros(len(scatters))
     for arrival in origin.arrivals:
         pick = arrival.pick
         network = pick.waveform_id.network_code
@@ -59,15 +61,16 @@ def measure_incidence_angle_hodogram(st: Stream, event: Event,
             starttime=start_time, endtime=end_time)
 
         wave_mat = []
-        for component in ['N', 'E', 'Z']:
+        for component in ['E', 'N', 'Z']:
             tr = st_tmp.select(component=component)[0]
             wave_mat.append(tr.data)
 
         wave_mat = np.array(wave_mat)
-        plt.close('all')
-        plt.clf()
-        plt.plot(wave_mat[1, :] / np.max(wave_mat[1, :]),
-                 wave_mat[0, :] / np.max(wave_mat[0, :]), 'k')
+        # plt.figure(2)
+        # plt.close('all')
+        # plt.clf()
+        # plt.plot(wave_mat[1, :] / np.max(wave_mat[1, :]),
+        #          wave_mat[0, :] / np.max(wave_mat[0, :]), 'k')
 
         cov_mat = np.cov(np.array(wave_mat))
 
@@ -88,71 +91,22 @@ def measure_incidence_angle_hodogram(st: Stream, event: Event,
                         np.linalg.norm(eig_vals[i_[1:]]))
             color = 'r'
 
+        # if linearity < linearity_threshold:
+        #     continue
 
         sta = inventory.select(network=network,
                                station=station,
                                location=location)[0][0]
 
-        r = np.linalg.norm(eig_vect[0:2])
-        v = np.linalg.norm(eig_vect[2])
+        eig_vect /= np.linalg.norm(eig_vect)
 
-        v_vect = sta.loc[2] - origin.loc[2]
-        r_vect = origin.loc[0]
-        sign = np.sign(np.dot([r, v], [r_vect, v_vect]))
-        eig_vect *= sign
+        for i, scat in enumerate(scatters):
+            vect = sta.loc - scat[0:3]
+            vect /= np.linalg.norm(vect)
+            dot_prod[i] += np.abs(np.dot(vect, eig_vect)) * scat[-1] * \
+                           linearity
 
-
-
-        # plt.plot([0, eig_vect[1]] / r,
-        #          [0, eig_vect[0]] / r, color)
-        #
-        # plt.show()
-        # input(f'grossomodo {arrival.phase} {linearity}')
-
-        linearities.append(linearity)
-
-        azimuth = np.arctan2(eig_vect[1], eig_vect[0]) * 180 / np.pi
-        if azimuth < 0:
-            azimuth += 360
-
-        plunges.append(np.arctan2(eig_vect[-1],
-                                  sign * np.linalg.norm(eig_vect[0:2])))
-        azimuths.append(azimuth)
-        phases.append(arrival.phase)
-
-    azimuths = np.array(azimuths)
-    linearities = np.array(linearities)
-    phases = np.array(phases)
-    plunges = np.array(plunges)
-
-    i_ = np.nonzero(linearities > 0.9)[0]
-
-    return azimuths
-    #
-    #
-    #
-    # wave_mat = np.array(
-    #     [waveform[c] - np.mean(waveform[c]) for c in ["E", "N", "Z"]])
-    # eig_vals, eig_vecs = np.linalg.eig(
-    #     wave_mat @ wave_mat.T)  # eigenvalue decomp of covariance
-    # i_sort = np.argsort(eig_vals)
-    # linearity = 1 - eig_vals[i_sort[1]] / eig_vals[i_sort[2]]
-    # trend, plunge = unit_vector_to_trend_plunge(eig_vecs[:, i_sort[2]])
-    # wave_mat_2d = np.array(
-    #     [waveform[c] - np.mean(waveform[c]) for c in ["E", "N"]])
-    # eig_vals_2d, eig_vecs_2d = np.linalg.eig(wave_mat_2d @ wave_mat_2d.T)
-    # i_sort_2d = np.argsort(eig_vals_2d)
-    # linearity_2d = 1 - eig_vals_2d[i_sort_2d[0]] / eig_vals_2d[
-    #     i_sort_2d[1]]
-    # trend_2d, _ = unit_vector_to_trend_plunge(
-    #     [*eig_vecs_2d[:, i_sort_2d[1]], 0])
-    # return {
-    #     "trend": float(trend % 360),
-    #     "plunge": float(plunge),
-    #     "linearity": linearity,
-    #     "2D trend": trend_2d % 360,
-    #     "2D linearity": linearity_2d,
-    # }
+    return scatters[np.argmax(dot_prod), :-1]
 
 
 def calculate_uncertainty(point_cloud):
@@ -162,6 +116,23 @@ def calculate_uncertainty(point_cloud):
     :return: uncertainty
     :rtype: uquake.core.event.OriginUncertainty
     """
+
+    # horizontal uncertainty
+    if len(point_cloud) == 0:
+        ce = ConfidenceEllipsoid(semi_major_axis_length=0,
+                                 semi_intermediate_axis_length=0,
+                                 semi_minor_axis_length=0,
+                                 major_axis_plunge=0,
+                                 major_axis_azimuth=0,
+                                 major_axis_rotation=0)
+
+        return OriginUncertainty(horizontal_uncertainty=0,
+                                 confidence_ellipsoid=0,
+                                 preferred_description='confidence ellipsoid',
+                                 confidence_level=68)
+
+    v, u = np.linalg.eig(np.cov(point_cloud[:, 0:2].T))
+    horizontal_uncertainty = np.sqrt(np.max(v))
 
     v, u = np.linalg.eig(np.cov(point_cloud.T))
 
@@ -185,25 +156,19 @@ def calculate_uncertainty(point_cloud):
                              major_axis_azimuth=major_axis_azimuth,
                              major_axis_rotation=major_axis_rotation)
 
-    return OriginUncertainty(confidence_ellipsoid=ce,
+    return OriginUncertainty(horizontal_uncertainty=horizontal_uncertainty,
+                             confidence_ellipsoid=ce,
                              preferred_description='confidence ellipsoid',
                              confidence_level=68)
 
 
 class NLLOCResult(object):
 
-    # hypocenter: List[float]
-    # event_time: datetime
-    # scatter_cloud: List[float]
-    # rays: List[Rays]
-    # observations: models.nlloc.Observations
-    # evaluation_mode: models.event.evaluation_mode
-    # evaluation_status: models.event.evaluation_status
-
-    def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
-                 scatter_cloud: np.ndarray, rays: list,
-                 observations: Observations, evaluation_mode: str,
-                 evaluation_status: str, hypocenter_file: str):
+    def __init__(self, nll_object, hypocenter: np.array,
+                 event_time: UTCDateTime, scatter_cloud: np.ndarray,
+                 rays: list, observations: Observations,
+                 evaluation_mode: str, evaluation_status: str,
+                 hypocenter_file: str):
         self.hypocenter = hypocenter
         self.event_time = event_time
         self.scatter_cloud = scatter_cloud
@@ -212,14 +177,15 @@ class NLLOCResult(object):
         self.evaluation_mode = evaluation_mode
         self.evaluation_status = evaluation_status
 
-        self.uncertainty_ellipsoid = calculate_uncertainty(
+        self.origin_uncertainty = calculate_uncertainty(
             self.scatter_cloud[:, :-1])
-
-        self.origin_uncertainty = OriginUncertainty()
 
         self.creation_info = CreationInfo(author='uQuake-nlloc',
                                           creation_time=UTCDateTime.now())
         self.hypocenter_file = hypocenter_file
+        self.nll_object = nll_object
+        self.unc = self.origin_uncertainty.confidence_ellipsoid.\
+            semi_major_axis_length
 
     def __repr__(self):
         out_str = f"""
@@ -265,22 +231,48 @@ class NLLOCResult(object):
     @property
     def arrivals(self) -> list:
         arrivals = []
+        predicted_times = self.nll_object.travel_times.travel_time(
+            self.hypocenter )
+        angles = self.nll_object.travel_times.angles(self.hypocenter)
         for pick in self.observations.picks:
             travel_time = pick.time - self.t
             phase = pick.phase_hint
             site_code = pick.site
-            # if self.rays is not None:
-            for ray in self.rays:
-                if (ray.site_code == site_code) & (ray.phase == phase):
-                    break
-            distance = ray.length
 
-            time_residual = Arrival.calculate_time_residual(ray.travel_time,
-                                                            travel_time)
+            network = pick.waveform_id.network_code
+            station = pick.waveform_id.station_code
+            location = pick.waveform_id.location_code
+
+
+            if self.rays is not None:
+                for ray in self.rays:
+                    if (ray.site_code == site_code) & (ray.phase == phase):
+                        break
+                distance = ray.length
+
+                time_residual = Arrival.calculate_time_residual(
+                    ray.travel_time,
+                    travel_time)
+
+                azimuth = ray.azimuth
+                takeoff_angle = ray.takeoff_angle
+
+            else:
+                inv = self.nll_object.inventory.select(network=network,
+                                                       station=station,
+                                                       location=location)
+
+                distance = np.linalg.norm(self.hypocenter - inv[0][0][0].loc)
+
+                predicted_time = predicted_times[phase][site_code]
+
+                time_residual = Arrival.calculate_time_residual(predicted_time,
+                                                                travel_time)
+
+                azimuth = angles['azimuth'][phase][site_code]
+                takeoff_angle = angles['takeoff'][phase][site_code]
 
             time_weight = 1
-            azimuth = ray.azimuth
-            takeoff_angle = ray.takeoff_angle
 
             arrival = Arrival(phase=phase, distance=distance,
                               time_residual=time_residual,
@@ -301,7 +293,7 @@ class NLLOCResult(object):
                         creation_info=self.creation_info,
                         arrivals=self.arrivals,
                         origin_uncertainty=self.origin_uncertainty,
-                        uncertainty=uncertainty,
+                        uncertainty=self.unc,
                         rays=self.rays,
                         scatter=self.scatter_cloud)
         origin.scatter = self.scatter_cloud
@@ -314,8 +306,19 @@ class NLLOCResult(object):
 
     @property
     def uncertainty(self):
-        ce = self.uncertainty_ellipsoid.confidence_ellipsoid
+        ce = self.origin_uncertainty.confidence_ellipsoid
         return ce.semi_major_axis_length
+
+    @property
+    def predicted_picks(self):
+        if not self.rays:
+            return
+
+        predicted_picks = []
+        for ray in self.rays:
+            predicted_picks.append(ray.to_pick(self.time))
+
+        return predicted_picks
 
     def append_to_event(self, event: Event) -> Event:
         o = self.origin
@@ -331,9 +334,26 @@ class NLLOCResult(object):
         e.preferred_origin_id = o.resource_id
         return e
 
-    def to_2d(self, inventory, station):
-        return NLLOCResult2DCylindrical.from_nlloc_result(self, inventory,
-                                                          station)
+    def to_2d(self, station):
+        return NLLOCResult2DCylindrical.from_nlloc_result(self, station)
+
+    def relocate(self, residual_threshold=10e-3):
+        event = self.event
+        picks = []
+        for arrival in event.preferred_origin().arrivals:
+            if arrival.time_residual < residual_threshold:
+                picks.append(arrival.pick)
+
+        observations = Observations(picks=picks)
+        return self.nll_object.run_location(observations)
+
+    def relocate_hodogram(self, stream: Stream, window_length: float = 20e-3):
+        loc = locate_hodogram(stream, self.event, self.nll_object.inventory,
+                               window_length=window_length)
+
+        self.hypocenter = np.array(loc)
+
+        return loc
 
 
 class NLLOCResult2DCylindrical(NLLOCResult):
@@ -345,14 +365,15 @@ class NLLOCResult2DCylindrical(NLLOCResult):
     can be neglected
     """
 
-    def __init__(self, hypocenter: np.array, event_time: UTCDateTime,
+    def __init__(self, nlloc_object, hypocenter: np.array,
+                 event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
                  observations: Observations, evaluation_mode: str,
                  evaluation_status: str, hypocenter_file: str,
                  inventory: uquake.core.inventory.Inventory, station: str):
 
         """
-
+        :param nlloc_object:
         :param hypocenter: event hypocenter location
         :param event_time: event time
         :param scatter_cloud: cloud of probable location
@@ -378,19 +399,19 @@ class NLLOCResult2DCylindrical(NLLOCResult):
         self.reference_x = np.mean(xs)
         self.reference_y = np.mean(ys)
 
-        super().__init__(hypocenter, event_time, scatter_cloud, rays,
-                         observations, evaluation_mode, evaluation_status,
+        super().__init__(nlloc_object, hypocenter, event_time, scatter_cloud,
+                        rays, observations, evaluation_mode, evaluation_status,
                          hypocenter_file)
 
     @classmethod
-    def from_nlloc_result(cls, nlloc_result: NLLOCResult,
-                          inventory: uquake.core.inventory.Inventory,
-                          station: str):
-        return cls(nlloc_result.hypocenter, nlloc_result.event_time,
+    def from_nlloc_result(cls, nlloc_result: NLLOCResult, station: str):
+        return cls(nlloc_result.nll_object,nlloc_result.hypocenter,
+                   nlloc_result.event_time,
                    nlloc_result.scatter_cloud, nlloc_result.rays,
                    nlloc_result.observations, nlloc_result.evaluation_mode,
                    nlloc_result.evaluation_status,
-                   nlloc_result.hypocenter_file, inventory, station)
+                   nlloc_result.hypocenter_file,
+                   nlloc_result.nll_object.inventory, station)
 
     @property
     def uncertainty_h(self):
@@ -400,7 +421,7 @@ class NLLOCResult2DCylindrical(NLLOCResult):
 
     @property
     def uncertainty_z(self):
-        return np.std(self.scatter_cloud[:, -1])
+        return np.std(self.scatter_cloud[:, -2])
 
     @property
     def uncertainty(self):
@@ -423,6 +444,7 @@ class NLLOCResult2DCylindrical(NLLOCResult):
                         creation_info=self.creation_info,
                         arrivals=self.arrivals,
                         origin_uncertainty=self.origin_uncertainty,
+                        uncertainty=self.uncertainty_h,
                         rays=self.rays,
                         scatter=self.scatter_cloud)
         origin.scatter = self.scatter_cloud
@@ -440,9 +462,47 @@ class NLLOCResult2DCylindrical(NLLOCResult):
         """
         return out_str
 
-    def to_3d(self, stream: Stream) -> NLLOCResult:
-        pass
+    def to_3d(self, azimuth: float, std_azimuth: float) -> NLLOCResult:
+        """
+        :centroi
+        :param azimuth: azimuth in degrees
+        :param std_azimuth: standard deviation of the Azimuth in degrees
+        :return:
+        """
 
+        # converting degrees to radians
+
+        azimuth = (azimuth * np.pi / 180) % (2 * np.pi)
+
+        x = np.sin(azimuth) * self.r + self.reference_x  # Northing
+        y = np.cos(azimuth) * self.r + self.reference_y  # Easting
+
+        hypocenter = np.array([x, y, self.z])
+
+        d_s_x = self.scatter_cloud[:, 0] - self.reference_x
+        d_s_y = self.scatter_cloud[:, 1] - self.reference_y
+
+        scatter_azimuths = (np.arctan2(d_s_x, d_s_y)) % (2 * np.pi)
+
+        min_azimuth = (azimuth - std_azimuth) % (2 * np.pi)
+        max_azimuth = (azimuth + std_azimuth) % (2 * np.pi)
+
+        scatter_cloud = self.scatter_cloud[
+            (scatter_azimuths >= min_azimuth) &
+            (scatter_azimuths <= max_azimuth), :]
+
+        if len(scatter_cloud) == 0:
+            min_azimuth = (azimuth - 10 / 180 * np.pi) % (2 * np.pi)
+            max_azimuth = (azimuth + 10 / 180 * np.pi) % (2 * np.pi)
+
+            scatter_cloud = self.scatter_cloud[
+                            (scatter_azimuths >= min_azimuth) &
+                            (scatter_azimuths <= max_azimuth), :]
+
+        return NLLOCResult(self.nll_object, hypocenter, self.time,
+                           scatter_cloud, self.rays, self.observations,
+                           self.evaluation_mode, self.evaluation_status,
+                           self.hypocenter_file)
 
 
 class NLLOC(ProjectManager):
@@ -587,15 +647,21 @@ class NLLOC(ProjectManager):
             p_times = []
             for pick in observations.picks:
                 p_times.append(pick.time)
+            if not p_times:
+                logger.error('empty results')
+                return
             event_time = np.min(p_times)
 
         if not (self.paths.outputs / 'last.hyp').exists():
             logger.error(f'event location failed for event {event_time}!')
+            return
 
         with open(self.paths.outputs / 'last.hyp') as hyp_file:
             hypocenter_file = hyp_file.readlines()
 
         t, x, y, z = read_hypocenter_file(self.paths.outputs / 'last.hyp')
+
+        eloc = np.array([x, y, z])
 
         scatters = read_scatter_file(self.paths.outputs / 'last.scat')
 
@@ -609,11 +675,13 @@ class NLLOC(ProjectManager):
             logger.info(f'done calculating rays in {t1_ray - t0_ray:0.2f} '
                         f'seconds')
 
+        # for travel_time in self.travel_times.travel_time(eloc, )
+
         if delete_output_files:
             self.remove_run_directory()
 
-        result = NLLOCResult(np.array([x, y, z]), t, scatters, rays,
-                             observations, evaluation_mode, evaluation_status,
+        result = NLLOCResult(self, eloc, t, scatters, rays, observations,
+                             evaluation_mode, evaluation_status,
                              hypocenter_file)
 
         return result

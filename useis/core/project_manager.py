@@ -12,7 +12,7 @@ import os
 import shutil
 from ..settings.settings import Settings
 from uquake.core.event import AttribDict
-from .h5f import H5TTable
+from uquake.grid.hdf5 import H5TTable
 
 
 def read_srces(fname):
@@ -192,7 +192,8 @@ class ProjectManager(object):
                       'velocities': root / 'velocities',
                       'times': root / 'times',
                       'hdf5_times': root / 'hdf5_times',
-                      'ai_models': root / 'ai_models'}
+                      'ai_models': root / 'ai_models',
+                      'debug': root / 'debug'}
 
         self.paths = AttribDict(self.paths)
 
@@ -274,13 +275,14 @@ class ProjectManager(object):
         except Exception as e:
             logger.error(e)
 
-        # reading h5f if the file exists
-        self.hdf5_tt = None
-        if self.files.hdf5_tt.exists():
-            self.hdf5_tt = H5TTable(self.files.hdf5_tt)
-        elif self.travel_times is not None:
-            self.travel_times.write_hdf5(self.files.hdf5_tt)
-            self.hdf5_tt = H5TTable(self.files.hdf5_tt)
+    @property
+    def htt(self):
+        return self.hdf5_tt
+
+    @property
+    def hdf5_tt(self):
+        return self.travel_times.to_hdf5(self.files.hdf5_tt)
+
 
     @staticmethod
     def exists(project_path, project_name, network_code):
@@ -579,5 +581,15 @@ class ProjectManager(object):
         if self.inventory or self.srces:
             return True
         return False
+
+    def clean_stream(self, stream):
+        if 'black_list'.upper() in self.settings.keys():
+            for sensor in self.settings.black_list:
+                station = sensor.split('.')[0]
+                location = sensor.split('.')[1]
+                for tr in stream.select(station=station, location=location):
+                    stream.remove(tr)
+
+        return stream
 
 

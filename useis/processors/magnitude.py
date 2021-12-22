@@ -19,18 +19,18 @@ class Magnitude(ProjectManager):
         super().__init__(base_projects_path, project_name, network_code)
 
         self.files.magnitude_settings = self.paths.config / \
-                                     'magnitude_settings.toml'
+                                        'magnitude_settings.toml'
 
-        if not self.files.picker_settings.is_file():
+        if not self.files.magnitude_settings.is_file():
             settings_template = Path(os.path.realpath(__file__)).parent / \
                                 '../settings/magnitude_settings_template.toml'
 
             shutil.copyfile(settings_template,
                             self.files.magnitude_settings)
 
-        self.settings = Settings(settings_location=self.paths.config,
-                                 settings_file=
-                                 self.files.picker_settings.name)
+            super().__init__(base_projects_path, project_name, network_code)
+            
+        
 
 
 class MwPE(Magnitude):

@@ -474,7 +474,7 @@ class AIPicker(object):
         outputs = [out.item() for out in outputs_tensor.cpu()]
         return outputs
 
-    def predict_trace(self, trace: Trace, pick_time: UTCDateTime):
+    def predict_trace(self, trace: Trace, pick_time: UTCDateTime, phase: str):
         # import matplotlib.pyplot as plt
 
         trace = trace.resample(sampling_rate=int(self.sampling_rate))
@@ -482,7 +482,11 @@ class AIPicker(object):
         n_sample = int((pick_time - trace.stats.starttime)
                        * trace.stats.sampling_rate)
 
-        n_sample_start = int(n_sample - self.n_sample / 2)
+        if phase == 'P':
+            n_sample_start = int(n_sample - self.n_sample * 0.5)
+        else:
+            n_sample_start = int(n_sample - self.n_sample * 0.5)
+
         n_sample_end = int(n_sample_start + self.n_sample)
 
         data = trace.data[n_sample_start: n_sample_end]

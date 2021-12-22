@@ -4,15 +4,17 @@ from pathlib import Path
 
 
 class Settings(LazySettings):
-    def __init__(self, settings_location, settings_file='settings.toml'):
+    def __init__(self, settings_location):
         """
         Init function currently just initializes the object allowing
         """
 
+        settings_file = 'settings.toml'
+    
         config_dir = Path(settings_location)
 
         dconf = {}
-        dconf.setdefault('ENVVAR_PREFIX_FOR_DYNACONF', 'UQUAKE')
+        dconf.setdefault('ENVVAR_PREFIX_FOR_DYNACONF', 'USEIS')
 
         env_prefix = '{0}_ENV'.format(
             dconf['ENVVAR_PREFIX_FOR_DYNACONF']
@@ -24,7 +26,7 @@ class Settings(LazySettings):
         )
 
         dconf['SETTINGS_FILE_FOR_DYNACONF'] = os.path.join(settings_location,
-                                                           settings_file)
+                                                           'settings.toml')
         dconf['ROOT_PATH_FOR_DYNACONF'] = settings_location
 
         super().__init__(**dconf)
