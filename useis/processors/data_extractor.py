@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from uquake.core.stream import Stream
 
+
 def extract_trace_info_mseed(mseed_file):
     try:
         st = read(mseed_file)
@@ -35,6 +36,7 @@ def extract_trace_info_mseed(mseed_file):
         output_list.append(output_dict)
 
     return output_list
+
 
 def change_channel_name(mseed_file):
     from uquake.core.stream import Stream
@@ -67,7 +69,7 @@ class ContinuousWaveformDataExtractor(ProjectManager):
     def __init__(self, base_projects_path: Path, project_name: str,
                  network_code: str, data_path: Path,
                  create_waveform_file_index: bool = False,
-                 multiprocessing_indexing = True,
+                 multiprocessing_indexing: bool = True,
                  cpu_utilisation: float = 0.9):
 
         super().__init__(base_projects_path, project_name, network_code)
@@ -99,7 +101,7 @@ class ContinuousWaveformDataExtractor(ProjectManager):
                 logger.warning('waveform file index does not exist and will '
                                 'not be created')
 
-    def create_index(self, multiprocessing:bool = True):
+    def create_index(self, multiprocessing: bool = True):
 
         num_threads = int(np.ceil(self.__cpu_utilisation__ * cpu_count()))
         #

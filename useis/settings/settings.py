@@ -26,7 +26,7 @@ class Settings(LazySettings):
         )
 
         dconf['SETTINGS_FILE_FOR_DYNACONF'] = os.path.join(settings_location,
-                                                           'settings.toml')
+                                                           settings_file)
         dconf['ROOT_PATH_FOR_DYNACONF'] = settings_location
 
         super().__init__(**dconf)
