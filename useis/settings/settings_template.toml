@@ -1,4 +1,4 @@
-#dynaconf_include = ['*.toml']
+dynaconf_include = ['*.toml']
 
 time_zone.type = "UTC_offset"
 time_zone.time_zone_code = ""

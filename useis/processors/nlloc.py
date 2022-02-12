@@ -16,6 +16,7 @@ import toml
 # from typing import Optional, List
 import matplotlib.pyplot as plt
 
+
 def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
                     window_length: float = 20e-3, linearity_threshold=0.7):
     """
@@ -232,7 +233,7 @@ class NLLOCResult(object):
     def arrivals(self) -> list:
         arrivals = []
         predicted_times = self.nll_object.travel_times.travel_time(
-            self.hypocenter )
+            self.hypocenter)
         angles = self.nll_object.travel_times.angles(self.hypocenter)
         for pick in self.observations.picks:
             travel_time = pick.time - self.t
@@ -242,7 +243,6 @@ class NLLOCResult(object):
             network = pick.waveform_id.network_code
             station = pick.waveform_id.station_code
             location = pick.waveform_id.location_code
-
 
             if self.rays is not None:
                 for ray in self.rays:

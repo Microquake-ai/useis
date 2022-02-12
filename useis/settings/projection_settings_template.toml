@@ -1,0 +1,4 @@
+[projection]
+local.epsg = 32613
+local.offset = [0, 0, 0]
+global.epsg = 4326

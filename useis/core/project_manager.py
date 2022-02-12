@@ -13,6 +13,8 @@ import shutil
 from ..settings.settings import Settings
 from uquake.core.event import AttribDict
 from uquake.grid.hdf5 import H5TTable
+from .projection import Projection
+from pydantic import conlist
 
 
 def read_srces(fname):
@@ -201,7 +203,9 @@ class ProjectManager(object):
                       'srces': self.paths.inventory / 'srces.pickle',
                       'settings': self.paths.config / 'settings.toml',
                       'services_settings': self.paths.config /
-                                           'services_settings',
+                                           'services_settings.toml',
+                      'projection_settings': self.paths.config /
+                                             'projection_settings.toml',
                       'p_velocity': self.paths.velocities / p_vel_base_name,
                       's_velocity': self.paths.velocities / s_vel_base_name,
                       'hdf5_tt': self.paths.hdf5_times /
@@ -219,12 +223,18 @@ class ProjectManager(object):
             path.mkdir(parents=True, exist_ok=True)
 
         # SETTINGS
+        settings_path = Path(os.path.realpath(__file__)).parent.parent
 
         if not self.files.settings.is_file():
-            settings_template = Path(os.path.realpath(__file__)).parent / \
+            settings_template = settings_path / \
                                     '../settings/settings_template.toml'
 
             shutil.copyfile(settings_template, self.files.settings)
+
+        if not self.files.projection_settings.is_file():
+            settings_template = settings_path / \
+                                'settings/projection_settings_template.toml'
+            shutil.copyfile(settings_template, self.files.projection_settings)
 
         if not self.files.services_settings.is_file():
             settings_path = Path(os.path.realpath(__file__)).parent.parent
@@ -283,6 +293,65 @@ class ProjectManager(object):
     def hdf5_tt(self):
         return self.travel_times.to_hdf5(self.files.hdf5_tt)
 
+    @property
+    def projection(self):
+        offset = self.settings.projection.local.offset.to_list()
+        return Projection(global_epsg_code=
+                          self.settings.projection.GLOBAL.epsg,
+                          local_epsg_code=self.settings.projection.local.epsg,
+                          offset=offset)
+
+    def set_global_epsg_code(self, epsg_code: int):
+        self.settings.projection.GLOBAL.epsg = epsg_code
+        self.projection.write(self.files.projection_settings)
+
+    def set_local_epsg_code(self, epsg_code: int):
+        self.settings.projection.local.epsg = epsg_code
+        self.projection.write(self.files.projection_settings)
+
+    def set_projection_offset(self, offset: conlist(float, min_items=3,
+                                                    max_items=3)):
+        self.settings.projection.local.offset = offset
+        self.projection.write(self.files.projection_settings)
+
+    @property
+    def global_epsg_code(self):
+        return self.projection.global_epsg_code
+
+    @global_epsg_code.setter
+    def global_epsg_code(self, value):
+        self.projection.global_epsg_code = value
+        self.projection.write(self.files.projection_settings)
+
+    @property
+    def local_epsg_code(self):
+        return self.projection.local_epsg_code
+
+    @local_epsg_code.setter
+    def local_epsg_code(self, value):
+        self.projection.local_epsg_code = value
+        self.projection.write(self.files.projection_settings)
+
+    @property
+    def projection_offset(self):
+        return self.projection.offset
+
+    @local_epsg_code.setter
+    def local_epsg_code(self, value: conlist(float, min_items=3, max_items=3)):
+        self.projection.offset = value
+
+        self.projection.write(self.files.projection_settings)
+
+    def transform_to_global(self, easting: float = 0, northing: float = 0,
+                            z: float = 0):
+        return self.projection.transform_to_global(easting=easting,
+                                                   northing=northing,
+                                                   z=z)
+
+    def transform_to_local(self, longitude: float = 0, latitude: float = 0,
+                           z: float = 0):
+        return self.projection.transform_to_local(longitude=longitude,
+                                                  latitude=latitude)
 
     @staticmethod
     def exists(project_path, project_name, network_code):
