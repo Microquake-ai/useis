@@ -170,7 +170,12 @@ class NLLOCResult(object):
                  rays: list, observations: Observations,
                  evaluation_mode: str, evaluation_status: str,
                  hypocenter_file: str):
+        self.nll_object = nll_object
         self.hypocenter = hypocenter
+        self.hypocenter_global = (self.nll_object.projection.
+                                  transform_to_global(hypocenter[0],
+                                                      hypocenter[1],
+                                                      hypocenter[2]))
         self.event_time = event_time
         self.scatter_cloud = scatter_cloud
         self.rays = rays
@@ -184,7 +189,6 @@ class NLLOCResult(object):
         self.creation_info = CreationInfo(author='uQuake-nlloc',
                                           creation_time=UTCDateTime.now())
         self.hypocenter_file = hypocenter_file
-        self.nll_object = nll_object
         self.unc = self.origin_uncertainty.confidence_ellipsoid.\
             semi_major_axis_length
 
@@ -208,6 +212,18 @@ class NLLOCResult(object):
     @property
     def loc(self):
         return self.hypocenter
+
+    @property
+    def latitude(self):
+        return self.hypocenter_global[1]
+
+    @property
+    def longitude(self):
+        return self.hypocenter_global[0]
+
+    @property
+    def depth(self):
+        return self.hypocenter_global[2]
 
     @property
     def x(self):
@@ -287,6 +303,9 @@ class NLLOCResult(object):
     @property
     def origin(self):
         origin = Origin(x=self.x, y=self.y, z=self.z, time=self.t,
+                        latitude=self.latitude,
+                        longitude=self.longitude,
+                        depth=self.depth,
                         evaluation_mode=self.evaluation_mode,
                         evaluation_status=self.evaluation_status,
                         epicenter_fixed=False, method_id='uQuake-NLLOC',

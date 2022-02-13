@@ -57,7 +57,7 @@ def change_channel_name(mseed_file):
         trs.append(tr)
 
     output_mseed = Path(str(mseed_file).replace('data_sept',
-                                               'data_sept_reprocessed'))
+                                                'data_sept_reprocessed'))
 
     output_mseed.parent.mkdir(exist_ok=True, parents=True)
 
@@ -75,13 +75,7 @@ class ContinuousWaveformDataExtractor(ProjectManager):
         super().__init__(base_projects_path, project_name, network_code)
         self.paths.waveform_data = data_path
 
-        self.paths.file_index = self.paths.root / 'files_index'
-
-        if not self.paths.file_index.exists():
-            self.paths.file_index.mkdir(parents=True,
-                                        exist_ok=True)
-
-        self.files.waveform_file_index = self.paths.file_index / \
+        self.files.waveform_file_index = self.paths.index / \
                                 'continuous_waveform_file.index'
 
         self.waveform_file_index = None
