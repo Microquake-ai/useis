@@ -1,6 +1,11 @@
 from ..core.project_manager import ProjectManager
 from uquake.core.stream import Stream
+from uquake.core.event import Event
 import numpy as np
+from uquake.waveform.simple_mag import moment_magnitude
+from pathlib import Path
+import os
+import shutil
 
 
 class Magnitude(ProjectManager):
@@ -29,8 +34,6 @@ class Magnitude(ProjectManager):
                             self.files.magnitude_settings)
 
             super().__init__(base_projects_path, project_name, network_code)
-            
-        
 
 
 class MwPE(Magnitude):
@@ -104,7 +107,69 @@ class MwPE(Magnitude):
 
         networks = self.inventory
 
-            
+
+class MomentMagnitude(Magnitude):
+    def __init__(self, base_projects_path: Path, project_name: str,
+                 network_code: str):
+        """
+        Based object for the magnitude calculation
+        :param base_projects_path: base project path
+        :type base_projects_path: str
+        :param project_name: project name or id
+        :type project_name: str
+        :param network_code: network name or id
+        :type network_code: str
+        """
+
+        super().__init__(base_projects_path, project_name, network_code)
+
+    def predict(self, st: Stream, event: Event, only_triaxial=True,
+                density=2700, min_dist=20, win_length=0.04, len_spectrum=2**12,
+                clipped_fraction=0.1, max_frequency=600,
+                preferred_origin_only=True):
+        """
+        Calculate the moment magnitude for a given event
+        :param st: waveform
+        :type st: :py:class:uquake.core.stream.Stream:
+        :param event: event location
+        :type event: :py:class:numpy.array:
+        :return: the magnitude value estimate
+        :rtype: float
+        :param only_triaxial: whether only triaxial sensor are used in the
+        magnitude calculation (optional) (not yet implemented)
+        :type only_triaxial: bool
+        :param density: density in kg / m**3 (assuming homogeneous for now)
+        :type density: float
+        :param win_length: length of the window in second in which magnitude is
+        calculated
+        :type win_length: float
+        :param min_dist: minimum distance between sensor an event to allow
+        magnitude calculation
+        :param len_spectrum: length of the spectrum
+        :param clipped_fraction: allowed clipped fraction (fraction of the
+        signal equal to the min or the max.
+        :param max_frequency: maximum frequency used in the calculation on
+        magnitude. After a certain frequency, the noise starts to dominate the
+        signal and the biases the calculation of the magnitude and corner
+        frequency.
+        :param preferred_origin_only: calculates the magnitude for the
+        preferred_origin only
+        :rtype: uquake.core.event.Catalog
+        """
+
+        mag = moment_magnitude(st, event, inventory, self.p_velocity,
+                               self.s_velocity, only_triaxial=only_triaxial,
+                               density=density, min_dist=min_dist,
+                               win_length=win_length,
+                               len_spectrum=len_spectrum,
+                               clipped_fraction=clipped_fraction,
+                               max_frequency=max_frequency,
+                               preferred_origin_only=preferred_origin_only)
+
+
+
+
+
             
 
 

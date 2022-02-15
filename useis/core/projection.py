@@ -4,20 +4,20 @@ from typing import Annotated, NewType
 
 
 class Latitude(BaseModel):
-    value: float
+    latitude: float
 
-    @validator('value')
+    @validator('latitude')
     def range(cls, v):
-        assert -180 <= v <= 180, 'Latitude must be between -180 and 180'
+        assert -90 <= v <= 90, 'Latitude must be between -180 and 180'
         return v
 
 
 class Longitude(BaseModel):
-    value: float
+    longitude: float
 
-    @validator('value')
+    @validator('longitude')
     def range(cls, v):
-        assert -90 <= v <= 90, 'Latitude must be between -90 and 90'
+        assert -180 <= v <= 180, 'Latitude must be between -90 and 90'
         return v
 
 
@@ -38,8 +38,8 @@ local.offset = {self.offset}
 
     def transform_to_local(self, latitude: float = 0, longitude: float = 0,
                            z: float = 0):
-        Latitude(latitude)
-        Longitude(longitude)
+        Latitude(latitude=latitude)
+        Longitude(longitude=longitude)
         transformer = pyproj.Transformer.from_crs(self.global_epsg_code,
                                                   self.local_epsg_code,
                                                   always_xy=True)

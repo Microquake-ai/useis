@@ -4,9 +4,10 @@ time_zone.type = "UTC_offset"
 time_zone.time_zone_code = ""
 time_zone.offset = -6
 
-black_list = []
-
 logger_level = '0'
+
+[site]
+black_list = []
 
 #dynaconf_include = ["*.toml"]
 #project.name = 'test'

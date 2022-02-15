@@ -138,7 +138,7 @@ class ContinuousWaveformDataExtractor(ProjectManager):
         end_time = start_time + duration
         it = self.waveform_file_index[
             (self.waveform_file_index['start_time_timestamp']
-                                       < end_time.timestamp)]
+             <= end_time.timestamp)]
         it2 = it[it['end_time_timestamp'] > start_time.timestamp]
 
         mseed_files = np.unique(it2['mseed_file'])
@@ -156,7 +156,6 @@ class ContinuousWaveformDataExtractor(ProjectManager):
 
         st2 = st_out.select(network=network, station=station,
                             location=location, channel=channel)
-
         return st2.trim(starttime=start_time, endtime=end_time)
 
 

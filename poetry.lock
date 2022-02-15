@@ -944,7 +944,7 @@ test = ["pytest", "pytest-tornasync", "pytest-console-scripts"]
 
 [[package]]
 name = "nbclient"
-version = "0.5.10"
+version = "0.5.11"
 description = "A client library for executing notebooks. Formerly nbconvert's ExecutePreprocessor."
 category = "dev"
 optional = false
@@ -958,7 +958,7 @@ traitlets = ">=4.2"
 
 [package.extras]
 sphinx = ["Sphinx (>=1.7)", "sphinx-book-theme", "mock", "moto", "myst-parser"]
-test = ["ipython", "ipykernel", "ipywidgets (<8.0.0)", "pytest (>=4.1)", "pytest-cov (>=2.6.1)", "check-manifest", "flake8", "mypy", "xmltodict", "black", "pip (>=18.1)", "wheel (>=0.31.0)", "setuptools (>=38.6.0)", "twine (>=1.11.0)"]
+test = ["ipython (<8.0.0)", "ipykernel", "ipywidgets (<8.0.0)", "pytest (>=4.1)", "pytest-asyncio", "pytest-cov (>=2.6.1)", "check-manifest", "flake8", "mypy", "xmltodict", "black", "pip (>=18.1)", "wheel (>=0.31.0)", "setuptools (>=38.6.0)", "twine (>=1.11.0)"]
 
 [[package]]
 name = "nbconvert"
@@ -1866,7 +1866,7 @@ test = ["pytest"]
 
 [[package]]
 name = "typing-extensions"
-version = "4.1.0"
+version = "4.1.1"
 description = "Backported and Experimental Type Hints for Python 3.6+"
 category = "main"
 optional = false
@@ -1879,23 +1879,28 @@ description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
 python-versions = ">=3.7.1,<3.10"
+develop = true
 
 [package.dependencies]
-dynaconf = ">=3.1.4,<4.0.0"
-h5py = ">=3.2.1,<4.0.0"
-ipython = ">=7.19.0,<8.0.0"
+dynaconf = "^3.1.4"
+h5py = "^3.2.1"
+ipython = "^7.19.0"
 jedi = "0.17.2"
-loguru = ">=0.5.3,<0.6.0"
-numpy = ">=1.18.0,<2.0.0"
-obspy = ">=1.2.2,<2.0.0"
-openpyxl = ">=3.0.6,<4.0.0"
-pandas = ">=1.2.1,<2.0.0"
-pydantic = ">=1.8.2,<2.0.0"
-pyproj = ">=3.2.1,<4.0.0"
-pytest = ">=6.2.1,<7.0.0"
+loguru = "^0.5.3"
+numpy = "^1.18.0"
+obspy = "^1.2.2"
+openpyxl = "^3.0.6"
+pandas = "^1.2.1"
+pydantic = "^1.8.2"
+pyproj = "^3.2.1"
+pytest = "^6.2.1"
 scikit-fmm = "2021.2.2"
-tqdm = ">=4.62.3,<5.0.0"
-vtk = ">=9.0.1,<10.0.0"
+tqdm = "^4.62.3"
+vtk = "^9.0.1"
+
+[package.source]
+type = "directory"
+url = "libraries/uquake"
 
 [[package]]
 name = "urllib3"
@@ -1994,6 +1999,17 @@ python-versions = "*"
 aiohttp = "*"
 
 [[package]]
+name = "xseis2"
+version = "0.2.0"
+description = ""
+category = "main"
+optional = false
+python-versions = ">=3.7.1,<3.11"
+
+[package.dependencies]
+obspy = ">=1.2.2,<2.0.0"
+
+[[package]]
 name = "yarl"
 version = "1.7.2"
 description = "Yet another URL library"
@@ -2024,7 +2040,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7.1,<3.10"
-content-hash = "8c2831a49f5d93d0c6b0c0f0acb671ad4c26e82f42bb87af6b8c023281537adb"
+content-hash = "f48cb9ac2e7c7d7b914710f0c4f72b0abb4bc2f14f7499b8715aa049f9423616"
 
 [metadata.files]
 aiohttp = [
@@ -2870,8 +2886,8 @@ nbclassic = [
     {file = "nbclassic-0.3.5.tar.gz", hash = "sha256:99444dd63103af23c788d9b5172992f12caf8c3098dd5a35c787f0df31490c29"},
 ]
 nbclient = [
-    {file = "nbclient-0.5.10-py3-none-any.whl", hash = "sha256:5b582e21c8b464e6676a9d60acc6871d7fbc3b080f74bef265a9f90411b31f6f"},
-    {file = "nbclient-0.5.10.tar.gz", hash = "sha256:b5fdea88d6fa52ca38de6c2361401cfe7aaa7cd24c74effc5e489cec04d79088"},
+    {file = "nbclient-0.5.11-py3-none-any.whl", hash = "sha256:03e857bea3012377289daa1e1c1651f4fc0295bcd109ccd36a337efcdbebaed7"},
+    {file = "nbclient-0.5.11.tar.gz", hash = "sha256:751516992f34b58172bad54eef1e4bf7e4f4460d58e255ca1a4e5c9649476007"},
 ]
 nbconvert = [
     {file = "nbconvert-6.4.2-py3-none-any.whl", hash = "sha256:7b006ae9979af56200e7fa3db39d9d12c99e811e8843b05dbe518e5b754bcb2e"},
@@ -3590,13 +3606,10 @@ traitlets = [
     {file = "traitlets-5.1.1.tar.gz", hash = "sha256:059f456c5a7c1c82b98c2e8c799f39c9b8128f6d0d46941ee118daace9eb70c7"},
 ]
 typing-extensions = [
-    {file = "typing_extensions-4.1.0-py3-none-any.whl", hash = "sha256:c13180fbaa7cd97065a4915ceba012bdb31dc34743e63ddee16360161d358414"},
-    {file = "typing_extensions-4.1.0.tar.gz", hash = "sha256:ba97c5143e5bb067b57793c726dd857b1671d4b02ced273ca0538e71ff009095"},
+    {file = "typing_extensions-4.1.1-py3-none-any.whl", hash = "sha256:21c85e0fe4b9a155d0799430b0ad741cdce7e359660ccbd8b530613e8df88ce2"},
+    {file = "typing_extensions-4.1.1.tar.gz", hash = "sha256:1a9462dcc3347a79b1f1c0271fbe79e844580bb598bafa1ed208b94da3cdcd42"},
 ]
-uquake = [
-    {file = "uquake-0.10.1-py3-none-any.whl", hash = "sha256:d30f4adbecfc2f3eeabe75c1ca356511df5981a73329593a03c7dfbc2e387e1d"},
-    {file = "uquake-0.10.1.tar.gz", hash = "sha256:189140be104d654a2f0187af6be6938187eeee3eb25abd2e56130cdd4fc7fd80"},
-]
+uquake = []
 urllib3 = [
     {file = "urllib3-1.26.8-py2.py3-none-any.whl", hash = "sha256:000ca7f471a233c2251c6c7023ee85305721bfdf18621ebff4fd17a8653427ed"},
     {file = "urllib3-1.26.8.tar.gz", hash = "sha256:0e7c33d9a63e7ddfcb86780aac87befc2fbddf46c58dbb487e0855f7ceec283c"},
@@ -3639,6 +3652,10 @@ win32-setctime = [
 wslink = [
     {file = "wslink-1.4.1-py3-none-any.whl", hash = "sha256:54680229a0bceb87b0c315f26df3c3b67fe69852c502a1db8ab903b875c17d1d"},
     {file = "wslink-1.4.1.tar.gz", hash = "sha256:08192b970f0bd5d45b380fd97b08fbb9c6d8f33fa7391b757cd78647fb13491b"},
+]
+xseis2 = [
+    {file = "xseis2-0.2.0-cp39-cp39-manylinux_2_34_x86_64.whl", hash = "sha256:f1922c2f3c8d44ad100dff39b87c27ff09bf5ec6a90bc341b13e0be5bebdaa15"},
+    {file = "xseis2-0.2.0.tar.gz", hash = "sha256:c5e60dd13497282ea65301c37424f763fb392943154c97cd8448d24d66ab0ada"},
 ]
 yarl = [
     {file = "yarl-1.7.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:f2a8508f7350512434e41065684076f640ecce176d262a7d54f0da41d99c5a95"},
