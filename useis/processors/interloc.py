@@ -103,18 +103,23 @@ class Interloc(ProjectManager):
         logger.info(
             "done preparing data for Interloc in %0.3f seconds" % (t5 - t4))
 
+        debug_level = self.settings.interloc.debug_level
+        debug_level = 0
+
         logger.info("Locating event with Interloc")
         t6 = time()
         logger.info(
             "sample_rate_decimated {}, ngrid {}, nthreads {}, debug {}, "
             "debug_file {}",
             sample_rate_decimated, ngrid, nthreads,
-            self.settings.interloc.debug_level,
+            debug_level,
             debug_file)
 
+        from ipdb import set_trace
+        set_trace()
         out = xspy.pySearchOnePhase(
             data,
-            sample_rate_decimated,
+            int(sample_rate_decimated),
             channel_map,
             stalocs[ikeep],
             ttable_row_ptrs[ikeep],
@@ -124,13 +129,13 @@ class Interloc(ProjectManager):
             pair_dist_max,
             cc_smooth_length_sec,
             nthreads,
-            self.settings.interloc.debug_level,
-            debug_file
+            debug_level,
+            str(debug_file)
         )
 
         out_s = xspy.pySearchOnePhase(
             data,
-            sample_rate_decimated,
+            int(sample_rate_decimated),
             channel_map,
             stalocs[ikeep],
             ttable_row_ptrs_s[ikeep],
@@ -140,8 +145,8 @@ class Interloc(ProjectManager):
             pair_dist_max,
             cc_smooth_length_sec,
             nthreads,
-            self.settings.interloc.debug_level,
-            debug_file
+            debug_level,
+            str(debug_file)
         )
 
         vmax, imax, iot = out
