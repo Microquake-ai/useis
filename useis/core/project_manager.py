@@ -228,7 +228,7 @@ class ProjectManager(object):
 
         if not self.files.settings.is_file():
             settings_template = settings_path / \
-                                    '../settings/settings_template.toml'
+                                    'settings/settings_template.toml'
 
             shutil.copyfile(settings_template, self.files.settings)
 
