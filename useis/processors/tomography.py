@@ -19,6 +19,7 @@ from uuid import uuid4
 from functools import partial
 import scipy as sc
 from scipy.sparse import csr_matrix
+from ..tomography import data as ekdata
 
 __cpu_count__ = cpu_count()
 
@@ -64,6 +65,7 @@ class EventEnsemble(object):
     def __init__(self, events: List[EventData] = []):
         self.events = events
         self.dict = {}
+        self.ids = np.arange(0, len(events))
         for event in events:
             self.dict[event.id] = event
             
@@ -74,14 +76,21 @@ class EventEnsemble(object):
         if isinstance(items, (list, np.ndarray)):
             events = []
             for item in items:
-                for event in self.events:
-                    if event.id == item:
-                        events.append(event)
+                if isinstance(item, str):
+                    for event in self.events:
+                        if event.id == item:
+                            events.append(event)
+                elif isinstance(item, int):
+                    events.append(self.events[item])
+                else:
+                    raise TypeError
             return EventEnsemble(events=events)
         elif isinstance(items, str):
             for event in self.events:
                 if event.id == items:
                     return EventEnsemble(events=[event])
+        elif isinstance(items, int):
+            return EventEnsemble(events=[self.events[items]])
         else:
             raise TypeError
 
@@ -107,6 +116,12 @@ class EventEnsemble(object):
         for event in self.events:
             locs.append(event.location)
         return locs
+
+    def to_ek_event_table_data(self):
+        ev_data = [(event.resource_id, event_id, event.location,
+                 event.location_correction) for event, event_id
+                in zip(self.events, self.ids)]:
+         data.EKEventTable()
 
 
 class ArrivalTimeData(BaseModel):
