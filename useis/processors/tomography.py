@@ -18,6 +18,7 @@ from datetime import datetime
 from uuid import uuid4
 from functools import partial
 import scipy as sc
+from scipy.sparse import csr_matrix
 
 __cpu_count__ = cpu_count()
 
@@ -227,9 +228,15 @@ class TomoRay(Ray):
         self.velocity = None
         self.epsilon = 10
         self.threshold = 0.1
+        self.sensitivity_kernel = None
         
     def add_velocity(self, velocity: VelocityGrid3D):
         self.velocity = velocity
+        x, y, z, v = velocity.flattens()
+        self.vel_x = x
+        self.vel_y = y
+        self.vel_z = z
+        self.flatten_vel = v
         
     def set_epsilon(self, epsilon):
         self.epsilon
@@ -237,14 +244,23 @@ class TomoRay(Ray):
     def sensitivity(self, distance_along_ray):
         """
         measures the sensitivity with respect to the velocity model parameters
+
+        :NOTE: currently, the sensitivity assumes a rbf inverse distance
+        interpolation kernel
         """
 
+        from time import time
+        t0 = time()
         location = self.interpolate_coordinate(distance_along_ray)
-        
-        result = self.velocity.rbf_interpolation_sensitivity(location,
-                                                             self.epsilon,
-                                                             threshold=
-                                                             self.threshold)
+
+        result = self.rbf_interpolation_sensitivity(location)
+
+        # result = self.velocity.rbf_interpolation_sensitivity(location,
+        #                                                      self.epsilon,
+        #                                                      threshold=
+        #                                                      self.threshold)
+        t1 = time()
+        logger.info(f'dones measuring sensitivity in {t1 - t0}')
 
         return result
 
@@ -263,9 +279,34 @@ class TomoRay(Ray):
         return np.array([self.int_x(distance_along_ray),
                          self.int_y(distance_along_ray),
                          self.int_z(distance_along_ray)])
+
+    def rbf_interpolation_sensitivity(self, location):
+        """
+        calculate the sensitivity of each element given a location
+        :param location: location in model space at which the interpolation
+        occurs
+        :param epsilon: the standard deviation of the gaussian kernel
+        :param threshold: threshold relative to the maximum value below which
+        the weights are considered 0.
+        :rparam: the sensitivity matrix
+        """
+
+        # calculating the distance between the location and every grid points
+
+        dist = np.sqrt((self.vel_x - location[0]) ** 2 +
+                       (self.vel_y - location[1]) ** 2 +
+                       (self.vel_z - location[2]) ** 2)
+
+        sensitivity = np.exp(-(dist / self.epsilon) ** 2)
+        sensitivity[sensitivity < np.max(sensitivity) * self.threshold] = 0
+        # sensitivity = sensitivity / np.sum(sensitivity)
+
+        return sensitivity
     
     def integrate_sensitivity(self, velocity: VelocityGrid3D, epsilon=10,
-                              threshold=0.1, max_it=100):
+                              threshold=0.1, max_it=100, compress_matrix=True):
+        from time import time
+        t0 = time()
         self.set_epsilon(epsilon)
         self.add_velocity(velocity)
         self.threshold = threshold
@@ -279,7 +320,14 @@ class TomoRay(Ray):
 
         # sensitivity = sensitivity / np.sum(sensitivity) * self.travel_time
 
-        return sensitivity
+        if compress_matrix:
+            sensitivity = csr_matrix(sensitivity)
+
+        self.sensitivity_kernel = sensitivity
+        t1 = time()
+        logger.info(f'done calculating sensitivity in {t1 - t0:0.2f} seconds')
+
+        return
 
         # to calculate frechet just making sure the sensitivity is normalized,
         # the sensitivity is expressed in s (time)
@@ -459,15 +507,22 @@ class Tomography(ProjectManager):
                         i += 1
 
         @staticmethod
-        def ray_tracer(data):
+        def ray_tracer(velocity, data):
             travel_time_grid = data[0]
             arrival_id = data[1]
             loc = data[2]
 
             ray = travel_time_grid.ray_tracer(loc)
             ray.arrival_id = arrival_id
-            return TomoRay(ray)
-                
+            # if ray.phase == 'P':
+            #     velocity = self.p_velocity
+            # else:
+            #     velocity = self.s_velocity
+            tomo_ray = TomoRay(ray)
+            tomo_ray.integrate_sensitivity(velocity)
+
+            return tomo_ray
+
         def ray_tracing(self, cpu_utilisation=0.9):
             """
             calculate the rays for every station event pair
@@ -494,8 +549,18 @@ class Tomography(ProjectManager):
                             for travel_time, arrival_id, loc
                             in zip(tts, arrival_ids, locs)]
 
+                    if phase == 'P':
+                        velocity = self.p_velocity
+                    else:
+                        velocity = self.s_velocity
+
+                    ray_tracer = partial(self.ray_tracer, velocity)
+
+                    for d in data:
+                        ray_tracer(d)
+
                     with Pool(num_threads) as pool:
-                        rays_tmp = list(tqdm(pool.imap(self.ray_tracer,
+                        rays_tmp = list(tqdm(pool.imap(ray_tracer,
                                                        data),
                                              total=len(locs)))
 
