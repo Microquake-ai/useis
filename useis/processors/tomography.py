@@ -10,7 +10,6 @@ from uquake.core.logging import logger
 import numpy as np
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
-import dataclasses
 from pydantic import BaseModel, conlist
 from enum import Enum
 from pydantic.typing import List, Union
@@ -19,6 +18,8 @@ from uuid import uuid4
 from functools import partial
 import scipy as sc
 from scipy.sparse import csr_matrix
+import docker
+from ..tomography.data
 
 __cpu_count__ = cpu_count()
 
@@ -34,13 +35,28 @@ class Phase(str, Enum):
         return self.__str__()
 
     def __call__(self):
+        return self.value
+
+
+class SyntheticTypes(str, Enum):
+    random = 'random'
+    cubic = 'cubic'
+
+    def __str__(self):
+        return self.value
+
+    def __expr__(self):
         return self.__str__()
+
+    def __call__(self):
+        return self.value
 
 
 class EventData(BaseModel):
     location: conlist(float, min_items=3, max_items=3)
     location_correction: conlist(float, min_items=3, max_items=3) = [0, 0, 0]
-    resource_id: str=None
+    resource_id: str = None
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.resource_id = ResourceIdentifier()
@@ -120,7 +136,6 @@ class ArrivalTimeData(BaseModel):
         super().__init__(*args, **kwargs)
         self.resource_id = ResourceIdentifier()
 
-
     @property
     def id(self):
         return self.resource_id.id
@@ -142,8 +157,9 @@ class ArrivalTimeData(BaseModel):
                f'arrival time:{self.arrival_time}'
 
 
-class ArrivalTimeEnsemble():
-    def __init__(self, arrival_times: List[ArrivalTimeData] = []):
+class ArrivalTimeEnsemble(object):
+    def __init__(self, arrival_times:
+    Union[List[ArrivalTimeData], np.ndarray] = []):
         self.arrival_times = arrival_times
 
     def append(self, arrival_time):
@@ -360,220 +376,240 @@ class TomoRayEnsemble(BaseModel):
 
 
 class Tomography(ProjectManager):
-        def __init__(self, base_projects_path, project_name, network_code,
-                     use_srces=False, solve_velocity=True, solve_location=True,
-                     **kwargs):
-            
-            self.events = None
-            self.observations = None
-            self.rays = None
-            self.solve_location = solve_location
-            self.solve_velocity = solve_velocity
-            
-            super().__init__(base_projects_path, project_name, network_code,
-                             use_srces=use_srces, **kwargs)
+    def __init__(self, base_projects_path, project_name, network_code,
+                 use_srces=False, solve_velocity=True, solve_location=True,
+                 **kwargs):
 
-            self.paths.tomography = self.paths.root / 'tomography'
+        self.events = None
+        self.observations = None
+        self.rays = None
+        self.solve_location = solve_location
+        self.solve_velocity = solve_velocity
 
-            super().__init__(base_projects_path, project_name, network_code,
-                             use_srces=use_srces, **kwargs)
-            
-        
-        def synthetic(self, dims=[100, 100, 100], 
-                      origin=[0, 0, 0], 
-                      spacing=[10, 10, 10], 
-                      p_mean=5000, p_std=200, s_mean=3000, s_std=125,
-                      model_smoothing=3,
-                      nsites=20, nevents=1000,
-                      trave_time_completeness=0.7, perturbation=0.005,
-                      random_seed=None, multi_threaded=True):
-            
-            self.__add_random_velocities__(dims, origin, spacing, 
+        super().__init__(base_projects_path, project_name, network_code,
+                         use_srces=use_srces, **kwargs)
+
+        self.paths.tomography = self.paths.root / 'tomography'
+
+        super().__init__(base_projects_path, project_name, network_code,
+                         use_srces=use_srces, **kwargs)
+
+    def synthetic(self, dims=[100, 100, 100],
+                  origin=[0, 0, 0],
+                  spacing=[10, 10, 10],
+                  p_mean=5000, p_std=200, s_mean=3000, s_std=125,
+                  model_smoothing=3,
+                  n_sites=20, n_events=1000,
+                  min_observations=None, max_observations=None,
+                  pick_perturbation_std=0.005,
+                  synthetic_type: SyntheticTypes = SyntheticTypes('random'),
+                  random_seed=None, multi_threaded=True):
+
+        if synthetic_type == SyntheticTypes('random'):
+
+            self.__add_random_velocities__(dims, origin, spacing,
                                            p_mean, p_std, s_mean, s_std,
                                            model_smoothing,
                                            random_seed=random_seed)
-            self.__add_random_sites__(nsites, random_seed=random_seed)
-            self.__add_random_events__(nevents, random_seed=random_seed)
-            self.init_travel_time_grids(multi_threaded=multi_threaded)
-            self.__add_random_travel_times__()
 
+        else:
+            raise ValueError('not implemented yet')
 
-        def __add_random_velocities__(self, dims, origin, spacing, 
-                                      p_mean, p_std, s_mean, s_std,
-                                      smoothing, random_seed=None,
-                                      multi_threaded=True):
-            
-            p_velocity = VelocityGrid3D(self.network_code, dims, origin,
-                                        spacing)
+        self.__add_random_sites__(n_sites, random_seed=random_seed)
+        self.__add_random_events__(n_events, random_seed=random_seed)
+        self.init_travel_time_grids(multi_threaded=multi_threaded)
+        self.__add_random_travel_times__(min_observations=min_observations,
+                                         max_observations=max_observations,
+                                         p_pick_error=pick_perturbation_std,
+                                         s_pick_error=pick_perturbation_std)
 
-            s_velocity = VelocityGrid3D(self.network_code, dims, origin,
-                                        spacing, phase='S')
-            
-            p_velocity.fill_random(p_mean, p_std, smoothing, random_seed)
+    def __add_random_velocities__(self, dims, origin, spacing,
+                                  p_mean, p_std, s_mean, s_std,
+                                  smoothing, random_seed=None,
+                                  multi_threaded=True):
 
-            if random_seed is not None:
-                random_seed += 10
+        p_velocity = VelocityGrid3D(self.network_code, dims, origin,
+                                    spacing)
 
-            s_velocity.fill_random(s_mean, s_std, smoothing, random_seed)
+        s_velocity = VelocityGrid3D(self.network_code, dims, origin,
+                                    spacing, phase='S')
 
-            # self.add_velocity(p_velocity)
-            # self.add_velocity(s_velocity)
+        p_velocity.fill_random(p_mean, p_std, smoothing, random_seed)
 
-            self.add_velocities(VelocityGridEnsemble(p_velocity, s_velocity),
-                                initialize_travel_times=False)
+        if random_seed is not None:
+            random_seed += 10
 
-        def __add_random_sites__(self, nstations, random_seed=None):
-            """
-            create random stations
-            """
+        s_velocity.fill_random(s_mean, s_std, smoothing, random_seed)
 
-            if not self.has_p_velocity():
-                logger.info('The project does not contain a p wave velocity...'
-                            ' exiting')
-                return
+        # self.add_velocity(p_velocity)
+        # self.add_velocity(s_velocity)
 
-            if not self.has_s_velocity():
-                logger.info('The project does not contain a s wave velocity...'
-                            ' exiting')
-                return
+        self.add_velocities(VelocityGridEnsemble(p_velocity, s_velocity),
+                            initialize_travel_times=False)
 
-            sta_locs = self.p_velocity.generate_random_points_in_grid(
-                nstations, seed=random_seed)
+    def __add_random_sites__(self, nstations, random_seed=None):
+        """
+        create random stations
+        """
 
-            sites = [Site(label=f'STA{i:02d}', x=sta_loc[0], y=sta_loc[1],
-                          z=sta_loc[2]) for i, sta_loc in enumerate(sta_locs)]
-            
-            self.add_srces(Srces(sites), initialize_travel_time=False)
-            
-        def __add_random_events__(self, nevents, random_seed=None):
-            if not self.has_p_velocity():
-                logger.info('The project does not contain a p wave velocity...'
-                            ' exiting')
-                return
+        if not self.has_p_velocity():
+            logger.info('The project does not contain a p wave velocity...'
+                        ' exiting')
+            return
 
-            if not self.has_s_velocity():
-                logger.info('The project does not contain a s wave velocity...'
-                            ' exiting')
-                return
-            
-            events = self.p_velocity.\
-                generate_random_points_in_grid(nevents, seed=random_seed)
+        if not self.has_s_velocity():
+            logger.info('The project does not contain a s wave velocity...'
+                        ' exiting')
+            return
 
-            self.events = EventEnsemble()
-            for id, event in enumerate(events):
-                self.events.append(EventData(location=list(event)))
-            
-            return self.events
-            
-        def __add_random_travel_times__(self, completeness=0.6,
-                                        min_observations=5,
-                                        p_pick_error=0.001,
-                                        s_pick_error=0.001):
-            """
-            generate random travel time observations.
-            :param completeness: on average the number of observation per 
-            event-sensor pair
-            :param min_observations: minimum number of observation for each
-            event
-            :param p_pick_error: standard deviation of the gaussian
-            perturbation in second to add to the travel time for the p picks
-            :param s_pick_error: standard deviation of the gaussian
-            perturbation in second to add to the travel time for the s picks
-            """
+        sta_locs = self.p_velocity.generate_random_points_in_grid(
+            nstations, seed=random_seed)
 
-            origin_time = UTCDateTime()
-            self.arrival_times = ArrivalTimeEnsemble()
-            perturbation = {'P': p_pick_error,
-                            'S': s_pick_error}
-            i = 0
-            for event_id in self.events.dict.keys():
-                arrivals = []
-                for sensor in self.srces:
-                    for phase in ['P', 'S']:
-                        travel_time = self.travel_times.select(
-                            sensor.label, phase=phase)[0].interpolate(
-                            self.events.dict[event_id].loc)[0]
+        sites = [Site(label=f'STA{i:02d}', x=sta_loc[0], y=sta_loc[1],
+                      z=sta_loc[2]) for i, sta_loc in enumerate(sta_locs)]
 
-                        travel_time += np.random.randn() * perturbation[phase]
-                        pick_time = origin_time + travel_time
+        self.add_srces(Srces(sites), initialize_travel_time=False)
 
-                        arrival = ArrivalTimeData(event_id=event_id,
-                                                  site_id=sensor.label,
-                                                  arrival_time=pick_time,
-                                                  phase=phase)
+    def __add_random_events__(self, nevents, random_seed=None):
+        if not self.has_p_velocity():
+            logger.info('The project does not contain a p wave velocity...'
+                        ' exiting')
+            return
 
-                        self.arrival_times.append(arrival)
+        if not self.has_s_velocity():
+            logger.info('The project does not contain a s wave velocity...'
+                        ' exiting')
+            return
 
-                        i += 1
+        events = self.p_velocity.\
+            generate_random_points_in_grid(nevents, seed=random_seed)
 
-        @staticmethod
-        def ray_tracer(velocity, data):
-            travel_time_grid = data[0]
-            arrival_id = data[1]
-            loc = data[2]
+        self.events = EventEnsemble()
+        for id, event in enumerate(events):
+            self.events.append(EventData(location=list(event)))
 
-            ray = travel_time_grid.ray_tracer(loc)
-            ray.arrival_id = arrival_id
-            # if ray.phase == 'P':
-            #     velocity = self.p_velocity
-            # else:
-            #     velocity = self.s_velocity
-            tomo_ray = TomoRay(ray)
-            tomo_ray.integrate_sensitivity(velocity)
+        return self.events
 
-            return tomo_ray
+    def __add_random_travel_times__(self, min_observations=None,
+                                    max_observations=None,
+                                    p_pick_error=0.001,
+                                    s_pick_error=0.001):
+        """
+        generate random travel time observations.
+        :param completeness: on average the number of observation per
+        event-sensor pair
+        :param min_observations: minimum number of observation for each
+        event
+        :param p_pick_error: standard deviation of the gaussian
+        perturbation in second to add to the travel time for the p picks
+        :param s_pick_error: standard deviation of the gaussian
+        perturbation in second to add to the travel time for the s picks
+        """
 
-        def ray_tracing(self, cpu_utilisation=0.9):
-            """
-            calculate the rays for every station event pair
-            """
-            num_threads = int(np.ceil(cpu_utilisation * __cpu_count__))
+        if min_observations is None:
+            min_observations = 0
+        elif min_observations < 0:
+            min_observations = 0
 
-            arrival_time_grouped = self.arrival_times.groupby(
-                ['site_id', 'phase'])
+        if max_observations is None:
+            max_observations = len(self.srces)
 
-            rays = []
-            for site_id in tqdm(self.arrival_times.site_ids):
-                for phase in Phase:
-                    df = arrival_time_grouped.get_group((site_id, phase))
+        if max_observations > len(self.srces):
+            max_observations = len(self.srces)
 
-                    tt = self.travel_times.select(site_id,
-                                                  phase=phase.value)[0]
+        origin_time = UTCDateTime()
+        self.arrival_times = ArrivalTimeEnsemble()
+        perturbation = {'P': p_pick_error,
+                        'S': s_pick_error}
+        i = 0
+        for event_id in self.events.dict.keys():
+            arrivals = []
+            n_observations = np.random.randint(min_observations,
+                                               max_observations)
+            for sensor in self.srces:
+                for phase in ['P', 'S']:
+                    travel_time = self.travel_times.select(
+                        sensor.label, phase=phase)[0].interpolate(
+                        self.events.dict[event_id].loc)[0]
 
-                    locs = self.events[df.event_id.values].locs
-                    events = self.events[df.event_id.values]
-                    arrival_ids = df.resource_id.values
-                    tts = [tt] * len(arrival_ids)
+                    travel_time += np.random.randn() * perturbation[phase]
+                    pick_time = origin_time + travel_time
 
-                    data = [(travel_time, arrival_id, loc)
-                            for travel_time, arrival_id, loc
-                            in zip(tts, arrival_ids, locs)]
+                    arrival = ArrivalTimeData(event_id=event_id,
+                                              site_id=sensor.label,
+                                              arrival_time=pick_time,
+                                              phase=phase)
 
-                    if phase == 'P':
-                        velocity = self.p_velocity
-                    else:
-                        velocity = self.s_velocity
+                    arrivals.append(arrival)
 
-                    ray_tracer = partial(self.ray_tracer, velocity)
+            for arrival in np.random.choice(arrivals, n_observations,
+                                            replace=False):
+                self.arrival_times.append(arrival)
 
-                    for d in data:
-                        ray_tracer(d)
+    def __write_travel_times__(self):
+        pass
 
-                    with Pool(num_threads) as pool:
-                        rays_tmp = list(tqdm(pool.imap(ray_tracer,
-                                                       data),
-                                             total=len(locs)))
+    @staticmethod
+    def ray_tracer(velocity, data):
+        travel_time_grid = data[0]
+        arrival_id = data[1]
+        loc = data[2]
 
-                        for ray in rays_tmp:
-                            rays.append(ray)
+        ray = travel_time_grid.ray_tracer(loc)
+        ray.arrival_id = arrival_id
+        # if ray.phase == 'P':
+        #     velocity = self.p_velocity
+        # else:
+        #     velocity = self.s_velocity
+        tomo_ray = TomoRay(ray)
+        tomo_ray.integrate_sensitivity(velocity)
 
-                    return rays
+        return tomo_ray
 
+    def ray_tracing(self, cpu_utilisation=0.9):
+        """
+        calculate the rays for every station event pair
+        """
+        num_threads = int(np.ceil(cpu_utilisation * __cpu_count__))
 
-                
-                
+        arrival_time_grouped = self.arrival_times.groupby(
+            ['site_id', 'phase'])
 
+        rays = []
+        for site_id in tqdm(self.arrival_times.site_ids):
+            for phase in Phase:
+                df = arrival_time_grouped.get_group((site_id, phase))
 
+                tt = self.travel_times.select(site_id,
+                                              phase=phase.value)[0]
 
-            
+                locs = self.events[df.event_id.values].locs
+                events = self.events[df.event_id.values]
+                arrival_ids = df.resource_id.values
+                tts = [tt] * len(arrival_ids)
+
+                data = [(travel_time, arrival_id, loc)
+                        for travel_time, arrival_id, loc
+                        in zip(tts, arrival_ids, locs)]
+
+                if phase == 'P':
+                    velocity = self.p_velocity
+                else:
+                    velocity = self.s_velocity
+
+                ray_tracer = partial(self.ray_tracer, velocity)
+
+                for d in data:
+                    ray_tracer(d)
+
+                with Pool(num_threads) as pool:
+                    rays_tmp = list(tqdm(pool.imap(ray_tracer,
+                                                   data),
+                                         total=len(locs)))
+
+                    for ray in rays_tmp:
+                        rays.append(ray)
+
+                return rays
+
             

@@ -30,6 +30,7 @@ uquake = {path = "libraries/uquake", develop = true}
 #xseis2 = {path = "libraries/uquake-xseis"}
 #xseis2 = {path = "libraries/uquake-xseis", develop = true}
 #xseis2 = "^0.2.0"
+docker = "^5.0.3"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
