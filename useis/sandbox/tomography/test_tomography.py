@@ -6,11 +6,11 @@ tomo = tomography.Tomography('/data_1/projects/tomo_test', 'tomo_test', 'TGT')
 
 # tomo.synthetic()
 
-tomo.__add_random_events__(1000)
-tomo.__add_random_travel_times__()
+# tomo.__add_random_events__(1000)
+# tomo.__add_random_travel_times__()
 
-rays = tomo.ray_tracing()
-ray = rays[0]
+# rays = tomo.ray_tracing()
+# ray = rays[0]
 
 
 # from uquake.grid.nlloc import VelocityGrid3D

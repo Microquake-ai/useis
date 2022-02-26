@@ -13,13 +13,16 @@ from tqdm import tqdm
 from pydantic import BaseModel, conlist
 from enum import Enum
 from pydantic.typing import List, Union
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 from functools import partial
 import scipy as sc
 from scipy.sparse import csr_matrix
 import docker
-from ..tomography.data
+from ..tomography import data as estuaire_data
+import os
+import pickle
+from pathlib import Path
 
 __cpu_count__ = cpu_count()
 
@@ -55,7 +58,9 @@ class SyntheticTypes(str, Enum):
 class EventData(BaseModel):
     location: conlist(float, min_items=3, max_items=3)
     location_correction: conlist(float, min_items=3, max_items=3) = [0, 0, 0]
+    origin_time: datetime
     resource_id: str = None
+    origin_time_correction: float = 0
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -69,6 +74,14 @@ class EventData(BaseModel):
     def id(self):
         return self.resource_id.id
 
+    @property
+    def time_correction(self):
+        return timedelta(self.origin_time_correction)
+
+    @property
+    def time(self):
+        return self.origin_time + self.time_correction
+
     def __str__(self):
         return f'{self.id},{self.location},{self.location_correction}'
 
@@ -80,9 +93,10 @@ class EventEnsemble(object):
     def __init__(self, events: List[EventData] = []):
         self.events = events
         self.dict = {}
+        self.__ids__ = list(np.arange(len(events) + 1))
         for event in events:
-            self.dict[event.id] = event
-            
+            self.dict[event.resource_id] = event
+
     def __len__(self):
         return len(self.events)
     
@@ -91,15 +105,31 @@ class EventEnsemble(object):
             events = []
             for item in items:
                 for event in self.events:
-                    if event.id == item:
-                        events.append(event)
+                    if isinstance(item, str):
+                        if event.resource_id.id == item:
+                            events.append(event)
+                    elif isinstance(item, int):
+                        events.append(self.events[item])
+                    elif isinstance(item, ResourceIdentifier):
+                        if event.resource_id == item:
+                            events.append(event)
+                    else:
+                        raise ValueError('the indices must be str, int or'
+                                         'ResourceIdentifier')
             return EventEnsemble(events=events)
+        elif isinstance(items, int):
+            return self.events[items]
+        elif isinstance(items, ResourceIdentifier):
+            for event in self.events:
+                if event.resource_id == items:
+                    return event
         elif isinstance(items, str):
             for event in self.events:
-                if event.id == items:
-                    return EventEnsemble(events=[event])
+                if event.resource_id.id == items:
+                    return event
         else:
-            raise TypeError
+            raise TypeError('the index must be a str, an int or a '
+                            'ResourceIdentifier')
 
     def __str__(self):
         out_str = ''
@@ -110,12 +140,23 @@ class EventEnsemble(object):
     def __repr__(self):
         return str(self)
 
+    def get_index(self, item):
+        if isinstance(item, ResourceIdentifier):
+            for _id, event in zip(self.__ids__, self.events):
+                if event.resource_id == item:
+                    return _id
+        elif isinstance(item, str):
+            for _id, event in zip(self.__ids__, self.events):
+                if event.resource_id.id == item:
+                    return _id
+
     def select(self, ids: Union[List[int], int]):
         return self[ids]
     
     def append(self, event: EventData):
+        self.__ids__.append(len(self) + 1)
         self.events.append(event)
-        self.dict[event.id] = event
+        self.dict[event.resource_id] = event
 
     @property
     def locs(self):
@@ -126,10 +167,11 @@ class EventEnsemble(object):
 
 
 class ArrivalTimeData(BaseModel):
-    event_id: str
-    site_id: str
+    event_id: int
+    site_name: str
+    site_id: int
     phase: Phase
-    resource_id: str=None
+    resource_id: str = None
     arrival_time: datetime
 
     def __init__(self, *args, **kwargs):
@@ -161,6 +203,7 @@ class ArrivalTimeEnsemble(object):
     def __init__(self, arrival_times:
     Union[List[ArrivalTimeData], np.ndarray] = []):
         self.arrival_times = arrival_times
+        self.__ids__ = np.arange(0, len(arrival_times) + 1)[0]
 
     def append(self, arrival_time):
         if not isinstance(arrival_time, ArrivalTimeData):
@@ -191,20 +234,22 @@ class ArrivalTimeEnsemble(object):
             raise TypeError
 
     def to_dict(self):
-        out_dict = {'id': [],
+        out_dict = {'resource_id': [],
+                    'id': [],
                     'event_id': [],
                     'site_id': [],
+                    'site_name': [],
                     'arrival_time': [],
-                    'phase': [],
-                    'resource_id': []}
+                    'phase': []}
 
-        for arrival_time in self.arrival_times:
-            out_dict['id'].append(arrival_time.id)
+        for k, arrival_time in enumerate(self.arrival_times):
+            out_dict['resource_id'].append(arrival_time.id)
+            out_dict['id'].append(k)
             out_dict['event_id'].append(arrival_time.event_id)
             out_dict['site_id'].append(arrival_time.site_id)
+            out_dict['site_name'].append(arrival_time.site_name)
             out_dict['arrival_time'].append(arrival_time.arrival_time)
             out_dict['phase'].append(arrival_time.phase)
-            out_dict['resource_id'].append(arrival_time.resource_id)
 
         return out_dict
 
@@ -345,19 +390,6 @@ class TomoRay(Ray):
 
         return
 
-        # to calculate frechet just making sure the sensitivity is normalized,
-        # the sensitivity is expressed in s (time)
-
-
-        # integrator = sc.integrate.RK45(self.sensitivity, 0, y0, self.length)
-        #
-        # for i in range(0, max_it):
-        #     integrator.step()
-        #     if integrator.status == 'finished':
-        #         break
-        #
-        # return integrator.y / np.sum(integrator.y)
-
 
 class TomoRayEnsemble(BaseModel):
     def __init__(self, events: EventEnsemble, arrivals: ArrivalTimeEnsemble,
@@ -378,21 +410,142 @@ class TomoRayEnsemble(BaseModel):
 class Tomography(ProjectManager):
     def __init__(self, base_projects_path, project_name, network_code,
                  use_srces=False, solve_velocity=True, solve_location=True,
-                 **kwargs):
+                 current_epoch=0, **kwargs):
 
         self.events = None
         self.observations = None
         self.rays = None
         self.solve_location = solve_location
         self.solve_velocity = solve_velocity
+        self.epoch = current_epoch
+        self.docker_client = docker.from_env()
 
         super().__init__(base_projects_path, project_name, network_code,
                          use_srces=use_srces, **kwargs)
 
         self.paths.tomography = self.paths.root / 'tomography'
 
-        super().__init__(base_projects_path, project_name, network_code,
-                         use_srces=use_srces, **kwargs)
+        if not self.paths.tomography.exists():
+            self.paths.tomography.mkdir(parents=True, exist_ok=True)
+
+        self.paths.current_epoch = self.paths.tomography / \
+                                       f'epoch_{self.epoch}'
+
+        self.paths.current_epoch.mkdir(parents=True, exist_ok=True)
+
+    @property
+    def travel_time_table_path(self):
+        travel_time_table_path = self.paths.current_epoch / 'travel_times'
+        travel_time_table_path.mkdir(parents=True, exist_ok=True)
+        return travel_time_table_path
+
+    def travel_time_table_file(self, site_name, phase):
+        return self.travel_time_table_path \
+               / f'travel_time_table_{site_name}_{phase}.pickle'
+
+    @property
+    def current_epoch(self):
+        return self.epoch
+
+    @property
+    def event_table_file(self):
+        event_table_file = self.paths.current_epoch / 'event_table.pickle'
+        event_table_file.parent.mkdir(parents=True, exist_ok=True)
+        return event_table_file
+
+
+    @property
+    def site_table_file(self):
+        site_table_file = self.paths.current_epoch / 'site_table.pickle'
+        site_table_file.parent.mkdir(parents=True, exist_ok=True)
+        return site_table_file
+
+    @property
+    def path_velocities(self):
+        path_velocities = self.paths.current_epoch / 'velocities'
+        path_velocities.mkdir(parents=True, exist_ok=True)
+        return path_velocities
+
+    def velocity_file(self, phase):
+        return self.path_velocities / f'{phase}_velocity.pickle'
+
+    @property
+    def estuaire_path_prefix(self):
+        return Path('/tmp')
+
+    @property
+    def travel_time_grids_path(self):
+        path_travel_time_grids = self.paths.current_epoch / 'travel_time_grids'
+        path_travel_time_grids.mkdir(parents=True, exist_ok=True)
+        return path_travel_time_grids
+
+    def travel_time_grid_file(self, site_name, phase):
+        return self.travel_time_grids_path / \
+               f'travel_time_grid_{site_name}_{phase}.pickle'
+
+    @property
+    def sensitivity_path(self):
+        path_sensitivity = self.paths.current_epoch / 'sensitivities'
+        path_sensitivity.mkdir(parents=True, exist_ok=True)
+        return path_sensitivity
+
+    def sensitivity_file(self, site_name, phase):
+        return self.sensitivity_path / \
+               f'sensitivity_{site_name}_{phase}.pickle'
+
+    @property
+    def site_table(self):
+        site_list = [(site_id, list(site.loc), site.time_correction)
+                     for site_id, site in enumerate(self.srces.sites)]
+
+        site_list = np.array(site_list, dtype=estuaire_data.st_dtype)
+
+        return estuaire_data.EKStationTable(data=site_list)
+
+    @property
+    def event_table(self):
+        events = [(event_id, event.loc, event.origin_time_correction)
+                  for event_id, event in enumerate(self.events)]
+
+        events = np.array(events, dtype=estuaire_data.ev_dtype)
+
+        return estuaire_data.EKEventTable(data=events)
+
+    def travel_time_table(self, site_id: int, phase: Phase):
+        ats = self.arrival_times.groupby('site_id').get_group(site_id)
+        ttt = []
+        ttt_id = 0
+        for i, at in enumerate(ats.iterrows()):
+            at = at[1]
+            if at.phase != phase:
+                continue
+            travel_time = at.arrival_time - \
+                          self.events[at.event_id].origin_time
+            ttt.append((ttt_id, at.event_id, travel_time.total_seconds()))
+            ttt_id += 1
+
+        ttt = np.array(ttt, dtype=estuaire_data.tt_dtype)
+
+        event_table_file = self.estuaire_path_prefix / self.event_table_file
+        site_table_file = self.estuaire_path_prefix / self.site_table_file
+
+        tt_table = estuaire_data.EKTTTable(ttt, site_id,
+                                           evnfile=event_table_file,
+                                           stafile=site_table_file)
+
+        return tt_table
+
+    def travel_time_tables(self, phase: Phase):
+        site_ids = [group[0] for group in
+                    self.arrival_times.groupby('site_id')]
+        site_names = [group[0] for group in
+                      self.arrival_times.groupby('site_name')]
+
+        tt_tables = [(site_name, self.travel_time_table(site_id, phase))
+                     for site_id, site_name in
+                     zip(site_ids, site_names)]
+
+        return tt_tables
 
     def synthetic(self, dims=[100, 100, 100],
                   origin=[0, 0, 0],
@@ -418,10 +571,10 @@ class Tomography(ProjectManager):
         self.__add_random_sites__(n_sites, random_seed=random_seed)
         self.__add_random_events__(n_events, random_seed=random_seed)
         self.init_travel_time_grids(multi_threaded=multi_threaded)
-        self.__add_random_travel_times__(min_observations=min_observations,
-                                         max_observations=max_observations,
-                                         p_pick_error=pick_perturbation_std,
-                                         s_pick_error=pick_perturbation_std)
+        self.__add_random_arrival_times__(min_observations=min_observations,
+                                          max_observations=max_observations,
+                                          p_pick_error=pick_perturbation_std,
+                                          s_pick_error=pick_perturbation_std)
 
     def __add_random_velocities__(self, dims, origin, spacing,
                                   p_mean, p_std, s_mean, s_std,
@@ -470,7 +623,7 @@ class Tomography(ProjectManager):
 
         self.add_srces(Srces(sites), initialize_travel_time=False)
 
-    def __add_random_events__(self, nevents, random_seed=None):
+    def __add_random_events__(self, n_events, random_seed=None):
         if not self.has_p_velocity():
             logger.info('The project does not contain a p wave velocity...'
                         ' exiting')
@@ -481,25 +634,27 @@ class Tomography(ProjectManager):
                         ' exiting')
             return
 
+        origin_time = datetime.now()
+
         events = self.p_velocity.\
-            generate_random_points_in_grid(nevents, seed=random_seed)
+            generate_random_points_in_grid(n_events, seed=random_seed)
 
         self.events = EventEnsemble()
-        for id, event in enumerate(events):
-            self.events.append(EventData(location=list(event)))
+        for event in events:
+            self.events.append(EventData(location=list(event),
+                                         origin_time=origin_time))
 
         return self.events
 
-    def __add_random_travel_times__(self, min_observations=None,
-                                    max_observations=None,
-                                    p_pick_error=0.001,
-                                    s_pick_error=0.001):
+    def __add_random_arrival_times__(self, min_observations=None,
+                                     max_observations=None,
+                                     p_pick_error=0.001,
+                                     s_pick_error=0.001):
         """
         generate random travel time observations.
-        :param completeness: on average the number of observation per
-        event-sensor pair
-        :param min_observations: minimum number of observation for each
+        :param min_observations: minimum number of observations for each
         event
+        :param max_observations: maximum number of observations for each event
         :param p_pick_error: standard deviation of the gaussian
         perturbation in second to add to the travel time for the p picks
         :param s_pick_error: standard deviation of the gaussian
@@ -517,28 +672,30 @@ class Tomography(ProjectManager):
         if max_observations > len(self.srces):
             max_observations = len(self.srces)
 
-        origin_time = UTCDateTime()
+        origin_time = datetime.now()
         self.arrival_times = ArrivalTimeEnsemble()
         perturbation = {'P': p_pick_error,
                         'S': s_pick_error}
         i = 0
-        for event_id in self.events.dict.keys():
+        for k, event_id in enumerate(self.events.dict.keys()):
             arrivals = []
             n_observations = np.random.randint(min_observations,
                                                max_observations)
-            for sensor in self.srces:
+            for sensor_id, sensor in enumerate(self.srces):
                 for phase in ['P', 'S']:
                     travel_time = self.travel_times.select(
                         sensor.label, phase=phase)[0].interpolate(
                         self.events.dict[event_id].loc)[0]
 
                     travel_time += np.random.randn() * perturbation[phase]
-                    pick_time = origin_time + travel_time
+                    pick_time = origin_time + timedelta(seconds=travel_time)
 
-                    arrival = ArrivalTimeData(event_id=event_id,
-                                              site_id=sensor.label,
+                    arrival = ArrivalTimeData(event_id=k,
+                                              site_name=sensor.label,
+                                              site_id=sensor_id,
                                               arrival_time=pick_time,
-                                              phase=phase)
+                                              phase=phase,
+                                              resource_id=event_id.id)
 
                     arrivals.append(arrival)
 
@@ -546,8 +703,103 @@ class Tomography(ProjectManager):
                                             replace=False):
                 self.arrival_times.append(arrival)
 
-    def __write_travel_times__(self):
-        pass
+    def __write_site_table_file__(self):
+        with open(self.site_table_file, 'wb') as site_table_file:
+            pickle.dump(self.site_table, site_table_file)
+        logger.info(f'writing the site table file ({self.site_table_file}')
+
+    def __write_event_table_file__(self):
+        with open(self.event_table_file, 'wb') as event_table_file:
+            pickle.dump(self.event_table, event_table_file)
+        logger.info(f'writing the event table file ({self.event_table_file}')
+
+    def __write_travel_time_tables__(self):
+        for phase in Phase:
+            for site_name, tt_table in self.travel_time_tables(phase):
+                with open(self.travel_time_table_file(site_name, phase),
+                          'wb') as travel_time_table_file:
+
+                    pickle.dump(tt_table, travel_time_table_file)
+                logger.info(f'writing the travel time table file '
+                            f'({self.travel_time_table_file(site_name, phase)}'
+                            f')')
+
+    def __write_velocity_grids__(self):
+        with open(self.velocity_file(Phase('P')), 'wb') as p_velocity_file:
+
+            data = self.p_velocity.data
+            spacing = self.p_velocity.spacing[0]
+            origin = self.p_velocity.origin
+
+            p_velocity = estuaire_data.EKImageData(data, spacing=spacing,
+                                                   origin=origin)
+
+            pickle.dump(p_velocity, p_velocity_file)
+            logger.info(f'writing the p velocity file ({p_velocity_file})')
+
+        with open(self.velocity_file(Phase('S')), 'wb') as s_velocity_file:
+            data = self.p_velocity.data
+            spacing = self.p_velocity.spacing[0]
+            origin = self.p_velocity.origin
+
+            s_velocity = estuaire_data.EKImageData(data, spacing=spacing,
+                                                   origin=origin)
+
+            pickle.dump(s_velocity, s_velocity_file)
+            logger.info(f'writing the s velocity file ({s_velocity_file})')
+
+    def __write_travel_time_grids__(self):
+        for travel_time_grid in self.travel_times:
+            phase = Phase(travel_time_grid.phase)
+            site_name = travel_time_grid.seed_label
+            file_name = self.travel_time_grid_file(site_name, phase)
+
+            data = travel_time_grid.data
+            spacing = travel_time_grid.spacing[0]
+            origin = travel_time_grid.origin
+
+            grid = estuaire_data.EKImageData(data, spacing=spacing,
+                                             origin=origin)
+
+            with open(file_name, 'wb') as output_file:
+                pickle.dump(grid, output_file)
+
+            logger.info(f'writing the travel time grid for site {site_name} '
+                        f'({file_name}')
+
+    def initialize_inversion(self):
+        self.__write_site_table_file__()
+        self.__write_event_table_file__()
+        self.__write_travel_time_tables__()
+        self.__write_velocity_grids__()
+        self.__write_travel_time_grids__()
+
+    def run_sensitivity(self):
+
+        docker_volume = {os.getcwd(): {'bind': str(self.estuaire_path_prefix),
+                                       'mode': 'rw'}}
+
+        self.paths.current_epoch / 'sensitivity'
+        for site_name in self.travel_times.seed_labels:
+            for phase in Phase:
+                sensitivity_file = self.estuaire_path_prefix / \
+                                   self.sensitivity_file(site_name, phase)
+                travel_time_grid_file = self.estuaire_path_prefix / \
+                    self.travel_time_grid_file(site_name, phase)
+                travel_time_table_file = self.estuaire_path_prefix / \
+                    self.travel_time_table_file(site_name, phase)
+
+                cmd = f'sensitivity ' \
+                      f'--output {sensitivity_file} ' \
+                      f'--arrival {travel_time_grid_file} ' \
+                      f'--velocity /tmp/{self.velocity_file(phase)} ' \
+                      f'--traveltime {travel_time_table_file} ' \
+                      f'--grid_id {10}'
+                self.docker_client.containers.run('jpmercier/estuaire', cmd,
+                                                  volumes=docker_volume,
+                                                  mem_limit='4g')
+                krapout
+
 
     @staticmethod
     def ray_tracer(velocity, data):

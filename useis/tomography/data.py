@@ -14,13 +14,27 @@ TODO : BIG DESCRIPTION OF EXCHANGE DATA
 import numpy as np
 import pickle
 import copy
+from functools import wraps
 
-from agstd.decorators import memoize
+
+def memoize(fct):
+    """
+    This is a decorator which cache the result of a function based on the
+    given parameter.
+    """
+    return_dict = {}
+
+    @wraps(fct)
+    def wrapper(*args, **kwargs):
+        if args not in return_dict:
+            return_dict[args] = fct(*args, **kwargs)
+        return return_dict[args]
+    return wrapper
+
 
 # This is the data description for the input array describing the event
 #
-ev_dtype = [('name',       'str'),
-            ('id',          'int'),
+ev_dtype = [('id',          'int'),
             ('position',    'float',    (3,)),
             ('delta_t',     'float')]
 
@@ -43,11 +57,11 @@ class EKTTTable(object):
 
     def __init__(self, data, staid, evnfile=None, stafile=None):
         try:
-            for tname, ttype in tt_dtype:
+            for tname, ttype in enumerate(tt_dtype):
                 data[tname]
             import sys
-            sys.stderr.write(str(data.size))
-            sys.stderr.flush()
+            # sys.stderr.write(str(data.size))
+            # sys.stderr.flush()
             data = np.array(data.__getitem__([tname for tname, ttype in
                                               tt_dtype]), dtype=self.dtype)
         except ValueError as e:
@@ -66,7 +80,7 @@ class EKTTTable(object):
 
     @memoize
     def __get_event_table__(self):
-        return pickle.load(open(self.__evn_file__))
+        return pickle.load(open(self.__evn_file__, 'rb'))
     event_table = property(__get_event_table__)
 
     def __get_station_row__(self):
@@ -75,7 +89,7 @@ class EKTTTable(object):
 
     @memoize
     def __get_station_table__(self):
-        return pickle.load(open(self.__sta_file__))
+        return pickle.load(open(self.__sta_file__, 'rb'))
     station_table = property(__get_station_table__)
 
 
@@ -136,7 +150,7 @@ class EKImageData(object):
     :param origin: A Tuple representing the position of the lower left corner \
             of the grid
     """
-    def __init__(self, shape_or_data, spacing = 1, origin = None):
+    def __init__(self, shape_or_data, spacing=1, origin=None):
         if isinstance(shape_or_data, np.ndarray):
             self.data = shape_or_data
         else:
