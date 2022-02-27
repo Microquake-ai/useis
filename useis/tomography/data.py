@@ -149,8 +149,9 @@ class EKImageData(object):
     :param spacing: The spacing of the grid
     :param origin: A Tuple representing the position of the lower left corner \
             of the grid
+    :param seeds: a list of seeds in grid coordinates
     """
-    def __init__(self, shape_or_data, spacing=1, origin=None):
+    def __init__(self, shape_or_data, spacing=1, origin=None, seeds=None):
         if isinstance(shape_or_data, np.ndarray):
             self.data = shape_or_data
         else:
@@ -158,6 +159,7 @@ class EKImageData(object):
 
         self.origin = tuple([0] * self.data.ndim) if origin is None else origin
         self.spacing = spacing
+        self.seeds = seeds
 
     def transform_to(self, values):
         return (values - self.origin) / self.spacing

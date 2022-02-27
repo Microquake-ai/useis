@@ -418,7 +418,6 @@ class Tomography(ProjectManager):
         self.solve_location = solve_location
         self.solve_velocity = solve_velocity
         self.epoch = current_epoch
-        self.docker_client = docker.from_env()
 
         super().__init__(base_projects_path, project_name, network_code,
                          use_srces=use_srces, **kwargs)
@@ -520,7 +519,7 @@ class Tomography(ProjectManager):
             if at.phase != phase:
                 continue
             travel_time = at.arrival_time - \
-                          self.events[at.event_id].origin_time
+                self.events[at.event_id].origin_time
             ttt.append((ttt_id, at.event_id, travel_time.total_seconds()))
             ttt_id += 1
 
@@ -757,9 +756,11 @@ class Tomography(ProjectManager):
             data = travel_time_grid.data
             spacing = travel_time_grid.spacing[0]
             origin = travel_time_grid.origin
+            seeds = np.array([travel_time_grid.transform_to(
+                travel_time_grid.seed)])
 
             grid = estuaire_data.EKImageData(data, spacing=spacing,
-                                             origin=origin)
+                                             origin=origin, seeds=seeds)
 
             with open(file_name, 'wb') as output_file:
                 pickle.dump(grid, output_file)
@@ -775,6 +776,7 @@ class Tomography(ProjectManager):
         self.__write_travel_time_grids__()
 
     def run_sensitivity(self):
+        docker_client = docker.from_env()
 
         docker_volume = {os.getcwd(): {'bind': str(self.estuaire_path_prefix),
                                        'mode': 'rw'}}
@@ -794,11 +796,11 @@ class Tomography(ProjectManager):
                       f'--arrival {travel_time_grid_file} ' \
                       f'--velocity /tmp/{self.velocity_file(phase)} ' \
                       f'--traveltime {travel_time_table_file} ' \
-                      f'--grid_id {10}'
-                self.docker_client.containers.run('jpmercier/estuaire', cmd,
-                                                  volumes=docker_volume,
-                                                  mem_limit='4g')
-                krapout
+                      f'--grid_id {0}'
+                docker_client.containers.run('jpmercier/estuaire', cmd,
+                                             volumes=docker_volume,
+                                             mem_limit='4g')
+
 
 
     @staticmethod
