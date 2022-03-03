@@ -418,6 +418,7 @@ class Tomography(ProjectManager):
         self.solve_location = solve_location
         self.solve_velocity = solve_velocity
         self.epoch = current_epoch
+        self.arrival_times = None
 
         super().__init__(base_projects_path, project_name, network_code,
                          use_srces=use_srces, **kwargs)
@@ -441,6 +442,10 @@ class Tomography(ProjectManager):
     def travel_time_table_file(self, site_name, phase):
         return self.travel_time_table_path \
                / f'travel_time_table_{site_name}_{phase}.pickle'
+
+    def travel_time_table_files(self, phase):
+        return np.sort([f for f in self.travel_time_table_path.glob(
+                        f'*{phase}.pickle')])
 
     @property
     def current_epoch(self):
@@ -797,6 +802,9 @@ class Tomography(ProjectManager):
                       f'--velocity /tmp/{self.velocity_file(phase)} ' \
                       f'--traveltime {travel_time_table_file} ' \
                       f'--grid_id {0}'
+
+                logger.info(f'running sensitivity using the following command '
+                            f'\n{cmd}')
                 docker_client.containers.run('jpmercier/estuaire', cmd,
                                              volumes=docker_volume,
                                              mem_limit='4g')
