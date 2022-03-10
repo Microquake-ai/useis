@@ -11,4 +11,4 @@ class CatalogManager(ProjectManager):
         self.paths['event_waveforms'] = self.paths.catalog / 'waveform'
         self.paths['event_quakemls'] = self.paths.catalog / 'quakeml'
 
-        self.files['catalog_index'] = self.paths.
+        # self.files['catalog_index'] = self.paths.

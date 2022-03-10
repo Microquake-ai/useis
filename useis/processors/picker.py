@@ -15,6 +15,8 @@ from ..ai.model import AIPicker
 from datetime import datetime
 from uquake.core.stream import Stream
 from uquake.core.inventory import Inventory
+from typing import List
+from obspy.realtime.signal import kurtosis
 
 
 class PickerResult(object):
@@ -158,7 +160,11 @@ class Picker(ProjectManager):
         out_picks = []
         for pick in nmx_picks.iterrows():
             pick = pick[1]
-            network, station, location, channel = pick.site_id.split('.')
+            if len(pick.site_id.split('.')) == 3:
+                network, station, location = pick.site_id.split('.')
+                channel = None
+            elif len(pick.site_id.split('.')) == 4:
+                network, station, location, channel = pick.site_id.split('.')
 
             waveform_id = WaveformStreamID(network_code=network,
                                            station_code=station,
@@ -207,20 +213,19 @@ class Picker(ProjectManager):
             setting_section].post_pick_window_len
 
         snrs, new_picks = \
-            snr_ensemble_re_picker(stream, picks, start_search_window=
-                                                 start_search_window,
-                                                 end_search_window=
-                                                 end_search_window,
-                                                 start_refined_search_window=
-                                                 start_refined_search_window,
-                                                 end_refined_search_window=
-                                                 end_refined_search_window,
-                                                 refined_window_search_resolution=
-                                                 search_resolution,
-                                                 snr_calc_pre_pick_window_len
-                                                 =pre_pick_window_len,
-                                                 snr_calc_post_pick_window_len
-                                                 =post_pick_window_len)
+            snr_ensemble_re_picker(stream, picks,
+                                   start_search_window=start_search_window,
+                                   end_search_window=end_search_window,
+                                   start_refined_search_window=
+                                   start_refined_search_window,
+                                   end_refined_search_window=
+                                   end_refined_search_window,
+                                   refined_window_search_resolution=
+                                   search_resolution,
+                                   snr_calc_pre_pick_window_len
+                                   =pre_pick_window_len,
+                                   snr_calc_post_pick_window_len
+                                   =post_pick_window_len)
 
         out_picks = []
         for _i, new_pick in enumerate(new_picks):
@@ -249,15 +254,60 @@ class Picker(ProjectManager):
                              'add_ai_picker_from_file method')
             else:
                 self.ai_pick(stream.copy(), out_picks)
-                
 
         return PickerResult(new_picks=out_picks,
                             initial_picks=picks,
                             snr_threshold=
                             self.settings.snr_repicker.snr_threshold,
                             stream=stream)
-    
-    
+
+    @staticmethod
+    def origin_time_correction(stream: Stream, search_window: float = 0.2,
+                               kurtosis_window: float = 0.02)\
+            -> UTCDateTime:
+        """
+        estimate the origin time using the waveform and a list of picks.
+        This function is used to correct the origin time obtained from
+        beam forming.
+        :param stream: the waveforms
+        :type stream: uquake.core.stream.Stream
+        :param search_window: search window in seconds
+        :type search_window: float
+        :param kurtosis_window: length of the window used to calculate the
+        Kurtosis function. see obspy.realtime.signal import kurtosis
+        :return: time correction in second
+        :rtype: uquake.core.UTCDateTime
+        """
+
+        wf = stream
+        min_time = np.min([pick.time for pick in picks])
+
+        sampling_rate = wf[0].stats.sampling_rate
+        window_length = int(search_window * sampling_rate)
+
+        # stack data
+        stacked_data = np.zeros(len(wf[0].data))
+        for pick in picks:
+            station = pick.waveform_id.station_code
+            wf = wf.resample(sampling_rate)
+            for tr in wf.select(station=station):
+                data = tr.data.astype(np.float32) ** 2
+                data /= np.std(data)
+                n_sample = int((min_time - pick.time) * tr.stats.sampling_rate)
+                stacked_data += np.roll(data, n_sample)
+
+        stacked_trace = tr.copy()
+        stacked_trace.data = stacked_data
+
+        i_max = np.argmax(stacked_trace)
+
+        k = kurtosis(stacked_trace, win=kurtosis_window)
+        diff_k = np.diff(k)
+        # i_max = np.argmax(np.abs(diff_k))
+        i_0 = int(i_max - window_length)
+        i_1 = int(i_max + window_length)
+        o_i = np.argmax(np.abs(diff_k[i_0: i_1])) + i_0
+        return - o_i / sampling_rate
 
     def ai_pick(self, st: Stream, picks: list):
         import matplotlib.pyplot as plt
@@ -266,8 +316,7 @@ class Picker(ProjectManager):
         st2 = st2.detrend('demean').detrend('linear').taper(max_length=0.01,
                                                             max_percentage=1)
 
-        st2 = st2.resample(sampling_rate=
-                           (self.settings.ai_picker.sampling_rate))
+        st2 = st2.resample(sampling_rate=self.settings.ai_picker.sampling_rate)
 
         picks_out = []
         for pick in picks:
@@ -293,6 +342,7 @@ class Picker(ProjectManager):
             picks_out.append(pick)
 
         return picks_out
+
 
 def measure_linearity_planarity(st: Stream, pick: Pick, window_length: float):
     network = pick.waveform_id.network_code
