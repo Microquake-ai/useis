@@ -268,7 +268,7 @@ class Picker(ProjectManager):
                                           kurtosis_window: float = 0.02,
                                           use_p: bool = True,
                                           use_s: bool = True)\
-            -> UTCDateTime:
+            -> PickerResult:
         """
         estimate the origin time using the waveform and a list of picks.
         This function is used to correct the origin time obtained from
@@ -315,24 +315,20 @@ class Picker(ProjectManager):
         stacked_trace.data = stacked_data
 
         i_max = np.argmax(stacked_trace)
-        # import matplotlib.pyplot as plt
-        # plt.plot(stacked_trace)
-        # plt.show()
-        # input()
 
         k = kurtosis(stacked_trace, win=kurtosis_window)
         diff_k = np.diff(k)
-        # plt.plot(stacked_trace)
-        # plt.plot(diff_k)
-        # i_max = np.argmax(np.abs(diff_k))
         i_0 = int(i_max - window_length / 2)
         i_1 = int(i_max + window_length / 2)
         o_i = np.argmax(np.abs(diff_k[i_0: i_1])) + i_0
-        # from ipdb import set_trace
-        # set_trace()
-        # plt.show()
-        # input()
-        return (o_i - len(stacked_trace) / 2) / sampling_rate
+        origin_time_correction = (o_i - len(stacked_trace) / 2) / sampling_rate
+
+        out_picks = []
+        for pick in picks:
+            pick.time += origin_time_correction
+            out_picks.append(pick)
+
+        return PickerResult(out_picks, picks, -3, stream)
 
     def ai_pick(self, st: Stream, picks: list):
         import matplotlib.pyplot as plt

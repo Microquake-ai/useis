@@ -22,31 +22,6 @@ def read_srces(fname):
         return pickle.load(srces_file)
 
 
-# def read_inventory():
-#     if self.files.srces.exists() and use_srces:
-#         with open(self.files.srces, 'rb') as srces_file:
-#             logger.info('srces will be read from the file and not build'
-#                         'from the inventory file')
-#             self.srces = pickle.load(srces_file)
-#
-#         if self.files.inventory.exists():
-#             self.inventory = read_inventory(str(self.files.inventory))
-#
-#     elif self.files.inventory.exists():
-#         self.inventory = read_inventory(str(self.files.inventory))
-#         self.srces = Srces.from_inventory(self.inventory)
-#         logger.info('srces will be build from the inventory file. The '
-#                     'srces.pickle file will be replaced.')
-#         with open(self.files.srces, 'wb') as srces_file:
-#             pickle.dump(self.srces, srces_file)
-#
-#     elif self.files.srces.exists():
-#         logger.info('no inventory file in the project. srces file will be '
-#                     'used instead.')
-#         with open(self.files.srces, 'rb') as srces_file:
-#             self.srces = pickle.load(srces_file)
-
-
 class ProjectManager(object):
 
     inventory_file_name = 'inventory.xml'
