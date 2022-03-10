@@ -17,6 +17,7 @@ from uquake.core.stream import Stream
 from uquake.core.inventory import Inventory
 from typing import List
 from obspy.realtime.signal import kurtosis
+from numpy.fft import fftshift
 
 
 class PickerResult(object):
@@ -262,8 +263,11 @@ class Picker(ProjectManager):
                             stream=stream)
 
     @staticmethod
-    def origin_time_correction(stream: Stream, search_window: float = 0.2,
-                               kurtosis_window: float = 0.02)\
+    def origin_time_correction_from_picks(stream: Stream, picks: List[Pick],
+                                          search_window: float = 0.2,
+                                          kurtosis_window: float = 0.02,
+                                          use_p: bool = True,
+                                          use_s: bool = True)\
             -> UTCDateTime:
         """
         estimate the origin time using the waveform and a list of picks.
@@ -271,16 +275,23 @@ class Picker(ProjectManager):
         beam forming.
         :param stream: the waveforms
         :type stream: uquake.core.stream.Stream
+        :param picks: a list of picks
+        :type picks: List[Pick]
         :param search_window: search window in seconds
         :type search_window: float
         :param kurtosis_window: length of the window used to calculate the
         Kurtosis function. see obspy.realtime.signal import kurtosis
+        :type kurtosis_window: float
+        :param use_p: use p picks
+        :type use_p: bool
+        :param use_s: use s picks
+        :type use_s: bool
         :return: time correction in second
         :rtype: uquake.core.UTCDateTime
         """
 
         wf = stream
-        min_time = np.min([pick.time for pick in picks])
+        min_time = np.min([tr.stats.starttime for tr in wf])
 
         sampling_rate = wf[0].stats.sampling_rate
         window_length = int(search_window * sampling_rate)
@@ -288,26 +299,40 @@ class Picker(ProjectManager):
         # stack data
         stacked_data = np.zeros(len(wf[0].data))
         for pick in picks:
+            if (pick.phase_hint == 'P') and not use_p:
+                continue
+            if (pick.phase_hint == 'S') and not use_s:
+                continue
             station = pick.waveform_id.station_code
             wf = wf.resample(sampling_rate)
             for tr in wf.select(station=station):
                 data = tr.data.astype(np.float32) ** 2
                 data /= np.std(data)
                 n_sample = int((min_time - pick.time) * tr.stats.sampling_rate)
-                stacked_data += np.roll(data, n_sample)
+                stacked_data += fftshift(np.roll(data, n_sample))
 
         stacked_trace = tr.copy()
         stacked_trace.data = stacked_data
 
         i_max = np.argmax(stacked_trace)
+        # import matplotlib.pyplot as plt
+        # plt.plot(stacked_trace)
+        # plt.show()
+        # input()
 
         k = kurtosis(stacked_trace, win=kurtosis_window)
         diff_k = np.diff(k)
+        # plt.plot(stacked_trace)
+        # plt.plot(diff_k)
         # i_max = np.argmax(np.abs(diff_k))
-        i_0 = int(i_max - window_length)
-        i_1 = int(i_max + window_length)
+        i_0 = int(i_max - window_length / 2)
+        i_1 = int(i_max + window_length / 2)
         o_i = np.argmax(np.abs(diff_k[i_0: i_1])) + i_0
-        return - o_i / sampling_rate
+        # from ipdb import set_trace
+        # set_trace()
+        # plt.show()
+        # input()
+        return (o_i - len(stacked_trace) / 2) / sampling_rate
 
     def ai_pick(self, st: Stream, picks: list):
         import matplotlib.pyplot as plt
