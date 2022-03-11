@@ -49,8 +49,9 @@ class PickerResult(object):
     def picks(self):
         picks = []
         for pick in self.new_picks:
-            if pick.snr < self.snr_threshold:
-                continue
+            if self.snr_threshold is not None:
+                if pick.snr < self.snr_threshold:
+                    continue
             picks.append(pick)
 
         return picks
