@@ -106,8 +106,9 @@ class PickerResult(object):
                 if pick.waveform_id.channel_code is not None:
                     channel = pick.waveform_id.channel_code[0:2]
 
-                if pick.snr < self.snr_threshold:
-                    continue
+                if self.snr_threshold is not None:
+                    if pick.snr < self.snr_threshold:
+                        continue
 
                 station_string = f'{network}.{station}.'
                 # {location}.{channel}*'
@@ -268,7 +269,8 @@ class Picker(ProjectManager):
                                           search_window: float = 0.2,
                                           kurtosis_window: float = 0.02,
                                           use_p: bool = True,
-                                          use_s: bool = True)\
+                                          use_s: bool = True,
+                                          snr_threshold: float = None)\
             -> PickerResult:
         """
         estimate the origin time using the waveform and a list of picks.
@@ -287,6 +289,8 @@ class Picker(ProjectManager):
         :type use_p: bool
         :param use_s: use s picks
         :type use_s: bool
+        :param snr_threshold: snr threshold for picks
+        :type snr_threshold: float
         :return: time correction in second
         :rtype: uquake.core.UTCDateTime
         """
@@ -329,7 +333,7 @@ class Picker(ProjectManager):
             pick.time += origin_time_correction
             out_picks.append(pick)
 
-        return PickerResult(out_picks, picks, -3, stream)
+        return PickerResult(out_picks, picks, snr_threshold, stream)
 
     def ai_pick(self, st: Stream, picks: list):
         import matplotlib.pyplot as plt
