@@ -328,7 +328,11 @@ class Picker(ProjectManager):
         k = kurtosis(stacked_trace, win=kurtosis_window)
         diff_k = np.diff(k)
         i_0 = int(i_max - window_length / 2)
+        if i_0 < 0:
+            i_0 = 0
         i_1 = int(i_max + window_length / 2)
+        if i_1 > len(stacked_trace):
+            i_1 = len(stacked_trace)
         o_i = np.argmax(np.abs(diff_k[i_0: i_1])) + i_0
         origin_time_correction = (o_i - len(stacked_trace) / 2) / sampling_rate
 
