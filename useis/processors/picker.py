@@ -109,7 +109,8 @@ class PickerResult(object):
                 if pick.snr < self.snr_threshold:
                     continue
 
-                station_string = f'{network}.{station}.{location}.{channel}*'
+                station_string = f'{network}.{station}.'
+                # {location}.{channel}*'
                 line_out = f'{station_string},{pick.phase_hint.upper()},' \
                            f'{pick.time.timestamp}\n'
                 pick_file_out.write(line_out)
