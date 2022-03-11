@@ -1,6 +1,5 @@
 import pyproj
 from pydantic import BaseModel, validator, conlist
-from typing import Annotated, NewType
 
 
 class Latitude(BaseModel):
