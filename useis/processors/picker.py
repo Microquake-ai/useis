@@ -18,6 +18,7 @@ from uquake.core.inventory import Inventory
 from typing import List
 from obspy.realtime.signal import kurtosis
 from numpy.fft import fftshift
+from loguru import logger
 
 
 class PickerResult(object):
@@ -311,6 +312,9 @@ class Picker(ProjectManager):
             station = pick.waveform_id.station_code
             wf = wf.resample(sampling_rate)
             for tr in wf.select(station=station):
+                if (tr.stats.starttime > pick.time) or \
+                        (pick.time > tr.stats.endtime):
+                    continue
                 data = tr.data.astype(np.float32) ** 2
                 data /= np.std(data)
                 n_sample = int((min_time - pick.time) * tr.stats.sampling_rate)
