@@ -49,13 +49,15 @@ class Simulation(ProjectManager):
                             '../settings/simulation_settings_template.py'
 
         shutil.copyfile(settings_template, self.files.simulation_settings)
+
+        self.simulation_settings = __import__('simulation_settings')
+
+        self.settings = Settings(str(self.paths.config))
         
     def simulate_magnitude_completeness(self):
-        
+        min_num_site = self.settings.simulation.min_num_site
+        gmpe = self.settings.simulation.gmpe
 
-    self.simulation_settings = __import__('simulation_settings')
-
-    self.settings = Settings(str(self.paths.config))
 
 from microquake.core import ctl, logger
 from microquake.waveform.mag import synthetic_seismogram
@@ -420,7 +422,8 @@ def anelastic_attenuation(magnitude, distances, quality, SSD=1,
                           acceleration=False, vp=5000, vs=5000/1.41,
                           rho=2400, **kwargs):
     """
-    Calculate an interpolation function for anelastic and scattering attenuation
+    Calculate an interpolation function for anelastic and scattering
+    attenuation
     :param magnitude: a magnitude
     :param distances: list of distances
     :param SSD: static stress drop

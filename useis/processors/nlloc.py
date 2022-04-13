@@ -67,11 +67,6 @@ def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
             wave_mat.append(tr.data)
 
         wave_mat = np.array(wave_mat)
-        # plt.figure(2)
-        # plt.close('all')
-        # plt.clf()
-        # plt.plot(wave_mat[1, :] / np.max(wave_mat[1, :]),
-        #          wave_mat[0, :] / np.max(wave_mat[0, :]), 'k')
 
         cov_mat = np.cov(np.array(wave_mat))
 
@@ -91,9 +86,6 @@ def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
             linearity = (1 - eig_vals[i_[0]] /
                         np.linalg.norm(eig_vals[i_[1:]]))
             color = 'r'
-
-        # if linearity < linearity_threshold:
-        #     continue
 
         sta = inventory.select(network=network,
                                station=station,
