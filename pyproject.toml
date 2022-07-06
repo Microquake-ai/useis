@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "useis"
-version = "0.10.0"
+version = "0.10.1"
 description = ""
 authors = ["jpmercier <jpmercier01@gmail.com>"]
 license = "MIT"
@@ -25,7 +25,6 @@ scikit-learn = "^1.0.1"
 torch = "^1.10.0"
 torchaudio = "^0.10.0"
 torchvision = "^0.11.1"
-uquake = "^0.10.5"
 #uquake = {path = "libraries/uquake", develop = true}
 #xseis2 = {path = "libraries/uquake-xseis"}
 #xseis2 = {path = "libraries/uquake-xseis", develop = true}
