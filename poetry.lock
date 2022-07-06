@@ -2078,27 +2078,22 @@ description = "extension of the ObsPy library for local seismicity"
 category = "main"
 optional = false
 python-versions = ">=3.9,<3.10"
-develop = true
 
 [package.dependencies]
-dynaconf = "^3.1.4"
-h5py = "^3.2.1"
+dynaconf = ">=3.1.4,<4.0.0"
+h5py = ">=3.2.1,<4.0.0"
 jedi = "0.17.2"
-loguru = "^0.5.3"
-numpy = "^1.18.0"
-obspy = "^1.2.2"
-openpyxl = "^3.0.6"
-pandas = "^1.2.1"
-pydantic = "^1.8.2"
-pyproj = "^3.2.1"
-pytest = "^6.2.1"
-scikit-fmm = "^2022.3.26"
-tqdm = "^4.62.3"
-vtk = "^9.0.1"
-
-[package.source]
-type = "directory"
-url = "libraries/uquake"
+loguru = ">=0.5.3,<0.6.0"
+numpy = ">=1.18.0,<2.0.0"
+obspy = ">=1.2.2,<2.0.0"
+openpyxl = ">=3.0.6,<4.0.0"
+pandas = ">=1.2.1,<2.0.0"
+pydantic = ">=1.8.2,<2.0.0"
+pyproj = ">=3.2.1,<4.0.0"
+pytest = ">=6.2.1,<7.0.0"
+scikit-fmm = ">=2022.3.26,<2023.0.0"
+tqdm = ">=4.62.3,<5.0.0"
+vtk = ">=9.0.1,<10.0.0"
 
 [[package]]
 name = "urllib3"
@@ -2236,7 +2231,7 @@ docs = ["Sphinx", "sphinx-rtd-theme"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.9,<3.10"
-content-hash = "7944d821a6a96770a4cfbf42801b9a94a2c47cc2aa5e49b14caaa34b9aef943f"
+content-hash = "fd013a9277d3f7e42db649ba9a23e6be367d9dd60b6639e1c7e74fa423003e8c"
 
 [metadata.files]
 aiohttp = [
@@ -3858,7 +3853,10 @@ typing-extensions = [
     {file = "typing_extensions-4.3.0-py3-none-any.whl", hash = "sha256:25642c956049920a5aa49edcdd6ab1e06d7e5d467fc00e0506c44ac86fbfca02"},
     {file = "typing_extensions-4.3.0.tar.gz", hash = "sha256:e6d2677a32f47fc7eb2795db1dd15c1f34eff616bcaf2cfb5e997f854fa1c4a6"},
 ]
-uquake = []
+uquake = [
+    {file = "uquake-0.10.6-py3-none-any.whl", hash = "sha256:725b18835e845fb9f82ab248546c8f61cb711566395a8f8fc2981c94401cdb9e"},
+    {file = "uquake-0.10.6.tar.gz", hash = "sha256:f8ec8d277cff71cda1ea0daa206e61aa65980479a3d10a28ce369a05c4a143f9"},
+]
 urllib3 = [
     {file = "urllib3-1.26.9-py2.py3-none-any.whl", hash = "sha256:44ece4d53fb1706f667c9bd1c648f5469a2ec925fcf3a776667042d645472c14"},
     {file = "urllib3-1.26.9.tar.gz", hash = "sha256:aabaf16477806a5e1dd19aa41f8c2b7950dd3c746362d7e3223dbe6de6ac448e"},
