@@ -251,6 +251,7 @@ class NLLOCResult(object):
             network = pick.waveform_id.network_code
             station = pick.waveform_id.station_code
             location = pick.waveform_id.location_code
+            site = pick.waveform_id.site_code
 
             if self.rays is not None:
                 for ray in self.rays:
@@ -266,11 +267,19 @@ class NLLOCResult(object):
                 takeoff_angle = ray.takeoff_angle
 
             else:
-                inv = self.nll_object.inventory.select(network=network,
-                                                       station=station,
-                                                       location=location)
+                if self.nll_object.inventory is not None:
+                    inv = self.nll_object.inventory.select(network=network,
+                                                           station=station,
+                                                           location=location)
 
-                distance = np.linalg.norm(self.hypocenter - inv[0][0][0].loc)
+                    distance = np.linalg.norm(self.hypocenter -
+                                              inv[0][0][0].loc)
+                else:
+                    for srces_site in self.nll_object.srces.sites:
+                        if srces_site == site:
+                            distance = np.linalg.norm(self.hypocenter -
+                                                      srces_site.loc)
+                    self.nll_object.srces
 
                 predicted_time = predicted_times[phase][site_code]
 
