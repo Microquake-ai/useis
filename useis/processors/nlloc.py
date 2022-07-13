@@ -135,7 +135,7 @@ def calculate_uncertainty(point_cloud):
 
     major_axis_index = np.argmax(vals)
 
-    uncertainty = np.argsort(np.sqrt(vals))[-1::-1]
+    uncertainty = np.sort(np.sqrt(vals))[-1::-1]
 
     scaled_vects = (vects.T * vals).T
     horizontal_uncertainty = np.sqrt(np.linalg.norm(scaled_vects[:,0:2],
@@ -144,12 +144,12 @@ def calculate_uncertainty(point_cloud):
     vertical_uncertainty = np.sqrt(np.abs(scaled_vects[:,-1]).max())
 
 
-    h = np.linalg.norm(vals[major_axis_index, -1])
-    vert = vert[major_axis_index, -1]
+    h = np.linalg.norm(vects[major_axis_index, -1])
+    vert = vects[major_axis_index, -1]
 
     major_axis_plunge = np.arctan2(-vert, h)
-    x = vals[major_axis_index, 0]
-    y = vals[major_axis_index, 1]
+    x = vects[major_axis_index, 0]
+    y = vects[major_axis_index, 1]
     major_axis_azimuth = np.arctan2(x, y)
     major_axis_rotation = 0
 
