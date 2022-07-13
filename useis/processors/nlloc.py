@@ -124,21 +124,32 @@ def calculate_uncertainty(point_cloud):
                                  preferred_description='confidence ellipsoid',
                                  confidence_level=68)
 
-    v, u = np.linalg.eig(np.cov(point_cloud[:, 0:2].T))
-    horizontal_uncertainty = np.sqrt(np.max(v))
+    cov = np.cov(point_cloud[:, 0:2].T)
+    vals, vecs = np.linalg.eigh(cov)
 
-    v, u = np.linalg.eig(np.cov(point_cloud.T))
+    vals, vects = np.linalg.eigh(np.cov(point_cloud.T))
 
-    major_axis_index = np.argmax(v)
+    indices = np.argsort(vals)[-1::-1]
+    vals = vals[indices]
+    vects = vects[indices]
 
-    uncertainty = np.sort(np.sqrt(v))[-1::-1]
+    major_axis_index = np.argmax(vals)
 
-    h = np.linalg.norm(u[major_axis_index, :-1])
-    vert = u[major_axis_index, -1]
+    uncertainty = np.argsort(np.sqrt(vals))[-1::-1]
+
+    scaled_vects = (vects.T * vals).T
+    horizontal_uncertainty = np.sqrt(np.linalg.norm(scaled_vects[:,0:2],
+                                                    axis=1)).max()
+
+    vertical_uncertainty = np.sqrt(np.abs(scaled_vects[:,-1]).max())
+
+
+    h = np.linalg.norm(vals[major_axis_index, -1])
+    vert = vert[major_axis_index, -1]
 
     major_axis_plunge = np.arctan2(-vert, h)
-    x = u[major_axis_index, 0]
-    y = u[major_axis_index, 1]
+    x = vals[major_axis_index, 0]
+    y = vals[major_axis_index, 1]
     major_axis_azimuth = np.arctan2(x, y)
     major_axis_rotation = 0
 
@@ -276,10 +287,13 @@ class NLLOCResult(object):
                                               inv[0][0][0].loc)
                 else:
                     for srces_site in self.nll_object.srces.sites:
-                        if srces_site == site:
+                        if srces_site.label == site:
                             distance = np.linalg.norm(self.hypocenter -
                                                       srces_site.loc)
                     self.nll_object.srces
+
+                if site_code not in predicted_times[phase].keys():
+                    continue
 
                 predicted_time = predicted_times[phase][site_code]
 
