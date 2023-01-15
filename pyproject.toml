@@ -31,7 +31,6 @@ numpy = "^1.21.3"
 #xseis2 = {path = "libraries/uquake-xseis"}
 #xseis2 = {path = "libraries/uquake-xseis", develop = true}
 #xseis2 = "^0.2.0"
-gitpython = "^3.1.30"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"

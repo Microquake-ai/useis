@@ -388,7 +388,7 @@ class Picker(object):
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
                  groups: int = 1, n_block: int = 16, learning_rate=1e-5,
                  gpu: bool = True, n_sample: int = 256,
-                 sampling_rate: int=6000):
+                 sampling_rate: int=6000, to_device=True):
         self.in_channels = in_channels
         self.base_filters = base_filters
         self.kernel_size = kernel_size
@@ -413,9 +413,13 @@ class Picker(object):
 
         self.device = device
 
-        self.model = ResNet1D(in_channels, base_filters, kernel_size,
-                              stride, groups, n_block,
-                              n_classes).to(self.device)
+        self.model = self.init_model()
+
+        if to_device:
+            self.model.to(self.device)
+        # self.model = ResNet1D(self.in_channels, self.base_filters, self.kernel_size,
+        #                       self.stride, self.groups, self.n_block,
+        #                       n_classes).to(self.device)
 
         self.optimizer = torch.optim.Adam(self.model.parameters(),
                                           lr=learning_rate)
@@ -425,6 +429,11 @@ class Picker(object):
 
         self.validation_predictions = None
         self.validation_targets = None
+
+    def init_model(self):
+        return ResNet1D(self.in_channels, self.base_filters, self.kernel_size,
+                        self.stride, self.groups, self.n_block,
+                        self.n_classes)
 
     def train(self, dataset: PickingDataset, batch_size: int):
 
@@ -538,9 +547,10 @@ class Picker(object):
     def save(self, file_name):
         with(open(file_name, 'wb')) as f_out:
             pickle.dump(self, f_out)
+        # torch.save(self.model.state_dict(), file_name)
 
     @classmethod
-    def read(cls, file_name, gpu: bool = False):
+    def from_model(cls, file_name, gpu: bool = False):
         ai_picker = cls(gpu=gpu)
         with(open(file_name, 'rb')) as f_in:
             picker = pickle.load(f_in)
@@ -548,6 +558,21 @@ class Picker(object):
             ai_picker.model.to(ai_picker.device)
             ai_picker.model = ai_picker.model.double()
             ai_picker.model = ai_picker.model.eval()
+        # picker = cls()
+        # picker.model.load_state_dict(torch.load(filename))
+        # picker.model.eval()
+        # picker.model.to(self.device)
+        #
+        # picker.in_channels = in_channels
+        # self.base_filters = base_filters
+        # self.kernel_size = kernel_size
+        # self.stride = stride
+        # self.n_classes = n_classes
+        # self.groups = groups
+        # self.n_block = n_block
+        # self.gpu = gpu
+        # self.n_sample = n_sample
+        # self.sampling_rate = sampling_rate
 
         # if device == 'gpu':
         #     device = torch.device("cuda:0" if
