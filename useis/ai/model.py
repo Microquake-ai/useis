@@ -383,7 +383,7 @@ class Conv1DModel(nn.Module):
 
 
 # class AIPicker(EventClassifier):
-class AIPicker(object):
+class Picker(object):
     def __init__(self, in_channels: int = 1, base_filters: int = 64,
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
                  groups: int = 1, n_block: int = 16, learning_rate=1e-5,
