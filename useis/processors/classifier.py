@@ -43,4 +43,10 @@ class Classifier(ProjectManager):
         """
         return self.event_classifier.predict(st)
 
+    def train_model(self):
+        pass
+
+    def create_training_data_set(self):
+        pass
+
 
