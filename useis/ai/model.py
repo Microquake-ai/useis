@@ -222,8 +222,8 @@ def generate_spectrogram(stream: Stream):
         trs.append(tr.copy())
 
     st2 = Stream(traces=trs)
-    st2 = st2.trim(endtime=tr.stats.starttime + 2, pad=True,
-                 fill_value=0)
+    # st2 = st2.trim(endtime=tr.stats.starttime + 2, pad=True,
+    #                fill_value=0)
     st2 = st2.detrend('demean').detrend('linear')
 
     st2 = st2.taper(max_percentage=1, max_length=1e-2)
@@ -231,7 +231,8 @@ def generate_spectrogram(stream: Stream):
     for tr in st2:
         spec = spectrogram(tr)
         spec /= np.max(spec)
-
+        spec = spec / np.max(spec) * 255
+        spec = Image.fromarray(np.array(spec.tolist()).astype(np.uint8))
         specs.append(spec)
 
     return specs

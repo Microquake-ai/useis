@@ -179,7 +179,7 @@ sampling_rate = 6000
 num_threads = 10
 replication_level = 5
 snr_threshold = 10
-sequence_length_second = 2
+# sequence_length_second = 2
 perturbation_range_second = 1
 image_width = 128
 image_height = 128
@@ -187,11 +187,18 @@ buffer_image_fraction = 0.05
 
 buffer_image_sample = int(image_width * buffer_image_fraction)
 
-hop_length = int(sequence_length_second * sampling_rate //
-                 (image_width + 2 * buffer_image_sample))
+# hop_length = int(sequence_length_second * sampling_rate //
+#                  (image_width + 2 * buffer_image_sample))
 
 
 def spectrogram(trace: Trace):
+
+    sequence_length_second = trace.stats.endtime - trace.stats.starttime
+    sampling_rate = trace.stats.sampling_rate
+    # from ipdb import set_trace
+    # set_trace()
+    hop_length = int(np.floor(sequence_length_second * sampling_rate /
+                              (image_width + 2 * buffer_image_sample)))
 
     trace.resample(sampling_rate)
 
@@ -208,9 +215,9 @@ def spectrogram(trace: Trace):
     # trace = trace.detrend('demean')
     trace.data = trace.data - np.mean(trace.data)
     trace = trace.taper(max_length=0.01, max_percentage=0.05)
-    trace = trace.trim(starttime=trace.stats.starttime,
-                       endtime=trace.stats.starttime + sequence_length_second,
-                       pad=True, fill_value=0)
+    # trace = trace.trim(starttime=trace.stats.starttime,
+    #                    endtime=trace.stats.starttime + sequence_length_second,
+    #                    pad=True, fill_value=0)
     data = trace.data
 
     torch_data = torch.tensor(data).type(torch.float32)
@@ -218,7 +225,10 @@ def spectrogram(trace: Trace):
     spec = (mel_spec(torch_data))
     spec_db = amplitude_to_db(spec.abs() + 1e-3)
     spec_db = (spec_db - spec_db.min()).numpy()
-    # spec_db = (spec_db / spec_db.max()).type(torch.float32)
+    spec_db = spec_db[:, buffer_image_sample:-buffer_image_sample]
+    if spec_db.shape[1] > image_width:
+        spec_db = spec_db[:, spec_db.shape[1] - image_width:]
+    # spec_db = (s pec_db / spec_db.max()).type(torch.float32)
     return spec_db
 
 

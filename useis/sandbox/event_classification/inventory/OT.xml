@@ -3,7 +3,7 @@
   <Source>uquake</Source>
   <Module>ObsPy 1.4.0</Module>
   <ModuleURI>https://www.obspy.org</ModuleURI>
-  <Created>2023-03-01T01:37:57.122088Z</Created>
+  <Created>2023-03-02T10:05:31.708697Z</Created>
   <Network code="OT">
     <TotalNumberStations>[]</TotalNumberStations>
     <SelectedNumberStations>[]</SelectedNumberStations>
@@ -150,7 +150,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -236,7 +236,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -322,7 +322,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.045005514</uquake:cos1>
         <uquake:cos2>0.367044966</uquake:cos2>
         <uquake:cos3>0.929113823</uquake:cos3>
@@ -433,7 +433,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.584752</uquake:cos1>
         <uquake:cos2>0.760978</uquake:cos2>
         <uquake:cos3>0.281029</uquake:cos3>
@@ -519,7 +519,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.810935</uquake:cos1>
         <uquake:cos2>-0.539294</uquake:cos2>
         <uquake:cos3>-0.22704</uquake:cos3>
@@ -605,7 +605,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.021215</uquake:cos1>
         <uquake:cos2>-0.360658</uquake:cos2>
         <uquake:cos3>0.932457</uquake:cos3>
@@ -835,7 +835,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -921,7 +921,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -1007,7 +1007,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.307740424</uquake:cos1>
         <uquake:cos2>0.098557391</uquake:cos2>
         <uquake:cos3>0.946352087</uquake:cos3>
@@ -1237,7 +1237,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.96572</uquake:cos1>
         <uquake:cos2>-0.198436</uquake:cos2>
         <uquake:cos3>-0.167354</uquake:cos3>
@@ -1323,7 +1323,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.234907</uquake:cos1>
         <uquake:cos2>-0.942402</uquake:cos2>
         <uquake:cos3>-0.23811</uquake:cos3>
@@ -1409,7 +1409,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.110466</uquake:cos1>
         <uquake:cos2>-0.26926</uquake:cos2>
         <uquake:cos3>0.956711</uquake:cos3>
@@ -1639,7 +1639,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.837251</uquake:cos1>
         <uquake:cos2>-0.514456</uquake:cos2>
         <uquake:cos3>0.185325</uquake:cos3>
@@ -1733,7 +1733,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.546817</uquake:cos1>
         <uquake:cos2>-0.787056</uquake:cos2>
         <uquake:cos3>0.285542</uquake:cos3>
@@ -1827,7 +1827,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GNZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.001038</uquake:cos1>
         <uquake:cos2>0.340409</uquake:cos2>
         <uquake:cos3>0.940277</uquake:cos3>
@@ -2057,7 +2057,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.945139</uquake:cos1>
         <uquake:cos2>0.287651</uquake:cos2>
         <uquake:cos3>0.15482</uquake:cos3>
@@ -2151,7 +2151,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.249891</uquake:cos1>
         <uquake:cos2>0.941892</uquake:cos2>
         <uquake:cos3>-0.224486</uquake:cos3>
@@ -2245,7 +2245,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.210397</uquake:cos1>
         <uquake:cos2>0.173482</uquake:cos2>
         <uquake:cos3>0.9621</uquake:cos3>
@@ -6192,7 +6192,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.799011</uquake:cos1>
         <uquake:cos2>0.529871</uquake:cos2>
         <uquake:cos3>-0.284285</uquake:cos3>
@@ -6286,7 +6286,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.588715</uquake:cos1>
         <uquake:cos2>0.785601</uquake:cos2>
         <uquake:cos3>-0.190382</uquake:cos3>
@@ -6380,7 +6380,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.122457</uquake:cos1>
         <uquake:cos2>0.31948</uquake:cos2>
         <uquake:cos3>0.939647</uquake:cos3>
@@ -6499,7 +6499,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.248601</uquake:cos1>
         <uquake:cos2>0.549234</uquake:cos2>
         <uquake:cos3>-0.797834</uquake:cos3>
@@ -6593,7 +6593,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.77773</uquake:cos1>
         <uquake:cos2>0.60416</uquake:cos2>
         <uquake:cos3>0.173571</uquake:cos3>
@@ -6687,7 +6687,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.57735</uquake:cos1>
         <uquake:cos2>-0.57735</uquake:cos2>
         <uquake:cos3>-0.57735</uquake:cos3>
@@ -6806,7 +6806,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -6900,7 +6900,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -6994,7 +6994,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.097779883</uquake:cos1>
         <uquake:cos2>-0.021742589</uquake:cos2>
         <uquake:cos3>0.994970529</uquake:cos3>
@@ -10941,7 +10941,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.943997</uquake:cos1>
         <uquake:cos2>-0.255434</uquake:cos2>
         <uquake:cos3>0.208862</uquake:cos3>
@@ -11035,7 +11035,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.195062</uquake:cos1>
         <uquake:cos2>-0.942572</uquake:cos2>
         <uquake:cos3>-0.271126</uquake:cos3>
@@ -11129,7 +11129,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.266122</uquake:cos1>
         <uquake:cos2>-0.215201</uquake:cos2>
         <uquake:cos3>0.93961</uquake:cos3>
@@ -11248,7 +11248,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.879706</uquake:cos1>
         <uquake:cos2>0.475243</uquake:cos2>
         <uquake:cos3>-0.016165</uquake:cos3>
@@ -11342,7 +11342,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.475518</uquake:cos1>
         <uquake:cos2>0.879197</uquake:cos2>
         <uquake:cos3>-0.029905</uquake:cos3>
@@ -11436,7 +11436,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.033994</uquake:cos2>
         <uquake:cos3>0.999422</uquake:cos3>
@@ -11555,7 +11555,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>-0.936717</uquake:cos1>
         <uquake:cos2>-0.350086</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -11649,7 +11649,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.350086</uquake:cos1>
         <uquake:cos2>-0.936717</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -11743,7 +11743,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -25260,7 +25260,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -25354,7 +25354,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -25448,7 +25448,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -27481,7 +27481,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -27575,7 +27575,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -27669,7 +27669,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -33530,7 +33530,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -33624,7 +33624,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -33718,7 +33718,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -33837,7 +33837,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -33931,7 +33931,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34025,7 +34025,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -34144,7 +34144,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34238,7 +34238,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34332,7 +34332,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -34451,7 +34451,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34545,7 +34545,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34639,7 +34639,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -34758,7 +34758,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34852,7 +34852,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -34946,7 +34946,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -35065,7 +35065,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -35159,7 +35159,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -35253,7 +35253,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>
@@ -35372,7 +35372,7 @@
       <CreationDate>2015-12-31T12:23:34.500000Z</CreationDate>
       <TotalNumberChannels>3</TotalNumberChannels>
       <SelectedNumberChannels>3</SelectedNumberChannels>
-      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPX" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>1.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -35466,7 +35466,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPY" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>1.0</uquake:cos2>
         <uquake:cos3>0.0</uquake:cos3>
@@ -35560,7 +35560,7 @@
           </Stage>
         </Response>
       </Channel>
-      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="03">
+      <Channel code="GPZ" startDate="2015-12-31T12:23:34.500000Z" endDate="2599-12-31T12:23:34.500000Z" locationCode="01">
         <uquake:cos1>0.0</uquake:cos1>
         <uquake:cos2>0.0</uquake:cos2>
         <uquake:cos3>1.0</uquake:cos3>

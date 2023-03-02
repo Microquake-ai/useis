@@ -3,6 +3,9 @@ import pickle
 from pathlib import Path
 from ..ai.model import EventClassifier
 import uquake
+import os
+import shutil
+from ..settings.settings import Settings
 
 
 class Classifier(ProjectManager):
@@ -21,6 +24,17 @@ class Classifier(ProjectManager):
 
         super().__init__(base_projects_path, project_name, network_code,
                          use_srces=use_srces)
+
+        self.files.classifier_settings = self.paths.config / 'classifier_settings.py'
+
+        if not self.files.classifier_settings.is_file():
+            settings_template = Path(os.path.realpath(__file__)).parent / \
+                                '../settings/classifier_settings_template.toml'
+
+            shutil.copyfile(settings_template,
+                            self.files.classifier_settings)
+
+            super().__init__(base_projects_path, project_name, network_code)
 
         if self.files.classification_model.is_file():
             self.event_classifier = EventClassifier.read(

@@ -27,6 +27,8 @@ for i, station in enumerate(inventory[0]):
 
     for j, channel in enumerate(inventory[0][i]):
         channel_code = channel.code
+        if ('UG' in inventory[0][i].code) and (location_code == 3):
+            location_code = 1
         inventory[0][i][j].location_code = f'0{location_code}'
         inventory[0][i][j].code = f'{channel_prefix}{channel_code.upper()}'
         for extra_key in inventory[0][i][j].extra.keys():

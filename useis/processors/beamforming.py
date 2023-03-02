@@ -23,7 +23,6 @@ class Beamforming(ProjectManager):
                          network_code=network_code,
                          use_srces=use_srces)
 
-
     def locate(self, stream: Stream):
 
         nthreads = self.settings.beamforming.nthreads
