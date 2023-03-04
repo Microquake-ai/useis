@@ -17,7 +17,7 @@ classifier_project = Classifier('/data_1/projects/', 'classifier', 'OT')
 # Frame size
 
 raw_data_path = Path('/data_1/ot-reprocessed-data')
-training_data_path = Path('/data_1/classifier/training_data_set')
+training_data_path = classifier_project.paths.training_dataset
 training_data_path.mkdir(parents=True, exist_ok=True)
 
 context_trace = raw_data_path.glob('*.context_mseed')
@@ -61,25 +61,38 @@ def window_signal(stream: Stream, trigger_on: float = 0.5, trigger_off: float = 
 
 
 def create_spectrograms(stream: Stream, event_type: str, end_time: UTCDateTime):
-    for window_length in window_length_seconds:
-        for sampling_rate in sampling_rates:
+    for sampling_rate in sampling_rates:
+        for window_length in window_length_seconds:
             st_resampled = stream.copy().resample(sampling_rate)
             start_time = end_time - window_length
-            st_trimmed = st_resampled.trim(starttime=start_time, endtime=end_time,
-                                           pad=True, fill_value=0)
+            st_trimmed = st_resampled.copy().trim(starttime=start_time, endtime=end_time,
+                                                  pad=True, fill_value=0)
 
             spectrograms = generate_spectrogram(st_trimmed)
 
-            write_spectrogram(spectrograms, event_type, window_length, sampling_rate,
-                              end_time)
+            filenames = write_spectrogram(spectrograms, event_type, window_length,
+                                          sampling_rate, end_time)
+
+            for filename, tr in zip(filenames, st_trimmed):
+                plt.clf()
+                plt.plot(tr.data, 'k')
+                plt.axis('off')
+                plt.tight_layout()
+                filename = Path(filename)
+                classifier_dataset_path = classifier_project.paths.training_dataset
+                plt.savefig(f'{classifier_dataset_path / filename.stem}_td.png')
 
 
 def write_spectrogram(spectrograms, event_type, duration, sampling_rate, end_time):
 
+    filenames = []
     for i, spectrogram in enumerate(spectrograms):
         filename = f'{event_type}_{end_time}_ch{i}_sr{sampling_rate}_{duration}sec.png'
         path = training_data_path / filename
         spectrogram.save(path, format='png')
+        filenames.append(filename)
+
+    return filenames
 
 
 def create_blast_training_set(stream: Stream):
@@ -97,14 +110,11 @@ def create_blast_training_set(stream: Stream):
 def create_seismic_event_training_set(stream: Stream, event: Event):
 
     p_pick_time = None
-    s_pick_time = None
     for arrival in event.preferred_origin().arrivals:
         pick = arrival.get_pick()
         if pick.site == stream[0].stats.site:
             if arrival.phase.upper() == 'P':
                 p_pick_time = pick.time
-            else:
-                s_pick_time = pick.time
 
     if p_pick_time is None:
         tt_grid = classifier_project.travel_times.select(
@@ -117,25 +127,44 @@ def create_seismic_event_training_set(stream: Stream, event: Event):
     background = stream.copy().trim(starttime=p_pick_time-0.5, endtime=p_pick_time-0.1)
     background_energy = np.mean(background[0].data ** 2)
 
-    signal = stream.copy().trim(starttime=p_pick_time)[0].data
+    signal = stream.copy().trim(starttime=p_pick_time).detrend('demean').detrend(
+        'linear')[0].data
 
     energy_window = 100  # sample
     for i in range(len(signal) - energy_window):
         energy_remaining = np.mean(signal[i:i+energy_window] ** 2)
-        if energy_remaining < 1.1 * background_energy:
+        if energy_remaining < 10 * background_energy:
             end_signal_t = p_pick_time + i / stream[0].stats.sampling_rate
             break
 
     start_signal = p_pick_time - 0.01
     end_signal = end_signal_t
+    duration = end_signal - start_signal
+    min_start_window = start_signal + 0.3 * duration - np.min(window_length_seconds)
+    max_end_window = end_signal - 0.3 * duration + np.min(window_length_seconds)
+    window_range = max_end_window - min_start_window
 
+    event_type = event_type_lookup[event.event_type]
 
+    # from ipdb import set_trace
+    # set_trace()
+    end_signals = [max_end_window - t for t in (np.random.rand(5) * window_range)]
+    # from ipdb import set_trace
+    # set_trace()
+    # for end in end_signals:
 
+    traces = []
+    for tr in stream:
+        nsample_end = (end_signal - tr.stats.starttime) * tr.stats.sampling_rate
+        tr.stats.sampling_rate = 600
+        end_signal = tr.stats.starttime + nsample_end / 600
+        traces.append(tr)
 
+    stream.traces = traces
 
-    from ipdb import set_trace
-    set_trace()
-
+    for perturbation in np.random.rand(5):
+        end_signal += perturbation * duration * np.random.choice([-1, 1])
+        create_spectrograms(stream, event_type, end_signal)
 
 
 for context_trace in raw_data_path.glob('*.context_mseed'):
@@ -144,10 +173,26 @@ for context_trace in raw_data_path.glob('*.context_mseed'):
     except Exception as e:
         logger.error(e)
     event = read_events(context_trace.with_suffix('.xml'))[0]
+    if np.sum(st.composite()[0].data) / len(st.composite()[0].data) > 0.5:
+        continue
+    # if event.preferred_origin().time < UTCDateTime(2019, 1, 1):
+    #     continue
 
     # if event_type_lookup[event.event_type] == 'blast':
     #     create_blast_training_set(st)
 
+    event_time = event.preferred_origin().time
+
+    st_event = st.copy().trim(starttime=event_time, endtime=event_time + 1)
+
     if event_type_lookup[event.event_type] == 'seismic event':
-        create_event_training_set(st, 'seismic event')
+        traces = []
+        for tr, tr_event in zip(st, st_event):
+            if np.std(tr_event.data) > 0.1 * np.max(tr_event.data):
+                continue
+            traces.append(tr)
+        if len(traces) == 0:
+            continue
+        st.traces = traces
+        create_seismic_event_training_set(st, event)
 

@@ -171,7 +171,8 @@ class ProjectManager(object):
                       'hdf5_times': root / 'hdf5_times',
                       'ai_models': root / 'ai_models',
                       'debug': root / 'debug',
-                      'index': root / 'index'}
+                      'index': root / 'index',
+                      'databases' : root / 'databases'}
 
         self.paths = AttribDict(self.paths)
 

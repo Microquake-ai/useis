@@ -19,17 +19,17 @@ from importlib import reload
 # from .dataset as dataset
 # reload(dataset)
 
-
-sampling_rate = 6000
-# num_threads = int(np.ceil(cpu_count() - 10))
-num_threads = 10
-replication_level = 5
-snr_threshold = 10
-sequence_length_second = 2
-perturbation_range_second = 1
-image_width = 128
-image_height = 128
-buffer_image_fraction = 0.05
+from .params import *
+# sampling_rate = 6000
+# # num_threads = int(np.ceil(cpu_count() - 10))
+# num_threads = 10
+# replication_level = 5
+# snr_threshold = 10
+# sequence_length_second = 2
+# perturbation_range_second = 1
+# image_width = 256
+# image_height = 64
+# buffer_image_fraction = 0.05
 
 
 class EventClassifier(object):

@@ -12,6 +12,7 @@ from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 from uquake.core.trace import Trace
 from abc import ABC
 import pickle
+from .params import *
 
 
 # class Label():
@@ -102,88 +103,93 @@ class FileList(object):
 
 class SpectrogramDataset(Dataset):
 
-    def __init__(self, file_dict: dict,
-                 max_number_image_per_category: int = 1e5,
-                 seed: int = None):
-
-        categories = [key for key in file_dict.keys()]
-        self.category_list = categories
-        self.labels = np.arange(len(categories))
-
-        np.random.seed(seed)
-        self.labels_dict = {}
-        self.file_list = []
-        self.label_list = []
-        for category, label in zip(categories, self.labels):
-            self.labels_dict[category] = label
-            nb_files = int(max_number_image_per_category)
-            if len(file_dict[category]) < nb_files:
-                nb_files = int(len(file_dict[category]))
-            for f in np.random.choice(file_dict[category],
-                                      size=nb_files,
-                                      replace=False):
-                self.file_list.append(f)
-                self.label_list.append(label)
-
-        self.file_list = np.array(self.file_list)
-        self.label_list = np.array(self.label_list)
-
-    @classmethod
-    def from_file_list(cls, file_list: FileList,
-                       max_number_image_per_category=1e5, seed=None):
-        return cls(file_list.cat_file_list,
-                   max_number_image_per_category=max_number_image_per_category,
-                   seed=seed)
-
-    def __len__(self):
-        return len(self.file_list)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        # label = self.df_data.iloc[idx]['label']
-        # category = self.category_list[idx]
-        label = self.label_list[idx]
-
-        image = torch.from_numpy((np.array(Image.open(
-            self.file_list[idx])) / 255).astype(np.float32))
-
-        # return {'data': image, 'label': label}
-        return image, label
-
-    @property
-    def shape(self):
-        px_x, px_y = self[0][0].shape
-        return len(self.label_list), px_x, px_y
-
-    @property
-    def nb_pixel(self):
-        return np.prod(self[0][0].shape)
-
-    @property
-    def categories(self):
-        return self.labels_dict
-
-    @property
-    def classes(self):
-        return self.categories
-
-    @property
-    def nb_categories(self):
-        return len(self.category_list)
+    def __init__(self, base_path, image_files, categories, bounding_boxes, event_ids):
+        self.base_path = Path(base_path)
+        self.image_files = image_files
+        self.categories = categories
+        self.event_ids = event_ids
 
 
-sampling_rate = 6000
-# num_threads = int(np.ceil(cpu_count() - 10))
-num_threads = 10
-replication_level = 5
-snr_threshold = 10
-# sequence_length_second = 2
-perturbation_range_second = 1
-image_width = 128
-image_height = 128
-buffer_image_fraction = 0.05
+    # def __init__(self, file_dict: dict,
+    #              max_number_image_per_category: int = 1e5,
+    #              seed: int = None):
+    #
+    #     categories = [key for key in file_dict.keys()]
+    #     self.category_list = categories
+    #     self.labels = np.arange(len(categories))
+    #
+    #     np.random.seed(seed)
+    #     self.labels_dict = {}
+    #     self.file_list = []
+    #     self.label_list = []
+    #     for category, label in zip(categories, self.labels):
+    #         self.labels_dict[category] = label
+    #         nb_files = int(max_number_image_per_category)
+    #         if len(file_dict[category]) < nb_files:
+    #             nb_files = int(len(file_dict[category]))
+    #         for f in np.random.choice(file_dict[category],
+    #                                   size=nb_files,
+    #                                   replace=False):
+    #             self.file_list.append(f)
+    #             self.label_list.append(label)
+    #
+    #     self.file_list = np.array(self.file_list)
+    #     self.label_list = np.array(self.label_list)
+    #
+    # @classmethod
+    # def from_file_list(cls, file_list: FileList,
+    #                    max_number_image_per_category=1e5, seed=None):
+    #     return cls(file_list.cat_file_list,
+    #                max_number_image_per_category=max_number_image_per_category,
+    #                seed=seed)
+    #
+    # def __len__(self):
+    #     return len(self.file_list)
+    #
+    # def __getitem__(self, idx):
+    #     if torch.is_tensor(idx):
+    #         idx = idx.tolist()
+    #
+    #     # label = self.df_data.iloc[idx]['label']
+    #     # category = self.category_list[idx]
+    #     label = self.label_list[idx]
+    #
+    #     image = torch.from_numpy((np.array(Image.open(
+    #         self.file_list[idx])) / 255).astype(np.float32))
+    #
+    #     # return {'data': image, 'label': label}
+    #     return image, label
+    #
+    # @property
+    # def shape(self):
+    #     px_x, px_y = self[0][0].shape
+    #     return len(self.label_list), px_x, px_y
+    #
+    # @property
+    # def nb_pixel(self):
+    #     return np.prod(self[0][0].shape)
+    #
+    # @property
+    # def categories(self):
+    #     return self.labels_dict
+    #
+    # @property
+    # def classes(self):
+    #     return self.categories
+    #
+    # @property
+    # def nb_categories(self):
+    #     return len(self.category_list)
+# sampling_rate = 6000
+# # num_threads = int(np.ceil(cpu_count() - 10))
+# num_threads = 10
+# replication_level = 5
+# snr_threshold = 10
+# # sequence_length_second = 2
+# perturbation_range_second = 1
+# image_width = 128
+# image_height = 128
+# buffer_image_fraction = 0.05
 
 buffer_image_sample = int(image_width * buffer_image_fraction)
 
@@ -195,6 +201,7 @@ def spectrogram(trace: Trace):
 
     sequence_length_second = trace.stats.endtime - trace.stats.starttime
     sampling_rate = trace.stats.sampling_rate
+    trace.detrend('demean').detrend('linear').taper(max_percentage=0.1)
     # from ipdb import set_trace
     # set_trace()
     hop_length = int(np.floor(sequence_length_second * sampling_rate /
