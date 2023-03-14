@@ -18,9 +18,13 @@ for i, station in enumerate(inventory[0]):
     if 'ACC' in station.historical_code:
         # Accelerometer
         channel_prefix = 'GN'
+        if station_number in [1, 2, 3, 4, 5]:
+            location_code = 1
     else:
         # Geophone
         channel_prefix = 'GP'
+        if station_number in [1, 2, 3, 4, 5]:
+            location_code = 2
 
     for extra_key in inventory[0][i].extra.keys():
         inventory[0][i].extra[extra_key].namespace = ns

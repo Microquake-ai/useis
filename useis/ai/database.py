@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -13,9 +13,12 @@ class Record(Base):
     image10s_filename = Column(String)
     image3s_filename = Column(String)
     image1s_filename = Column(String)
+    Synthetic = Column(Boolean)
+    magnitude = Column(Float)
     sampling_rate = Column(Float)
     categories = Column(String)
     event_id = Column(Integer)
+    sensor_type = Column(String)
     bounding_box_start = Column(Integer)
     bounding_box_end = Column(Integer)
 
