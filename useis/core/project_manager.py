@@ -191,6 +191,7 @@ class ProjectManager(object):
                                               'classification.pickle'}
 
         self.files = AttribDict(self.files)
+        self.databases = AttribDict()
 
         # create the directory if it does not exist
         self.paths.root.mkdir(parents=True, exist_ok=True)

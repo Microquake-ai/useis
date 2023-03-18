@@ -1,6 +1,7 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean
+from sqlalchemy import (create_engine, Column, Integer, String, Float, Boolean, MetaData)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
+import sqlite3
 
 # Define a declarative base for the ORM
 Base = declarative_base()
@@ -10,75 +11,82 @@ Base = declarative_base()
 class Record(Base):
     __tablename__ = 'records'
     id = Column(Integer, primary_key=True)
-    image10s_filename = Column(String)
-    image3s_filename = Column(String)
-    image1s_filename = Column(String)
-    Synthetic = Column(Boolean)
+    event_id = Column(String)
+    spectrogram_filename = Column(String)
+    channel_id = Column(Integer)
     magnitude = Column(Float)
+    duration = Column(Float)
+    end_time = Column(String)
     sampling_rate = Column(Float)
     categories = Column(String)
-    event_id = Column(Integer)
+    original_event_type = Column(String)
+    mseed_file = Column(String)
     sensor_type = Column(String)
     bounding_box_start = Column(Integer)
     bounding_box_end = Column(Integer)
-
-
-def connect(db_url):
-    # Create an engine to connect to the database
-    engine = create_engine('sqlite:///mydatabase.db', echo=True)
-    # Create the table in the database
-    Base.metadata.create_all(engine)
-
-    # Create a session to interact with the database
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    return session
-
-
-# # Define the data to insert into the database
-# data = [
-#     Event(
-#         image10s_filename='image10s.jpg',
-#         image3s_filename='image3s.jpg',
-#         image1s_filename='image1s.jpg',
-#         categories='category1',
-#         event_id=1,
-#         bounding_box=[0, 0, 100, 100]
-#     ),
-#     Event(
-#         image10s_filename='image10s.jpg',
-#         image3s_filename='image3s.jpg',
-#         image1s_filename='image1s.jpg',
-#         categories='category2',
-#         event_id=2,
-#         bounding_box=[50, 50, 150, 150]
-#     ),
-#     Event(
-#         image10s_filename='image10s.jpg',
-#         image3s_filename='image3s.jpg',
-#         image1s_filename='image1s.jpg',
-#         categories='category1',
-#         event_id=3,
-#         bounding_box=[100, 100, 200, 200]
-#     )
-# ]
+    synthetic = Column(Boolean)
 
 
 class DBManager(object):
     def __init__(self, db_url):
         self.db_url = db_url
-        session = connect(db_url)
-        session.close()
 
-    def add_record(self, image10s_filename, image3s_filename, image1s_filename,
-                   sampling_rate, categories, event_id, bounding_box):
-        record = Record(image10s_filename, image3s_filename, image1s_filename,
-                        sampling_rate, categories, event_id, bounding_box)
-        session = connect(self.db_url)
+        self.engine = create_engine(self.db_url)
+        self.Session = sessionmaker(bind=self.engine)
+        self.session = self.Session()
+        self.metadata = MetaData()
+        Base.metadata.create_all(self.engine)
+
+    def add_record(self, event_id=None, spectrogram_filename=None, channel_id=None,
+                   magnitude=None, duration=None, end_time=None,
+                   sampling_rate=None, categories=None, original_event_type=None,
+                   mseed_file=None, sensor_type=None, bounding_box=None,
+                   synthetic=False):
+
+        if bounding_box is not None:
+            bounding_box_start = bounding_box[0]
+            bounding_box_end = bounding_box[1]
+        else:
+            bounding_box_start = 0
+            bounding_box_end = 0
+
+        record = Record(event_id=event_id,
+                        spectrogram_filename=spectrogram_filename,
+                        channel_id=channel_id,
+                        magnitude=magnitude,
+                        duration=duration,
+                        end_time=end_time,
+                        sampling_rate=sampling_rate,
+                        categories=categories,
+                        original_event_type=original_event_type,
+                        mseed_file=mseed_file,
+                        sensor_type=sensor_type,
+                        bounding_box_start=bounding_box_start,
+                        bounding_box_end=bounding_box_end,
+                        synthetic=synthetic)
+        session = self.Session()
 
         session.add_all([record])
         session.commit()
         session.close()
+
+    def clear_database(self):
+        self.metadata.reflect()
+
+        for table in reversed(metadata.sorted_tables):
+            conn = engine.connect()
+            conn.execute(table.delete())
+            conn.close()
+
+    def event_exists(self, event_id):
+        session = self.Session()
+        query = session.query(Record).filter_by(event_id=event_id)
+        record_exists = session.query(query.exists()).scalar()
+        return record_exists
+
+
+
+
+
 
 
