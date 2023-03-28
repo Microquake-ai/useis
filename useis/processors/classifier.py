@@ -401,11 +401,12 @@ class Classifier(ProjectManager):
         def reorganize(record):
             record_out = []
             for r in record:
-                filenames = (r.spectrogram_filename,
-                             r.spectrogram_filename.replace(
-                                 f'{wl:d}s', f'{self.window_length_seconds[1]:d}s'),
-                             r.spectrogram_filename.replace(
-                                 f'{wl:d}', f'{self.window_length_seconds[2]:d}'))
+                file_path = self.paths.training_dataset / r.categories
+                filenames = (file_path / r.spectrogram_filename,
+                             file_path / r.spectrogram_filename.replace(
+                                 f'{wl:d}sec', f'{self.window_length_seconds[1]:d}sec'),
+                             file_path / r.spectrogram_filename.replace(
+                                 f'{wl:d}sec', f'{self.window_length_seconds[2]:d}sec'))
                 label = r.categories
 
                 record_out.append({'s1': filenames[0],
