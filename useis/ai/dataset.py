@@ -13,28 +13,8 @@ from uquake.core.trace import Trace
 from abc import ABC
 import pickle
 from .params import *
+from typing import List, Dict
 
-
-# class Label():
-#     def __init__(self, labels):
-#         self.full_labels = list(labels)
-#         self.labels = range(0, len(labels))
-#
-#         self.unique_labels = np.unique(labels)
-#         self.unique_numerical_labels = np.range(len(self.unique_labels))
-#
-#         self.labels_dict = {}
-#         for full_label, label  in zip(labels, self.unique_labels):
-#             self.labels_dict[full_label] = label
-#
-#     def __len__(self):
-#         return len(self.labels)
-#
-#     def __getitem__(self, item):
-#         label = self.full_labels[item]
-#         return self.labels_dict[label]
-#
-#     def get_full_label(self, item):
 
 def get_file_list(input_directory, suffix, extension='png'):
     path = os.path.join(input_directory, '*', f'*{suffix}.{extension}')
@@ -103,11 +83,16 @@ class FileList(object):
 
 class SpectrogramDataset(Dataset):
 
-    def __init__(self, base_path, image_files, categories, bounding_boxes, event_ids):
-        self.base_path = Path(base_path)
-        self.image_files = image_files
-        self.categories = categories
-        self.event_ids = event_ids
+    def __init__(self, file_list: List[Dict], labels: List):
+        self.file_list = file_list
+        self.labels = labels
+
+    pass
+    # def __init__(self, base_path, image_files, categories, bounding_boxes, event_ids):
+    #     self.base_path = Path(base_path)
+    #     self.image_files = image_files
+    #     self.categories = categories
+    #     self.event_ids = event_ids
 
 
     # def __init__(self, file_dict: dict,
@@ -326,6 +311,11 @@ class ClassifierDataset1D(Dataset):
         return len(self.category_list)
 
 
+class ClassificationDataset(Dataset):
+    def __init__(self, spectrograms: list, label: list):
+        self.spectrograms_images
+
+
 class PickingDataset(Dataset):
     def __init__(self, file_list):
         self.file_list = file_list
@@ -361,7 +351,7 @@ class PickingDataset(Dataset):
         len_signal = self[0][0].shape
         return 1, len_signal[0]
 
-    def split(self, split_fraction: float = 0.8, random_seed: int = None):
+    def split(self, split_fraction: float = 0.8, random_seed: int = 24):
         np.random.seed(random_seed)
         choices = np.random.choice([False, True], size=len(self),
                                    p=[1 - split_fraction, split_fraction])

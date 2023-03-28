@@ -16,6 +16,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from uquake.core.event import AttribDict
 from ..ai.event_type_lookup import event_type_lookup
+from importlib import reload
+from ..ai import database as ai_database
+from sklearn.model_selection import train_test_split
+from ipdb import set_trace
+from sqlalchemy import func
+import random
+from ..ai.dataset import ClassificationDataset
+from tqdm import tqdm
+
+reload(ai_database)
 
 
 class Classifier(ProjectManager):
@@ -63,7 +73,8 @@ class Classifier(ProjectManager):
             for f in self.paths.training_dataset.glob('*/*'):
                 f.unlink()
 
-        self.training_db_manager = DBManager(self.databases.training_database)
+        self.training_db_manager = ai_database.DBManager(
+            self.databases.training_database)
 
         for key in self.paths.keys():
             path = self.paths[key]
@@ -143,62 +154,109 @@ class Classifier(ProjectManager):
                                     original_event_type: str,
                                     event_id: str, end_time: UTCDateTime,
                                     magnitude: float, expect_impulsive=True,
-                                    override_exist=False, simulate_magnitude=False,):
+                                    override_exist=False, simulate_magnitude=False):
+        """
+        Creates spectrograms of a given stream and writes them to disk.
 
+        :param stream: The input stream.
+        :type stream: obspy.core.stream.Stream
+        :param event_type: The type of event.
+        :type event_type: str
+        :param original_event_type: The original type of event.
+        :type original_event_type: str
+        :param event_id: The event ID.
+        :type event_id: str
+        :param end_time: The end time of the event.
+        :type end_time: UTCDateTime
+        :param magnitude: The magnitude of the event.
+        :type magnitude: float
+        :param expect_impulsive: Whether or not to expect an impulsive signal in the data.
+        :type expect_impulsive: bool
+        :param override_exist: Whether or not to override existing files.
+        :type override_exist: bool
+        :param simulate_magnitude: Whether or not to simulate the magnitude.
+        :type simulate_magnitude: bool
+        """
+        # Get the initial sampling rate
         init_sampling_rate = stream[0].stats.sampling_rate
-        # from ipdb import set_trace
-        # set_trace()
+
+        # Set the sampling rates to either the initial rate or the set of sampling rates to simulate
         if not simulate_magnitude:
             sampling_rates = [init_sampling_rate]
         else:
             sampling_rates = self.sampling_rates
 
+        # Get the start time
         starttime = stream[0].stats.starttime
+
+        # Calculate the end time in samples
         end_time_sample = (end_time - starttime) * init_sampling_rate
+
+        # Loop over each sampling rate
         for sampling_rate in sampling_rates:
             synthetic = False
             magnitude_change = np.log(init_sampling_rate / sampling_rate) / np.log(3)
             correction = (1 - init_sampling_rate / sampling_rate) * 0.8
+
+            # If the magnitude is not given, set it to -1
             if magnitude == -999:
                 magnitude = -1
+
+            # Calculate the new magnitude
             new_magnitude = magnitude + magnitude_change
+
+            # If the magnitude doesn't change, set synthetic to True
             if magnitude_change == 0:
                 synthetic = True
+
+            # Calculate the end time at the new sampling rate
             end_time_resampled = starttime + end_time_sample / sampling_rate + correction
+
+            # Loop over each window length
             for window_length in self.window_length_seconds:
                 trs_resampled = []
-                # tmp = stream.copy().composite()
-                # stream.traces.append(tmp[0])
+
+                # Loop over each trace in the stream
                 for tr in stream.copy():
                     # if expect_impulsive:
                     #     if not test_impulsiveness(tr):
                     #         continue
+
+                    # Resample the trace
                     tr_resampled = tr.copy()
                     tr_resampled.stats.sampling_rate = sampling_rate
                     trs_resampled.append(tr_resampled)
 
-                    tr_trimmed = tr_resampled.trim(starttime=end_time_resampled
-                                                             - window_length,
-                                                   endtime=end_time_resampled)
+                    # Trim the trace
+                    tr_trimmed = tr_resampled.trim(
+                        starttime=end_time_resampled - window_length,
+                        endtime=end_time_resampled)
 
+                    # Create a new stream with the trimmed trace
                     st_trimmed = Stream(traces=[tr_trimmed])
 
+                    # Generate spectrograms for the trimmed stream
                     spectrograms = generate_spectrogram(st_trimmed)
 
+                    # Write the spectrograms to disk
                     filenames = self.write_spectrogram(spectrograms, event_type,
-                                                       end_time_resampled,
-                                                       new_magnitude, window_length)
+                                                       end_time_res)
 
+                    # Get the channel code for the resampled trace
                     channel_code = tr_resampled.stats.channel
 
+                    # Determine the sensor type based on the channel code
                     if 'GP' in channel_code:
                         sensor_type = 'geophone'
                     else:
                         sensor_type = 'accelerometer'
 
+                    # Get the spectrogram filename, original event type, and other
+                    # metadata
                     sfn = filenames[0]
                     oet = event_type_lookup[original_event_type]
 
+                    # Add the record to the training database
                     self.training_db_manager.add_record(event_id=event_id,
                                                         spectrogram_filename=sfn,
                                                         channel_id=tr.stats.channel,
@@ -213,10 +271,7 @@ class Classifier(ProjectManager):
                                                         bounding_box=[0, 0],
                                                         synthetic=synthetic)
 
-                    # add_record(self, event_id, spectrogram_filename, channel_id,
-                    #            magnitude,
-                    #            sampling_rate, categories, mseed_file, sensor_type,
-                    #            bounding_box):
+                    # Save a thumbnail image of the spectrogram
                     for filename, tr in zip(filenames, st_trimmed):
                         plt.clf()
                         plt.plot(tr.data, 'k')
@@ -228,30 +283,147 @@ class Classifier(ProjectManager):
                             f'{classifier_dataset_path / event_type / filename.stem}'
                             f'_td.png')
 
-                if not trs_resampled:
-                    continue
+                    # Continue to the next iteration if there are no resampled traces
+                    if not trs_resampled:
+                        continue
 
                 # from ipdb import set_trace
                 # set_trace()
 
     def write_spectrogram(self, spectrograms, event_type, end_time, magnitude, duration):
+        """
+        Writes spectrogram images to disk.
 
+        :param spectrograms: A list of spectrograms to write to disk.
+        :type spectrograms: list
+        :param event_type: The type of event associated with the spectrograms.
+        :type event_type: str
+        :param end_time: The end time of the event.
+        :type end_time: str
+        :param magnitude: The magnitude of the event.
+        :type magnitude: float
+        :param duration: The duration of the event.
+        :type duration: float
+        :returns: A list of filenames corresponding to the saved spectrogram images.
+        :rtype: list
+        """
+        # create an empty list to store the filenames
         filenames = []
+
+        # loop over the spectrograms
         for i, spectrogram in enumerate(spectrograms):
+            # skip empty spectrograms
             if np.mean(spectrogram) == 0:
                 continue
 
-            filename = f'{event_type}_{end_time}_mag{magnitude:0.2f}_' \
-                       f'{duration}sec_ch{i}.png'
+            # create the filename for the spectrogram image
+            filename = f'{event_type}_{end_time}' \
+                       f'_mag{magnitude:0.2f}_{duration}sec_ch{i}.png'
+
+            # create the directory structure for the spectrogram image
             data_path = self.paths.training_dataset / event_type
             data_path.mkdir(parents=True, exist_ok=True)
+
+            # save the spectrogram image to disk
             path = self.paths.training_dataset / event_type / filename
             spectrogram.save(path, format='png')
+
+            # add the filename to the list of filenames
             filenames.append(filename)
 
+        # return the list of filenames
         return filenames
+
+    def split_dataset(self, split_test=0.2, split_validation=0.1, use_synthetic=True):
+        """
+        Split the dataset into training, testing, and validation sets.
+
+        Parameters:
+            split_test (float): The proportion of the dataset to allocate to the test
+            set.
+            split_validation (float): The proportion of the dataset to allocate to the
+            validation set.
+            use_synthetic (bool): Whether to use synthetic data or not.
+
+        Returns:
+            A tuple containing the training set, the testing set, and the validation set.
+        """
+
+        # Filter the data by category and synthetic status
+
+        session = self.training_db_manager.Session()
+
+        wl = self.window_length_seconds[0]
+
+        # df = self.training_db_manager.to_pandas()
+        # df_gb = df.groupby(['event_id', 'channel_id'])
+
+        if use_synthetic:
+            seismic_events = self.training_db_manager.filter(categories='seismic event',
+                                                             duration=wl)
+
+            # seismic_events_groups = df[(df['categories'] == 'seismic event') &
+            #                            (df['synthetic'] == False)].groupby(
+            #     ['event_id', 'channel_id', 'end_time'])
+        else:
+            seismic_events = self.training_db_manager.filter(synthetic=False,
+                                                             categories='seismic event',
+                                                             duration=wl)
+        blasts = self.training_db_manager.filter(categories='blast', duration=wl)
+        noises = self.training_db_manager.filter(categories='noise', duration=wl)
+
+        df = self.training_db_manager.to_pandas()
+
+        # Determine the size of the smallest category
+        n_samples = min(seismic_events.count(), blasts.count(), noises.count())
+
+        # Randomly sample records from each category
+        seismic_events_sample = seismic_events.order_by(func.random()).limit(
+            n_samples).all()
+        blasts_sample = blasts.order_by(func.random()).limit(n_samples).all()
+        noises_sample = noises.order_by(func.random()).limit(n_samples).all()
+
+        # Combine samples into one list
+        combined_sample = seismic_events_sample + blasts_sample + noises_sample
+
+        # Compute test and validation set sizes
+        test_size = split_test + split_validation
+        validation_size = split_validation / test_size
+
+        # Split the data into training, testing, and validation sets
+        train, test_validation = train_test_split(combined_sample, test_size=test_size,
+                                                  random_state=42)
+        test, validation = train_test_split(test_validation, test_size=validation_size,
+                                            random_state=42)
+
+        # creating the dataset object for the training
+
+        def reorganize(record):
+            record_out = []
+            for r in record:
+                filenames = (r.spectrogram_filename,
+                             r.spectrogram_filename.replace(
+                                 f'{wl:d}s', f'{self.window_length_seconds[1]:d}s'),
+                             r.spectrogram_filename.replace(
+                                 f'{wl:d}', f'{self.window_length_seconds[2]:d}'))
+                label = r.categories
+
+                record_out.append({'s1': filenames[0],
+                                   's2': filenames[1],
+                                   's3': filenames[2],
+                                   'label': label})
+            return record_out
+
+        return reorganize(train), reorganize(test), reorganize(validation)
 
     def event_exists(self, event_id):
         return self.training_db_manager.event_exists(event_id)
+
+    @property
+    def dataset(self):
+        filelist
+        return ClassificationDataset()
+
+
 
 

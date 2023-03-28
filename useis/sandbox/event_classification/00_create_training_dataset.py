@@ -30,7 +30,7 @@ np.random.seed(124)
 
 raw_data_path = Path('/data_1/ot-reprocessed-data')
 classifier_project = classifier.Classifier('/data_1/projects/', 'classifier', 'OT',
-                                           reset_training=True)
+                                           reset_training=False)
 training_data_path = classifier_project.paths.training_dataset
 # training_data_path.mkdir(parents=True, exist_ok=True)
 

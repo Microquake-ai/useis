@@ -2,6 +2,9 @@ from sqlalchemy import (create_engine, Column, Integer, String, Float, Boolean, 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import sqlite3
+from ipdb import set_trace
+import pandas as pd
+import sqlite3
 
 # Define a declarative base for the ORM
 Base = declarative_base()
@@ -26,16 +29,25 @@ class Record(Base):
     bounding_box_end = Column(Integer)
     synthetic = Column(Boolean)
 
+    def __repr__(self):
+        str = ''
+        for key in self.__dict__.keys():
+            str += f'{key}: {self.__dict__[key]}\n'
+
+        return str
+
 
 class DBManager(object):
     def __init__(self, db_url):
         self.db_url = db_url
+        self.db_path = db_url[10:]
 
         self.engine = create_engine(self.db_url)
         self.Session = sessionmaker(bind=self.engine)
         self.session = self.Session()
         self.metadata = MetaData()
         Base.metadata.create_all(self.engine)
+        self.table_name = Record.__tablename__
 
     def add_record(self, event_id=None, spectrogram_filename=None, channel_id=None,
                    magnitude=None, duration=None, end_time=None,
@@ -82,10 +94,22 @@ class DBManager(object):
         session = self.Session()
         query = session.query(Record).filter_by(event_id=event_id)
         record_exists = session.query(query.exists()).scalar()
+        session.close()
         return record_exists
 
+    def filter(self, **kwargs):
+        session = self.Session()
+        query = session.query(Record).filter_by(**kwargs)
+        session.close()
+        return query
 
-
+    def to_pandas(self):
+        con = sqlite3.connect(self.db_path)
+        query = f'SELECT * FROM {self.table_name}'
+        df = pd.read_sql_query(query, con)
+        con.close()
+        return df
+        # return pd.read_sql_table(Record.__tablename__, self.engine)
 
 
 
