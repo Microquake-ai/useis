@@ -14,6 +14,8 @@ from abc import ABC
 import pickle
 from .params import *
 from typing import List, Dict
+import random
+from torchvision import transforms
 
 
 def get_file_list(input_directory, suffix, extension='png'):
@@ -81,13 +83,7 @@ class FileList(object):
                 max_number_signal_per_category=number)
 
 
-class SpectrogramDataset(Dataset):
 
-    def __init__(self, file_list: List[Dict], labels: List):
-        self.file_list = file_list
-        self.labels = labels
-
-    pass
     # def __init__(self, base_path, image_files, categories, bounding_boxes, event_ids):
     #     self.base_path = Path(base_path)
     #     self.image_files = image_files
@@ -363,6 +359,64 @@ class PickingDataset(Dataset):
         set_b = PickingDataset(files_set_b)
 
         return set_a, set_b
+
+
+class SpectrogramDataset(Dataset):
+    def __init__(self, file_list: List[Dict], labels: List[int], random_seed: int = 10):
+        self.file_list = file_list
+        self.labels = labels
+        self.random_seed = random_seed
+
+        self.unique_labels = np.unique(self.labels)
+
+        self.label_mapping = {}
+        for i, label in enumerate(self.unique_labels):
+            self.label_mapping[label] = np.zeros(len(self.unique_labels))
+            self.label_mapping[label][i] = 1
+
+        # Set random seed for reproducibility
+        random.seed(self.random_seed)
+
+        # Define image transforms
+        self.transforms = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+        ])
+
+    def get_label(self, label_vect):
+        for key in self.label_mapping.keys():
+            if np.all(self.label_mapping[key] == np.array(label_vect)):
+                break
+        return key
+
+    @property
+    def num_classes(self):
+        return len(self.unique_labels)
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, idx):
+        # Load the three channel images and combine them into an RGB image
+        red_image_path = self.file_list[idx]['s1']
+        green_image_path = self.file_list[idx]['s1']
+        blue_image_path = self.file_list[idx]['s3']
+        red_image = Image.open(red_image_path)
+        green_image = Image.open(green_image_path)
+        blue_image = Image.open(blue_image_path)
+        rgb_image = Image.merge("RGB", (red_image, green_image, blue_image))
+
+        # Apply image transforms
+        rgb_image = self.transforms(rgb_image)
+
+        # Get the corresponding label
+        label = self.label_mapping[self.labels[idx]]
+
+        return rgb_image, label
+
+
+
 
 
 

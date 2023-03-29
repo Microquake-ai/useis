@@ -1,31 +1,32 @@
 from ..core.project_manager import ProjectManager
 import pickle
 from pathlib import Path
-from ..ai.model import EventClassifier
 import uquake
 from uquake.core.stream import Stream, Trace
 from uquake.core import UTCDateTime
 import os
 import shutil
 from ..settings.settings import Settings
-from ..ai.database import DBManager
 from uquake.core.logging import logger
-from ..ai.model import generate_spectrogram
-from ..ai.database import Record
 import numpy as np
 import matplotlib.pyplot as plt
 from uquake.core.event import AttribDict
-from ..ai.event_type_lookup import event_type_lookup
 from importlib import reload
 from ..ai import database as ai_database
+from ..ai import dataset
+from ..ai.event_type_lookup import event_type_lookup
+from ..ai.model import generate_spectrogram, EventClassifier
+from ..ai.database import Record, DBManager
 from sklearn.model_selection import train_test_split
 from ipdb import set_trace
 from sqlalchemy import func
 import random
-from ..ai.dataset import ClassificationDataset
+from PIL import Image
+
 from tqdm import tqdm
 
 reload(ai_database)
+reload(dataset)
 
 
 class Classifier(ProjectManager):
@@ -400,6 +401,7 @@ class Classifier(ProjectManager):
 
         def reorganize(record):
             record_out = []
+            labels = []
             for r in record:
                 file_path = self.paths.training_dataset / r.categories
                 filenames = (file_path / r.spectrogram_filename,
@@ -409,13 +411,16 @@ class Classifier(ProjectManager):
                                  f'{wl:d}sec', f'{self.window_length_seconds[2]:d}sec'))
                 label = r.categories
 
-                record_out.append({'s1': filenames[0],
-                                   's2': filenames[1],
-                                   's3': filenames[2],
-                                   'label': label})
-            return record_out
+                if filenames[0].exists() & filenames[1].exists() & filenames[2].exists():
+                    record_out.append({'s1': filenames[0],
+                                       's2': filenames[1],
+                                       's3': filenames[2]})
+                    labels.append(label)
+            return record_out, labels
 
-        return reorganize(train), reorganize(test), reorganize(validation)
+        return (dataset.SpectrogramDataset(*reorganize(train)),
+                dataset.SpectrogramDataset(*reorganize(test)),
+                dataset.SpectrogramDataset(*reorganize(validation)))
 
     def event_exists(self, event_id):
         return self.training_db_manager.event_exists(event_id)

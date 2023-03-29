@@ -36,11 +36,16 @@ class EventClassifier(object):
     def __init__(self, n_features: int, gpu: bool = True):
 
         # define the model
-        self.model = models.resnet34(pretrained=False)
-        self.model.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,
-                                     bias=False)
+        self.model = models.resnet50(pretrained=False)
+
+        num_input_channels = 3
+        self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
+                                     padding=3, bias=False)
 
         self.n_features = n_features
+        self.num_classes = n_features
+
+        # Replace the last fully-connected layer to output the desired number of classes
 
         self.model.fc = nn.Linear(self.model.fc.in_features, n_features)
 
@@ -99,6 +104,7 @@ class EventClassifier(object):
                                      shuffle=True)
 
         for inputs, targets in tqdm(training_loader):
+            #suspect
             inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
                                  inputs.size()[2])
             self.iterate(inputs, targets)
