@@ -16,6 +16,7 @@ from PIL import Image, ImageOps
 from torch import nn
 from .resnet1d import ResNet1D
 from importlib import reload
+from ipdb import set_trace
 # from .dataset as dataset
 # reload(dataset)
 
@@ -33,10 +34,11 @@ from .params import *
 
 
 class EventClassifier(object):
-    def __init__(self, n_features: int, gpu: bool = True):
+    def __init__(self, n_features: int, gpu: bool = True, learning_rate: float = 0.005,
+                 model=models.resnet34(pretrained=False)):
 
         # define the model
-        self.model = models.resnet50(pretrained=False)
+        self.model = model
 
         num_input_channels = 3
         self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
@@ -44,12 +46,12 @@ class EventClassifier(object):
 
         self.n_features = n_features
         self.num_classes = n_features
+        self.learning_rate = learning_rate
 
         # Replace the last fully-connected layer to output the desired number of classes
-
         self.model.fc = nn.Linear(self.model.fc.in_features, n_features)
 
-        self.optimizer = torch.optim.Adam(self.model.parameters())
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate)
         self.criterion = nn.CrossEntropyLoss()
         self.gpu = gpu
 
@@ -104,9 +106,10 @@ class EventClassifier(object):
                                      shuffle=True)
 
         for inputs, targets in tqdm(training_loader):
+            # set_trace()
             #suspect
-            inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
-                                 inputs.size()[2])
+            # inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
+            #                      inputs.size()[2])
             self.iterate(inputs, targets)
             torch.cuda.empty_cache()
 
@@ -125,8 +128,11 @@ class EventClassifier(object):
         loss.backward()
         self.optimizer.step()
 
-        self.accuracies.append(self.measure_accuracy(targets,
-                                                     predictions).item())
+        target_indices = torch.argmax(targets, dim=1)
+        predicted_indices = torch.argmax(predictions, dim=1)
+        loss = self.criterion(predictions, target_indices)
+        accuracy = (target_indices == predicted_indices).sum() / len(target_indices)
+        self.accuracies.append(accuracy.item())
         self.losses.append(loss.item())
 
     def validate(self, dataset: Dataset, batch_size: int):
@@ -135,30 +141,34 @@ class EventClassifier(object):
                                      shuffle=True)
         self.validation_targets = np.zeros(len(dataset))
         self.validation_predictions = np.zeros(len(dataset))
-        accuracy = 0
-        for i, (inputs, targets) in enumerate(tqdm(training_loader)):
-            inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
-                                 inputs.size()[2])
-            inputs = inputs.to(self.device)
+        accuracy = []
+        with torch.no_grad():
+            for i, (inputs, targets) in enumerate(tqdm(training_loader)):
+                # inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
+                #                      inputs.size()[2])
+                inputs = inputs.to(self.device)
 
-            start = batch_size * i
-            end = start + batch_size
-            self.validation_targets[start:end] = targets
-            targets = targets.to(self.device)
+                start = batch_size * i
+                end = start + batch_size
+                self.validation_targets[start:end] = torch.argmax(targets).cpu().numpy()
+                targets = targets.to(self.device)
 
-            # with torch.no_grad() pytorch does not compute the gradient,
-            # the gradient takes a significant amount of memory on the gpu.
-            # using torch.no_grad() consequently allows significantly
-            # increasing the batch size
-            with torch.no_grad():
+                # with torch.no_grad() pytorch does not compute the gradient,
+                # the gradient takes a significant amount of memory on the gpu.
+                # using torch.no_grad() consequently allows significantly
+                # increasing the batch size
+                # with torch.no_grad():
                 outputs = self.model(inputs)
 
-            self.validation_predictions[start:end] = outputs.max(dim=1)[1].cpu(
-            ).detach().numpy()
+                self.validation_predictions[start:end] = torch.argmax(
+                    outputs).cpu().numpy()
 
-            accuracy += self.measure_accuracy(targets, outputs)
+                target_indices = torch.argmax(targets, dim=1)
+                predicted_indices = torch.argmax(outputs, dim=1)
+                tmp = (target_indices == predicted_indices).sum() / len(target_indices)
+                accuracy.append(tmp.cpu().numpy())
         self.model.train()
-        return accuracy.cpu().detach().numpy() / (i + 1)
+        return accuracy
 
     def display_memory(self):
         torch.cuda.empty_cache()
