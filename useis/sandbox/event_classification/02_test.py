@@ -16,5 +16,7 @@ torch.cuda.empty_cache()
 classifier_project = classifier.Classifier('/data_1/projects/', 'classifier', 'OT',
                                            reset_training=False)
 
-# train, test, validation = classifier_project.split_dataset(use_synthetic=False)
+# classifier_project.train()
+st = read('/data_1/ot-reprocessed-data/177f51f6d4485d2ab4396ec7b02799f8.context_mseed')
 
+output = classifier_project.predict(st)

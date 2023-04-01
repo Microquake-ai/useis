@@ -34,11 +34,12 @@ from .params import *
 
 
 class EventClassifier(object):
-    def __init__(self, n_features: int, gpu: bool = True, learning_rate: float = 0.005,
-                 model=models.resnet34(pretrained=False)):
+    def __init__(self, n_features: int, label_mapping, gpu: bool = True, learning_rate: float = 0.001,
+                 model=models.resnet34(), model_id=None):
 
         # define the model
         self.model = model
+        self.model_id = model_id
 
         num_input_channels = 3
         self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
@@ -51,7 +52,8 @@ class EventClassifier(object):
         # Replace the last fully-connected layer to output the desired number of classes
         self.model.fc = nn.Linear(self.model.fc.in_features, n_features)
 
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate)
+        # self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.criterion = nn.CrossEntropyLoss()
         self.gpu = gpu
 
@@ -73,15 +75,14 @@ class EventClassifier(object):
         self.accuracies = []
         self.losses = []
 
-        self.validation_predictions = None
-        self.validation_targets = None
+        self.iteration = 0
+        self.label_mapping = label_mapping
 
     @classmethod
     def from_pretrained_model(cls, model, gpu: bool = True):
         n_features = model.fc.out_features
-        cls_tmp = cls(n_features, gpu=gpu)
-        cls_tmp.model = model.to(cls_tmp.device)
-
+        cls_tmp = cls(n_features, gpu=gpu, model=model)
+        # cls_tmp.model = model.to(cls_tmp.device)
         return cls_tmp
 
     @classmethod
@@ -89,7 +90,7 @@ class EventClassifier(object):
         with open(path, 'rb') as input_file:
             model = pickle.load(input_file)
 
-        return cls.from_pretrained_model(model, gpu=gpu)
+        return cls.from_pretrained_model(model, gpu=gpu, model=model)
 
     # @classmethod
     # def load_model(cls, file_name):
@@ -106,10 +107,6 @@ class EventClassifier(object):
                                      shuffle=True)
 
         for inputs, targets in tqdm(training_loader):
-            # set_trace()
-            #suspect
-            # inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
-            #                      inputs.size()[2])
             self.iterate(inputs, targets)
             torch.cuda.empty_cache()
 
@@ -134,6 +131,7 @@ class EventClassifier(object):
         accuracy = (target_indices == predicted_indices).sum() / len(target_indices)
         self.accuracies.append(accuracy.item())
         self.losses.append(loss.item())
+        self.iteration += 1
 
     def validate(self, dataset: Dataset, batch_size: int):
         self.model.eval()
@@ -142,6 +140,7 @@ class EventClassifier(object):
         self.validation_targets = np.zeros(len(dataset))
         self.validation_predictions = np.zeros(len(dataset))
         accuracy = []
+        loss = []
         with torch.no_grad():
             for i, (inputs, targets) in enumerate(tqdm(training_loader)):
                 # inputs = inputs.view(inputs.size()[0], -1, inputs.size()[1],
@@ -166,9 +165,10 @@ class EventClassifier(object):
                 target_indices = torch.argmax(targets, dim=1)
                 predicted_indices = torch.argmax(outputs, dim=1)
                 tmp = (target_indices == predicted_indices).sum() / len(target_indices)
-                accuracy.append(tmp.cpu().numpy())
+                accuracy.append(float(tmp.cpu().numpy()))
+                loss.append(float(self.criterion(outputs, target_indices).cpu().numpy()))
         self.model.train()
-        return accuracy
+        return accuracy, loss
 
     def display_memory(self):
         torch.cuda.empty_cache()
@@ -331,6 +331,7 @@ class EventClassifier1D(EventClassifier):
 
         # print(loss.item())
         self.losses.append(loss.cpu().item())
+        self.iteration += 1
 
     def validate(self, dataset: ClassifierDataset1D, batch_size: int):
         self.model.eval()

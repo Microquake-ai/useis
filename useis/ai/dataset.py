@@ -362,27 +362,28 @@ class PickingDataset(Dataset):
 
 
 class SpectrogramDataset(Dataset):
-    def __init__(self, file_list: List[Dict], labels: List[int], random_seed: int = 10):
+    def __init__(self, file_list: List[Dict], labels: List[int], labels_mapping: Dict,
+                 random_seed: int = 10):
         self.file_list = file_list
         self.labels = labels
         self.random_seed = random_seed
+        self.window_lengths = []
 
         self.unique_labels = np.unique(self.labels)
-
-        self.label_mapping = {}
-        for i, label in enumerate(self.unique_labels):
-            self.label_mapping[label] = np.zeros(len(self.unique_labels))
-            self.label_mapping[label][i] = 1
+        self.label_mapping = labels_mapping
 
         # Set random seed for reproducibility
         random.seed(self.random_seed)
 
         # Define image transforms
-        self.transforms = transforms.Compose([
+    @classmethod
+    def transform(cls, image):
+        transform = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
+        return transform(image)
 
     def get_label(self, label_vect):
         for key in self.label_mapping.keys():
@@ -400,20 +401,31 @@ class SpectrogramDataset(Dataset):
     def __getitem__(self, idx):
         # Load the three channel images and combine them into an RGB image
         red_image_path = self.file_list[idx]['s1']
-        green_image_path = self.file_list[idx]['s1']
+        green_image_path = self.file_list[idx]['s2']
         blue_image_path = self.file_list[idx]['s3']
         red_image = Image.open(red_image_path)
         green_image = Image.open(green_image_path)
         blue_image = Image.open(blue_image_path)
-        rgb_image = Image.merge("RGB", (red_image, green_image, blue_image))
-
-        # Apply image transforms
-        rgb_image = self.transforms(rgb_image)
+        rgb_image = self.merge_reshape(red_image, green_image, blue_image)
 
         # Get the corresponding label
         label = self.label_mapping[self.labels[idx]]
 
         return rgb_image, label
+
+    @classmethod
+    def merge_reshape(cls, short, medium, long):
+        """
+
+        @param short: spectrogram from the short window
+        @param medium: spectrogram from the medium size window
+        @param long: spectrogram from the long window
+        @return: the merge and transformed image
+        """
+        rgb = cls.transform(Image.merge("RGB", (short, medium, long)))
+        return rgb
+
+
 
 
 

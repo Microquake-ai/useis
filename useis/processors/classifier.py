@@ -15,24 +15,88 @@ from importlib import reload
 from ..ai import database as ai_database
 from ..ai import dataset
 from ..ai.event_type_lookup import event_type_lookup
-from ..ai.model import generate_spectrogram, EventClassifier
+from useis.ai.model import generate_spectrogram, EventClassifier
 from ..ai.database import Record, DBManager
 from sklearn.model_selection import train_test_split
 from ipdb import set_trace
 from sqlalchemy import func
 import random
 from PIL import Image
+from useis.ai import model
+from torchvision import models
+from uuid import uuid4
+import torch
+from torch.nn.functional import softmax
+import useis
 
 from tqdm import tqdm
 
 reload(ai_database)
 reload(dataset)
+reload(model)
+
+
+class ClassifierResult(object):
+    def __init__(self, raw_output, label_mapping, inputs):
+        self.raw_output = raw_output
+        self.label_mapping = label_mapping
+        self.inputs = inputs
+
+    @property
+    def predictions(self):
+        pred_classes = torch.argmax(self.probabilities, dim=1)
+
+        # Convert the index tensor to a binary tensor
+        binary_preds = torch.zeros_like(self.probabilities)
+        binary_preds.scatter_(1, pred_classes.view(-1, 1), 1)
+
+        return binary_preds
+
+    @property
+    def probabilities(self):
+        return softmax(self.raw_output, dim=1)
+
+    @property
+    def predicted_classes(self):
+        classes = []
+        for prediction in self.predictions:
+            for key in self.label_mapping.keys():
+                if np.all(self.label_mapping[key] == prediction.numpy()):
+                    break
+
+            classes.append(key)
+
+        return classes
+
+    def __repr__(self):
+        str_out = f'{self.inputs[0].stats.starttime}\n'
+        for tr, predicted_class, probability in zip(self.inputs, self.predicted_classes,
+                                                    self.probabilities):
+            probability = probability.detach().numpy()
+            formatted_probabilities = [f"{p:.2e}" for p in probability]
+            # str_out += f'{tr.stats.network}.{tr.stats.station}.{tr.stats.channel}, ' \
+            #            f'class: {predicted_class}, ' \
+            #            f'[{", ".join(formatted_probabilities)}]\n'
+
+            str_out += f'{tr.stats.network}.{tr.stats.station}.{tr.stats.channel}, ' \
+                       f'class: {predicted_class} ({np.max(probability):0.2%})\n'
+
+        return str_out
+
+
+        # softmax(self.event_classifier.model(merged_images).cpu(), dim=1)
+
+    # @property
+    # def results(self):
+
+
 
 
 class Classifier(ProjectManager):
     def __init__(self, base_projects_path: Path, project_name: str,
                  network_code: str, use_srces: bool=False, reset_training=False,
-                 sampling_rates=[3000, 4000, 6000], window_lengths=[1, 3, 10]):
+                 sampling_rates=[3000, 4000, 6000], window_lengths=[1, 3, 10],
+                 gpu: bool = True):
 
         """
         Object to control the classification
@@ -94,37 +158,71 @@ class Classifier(ProjectManager):
         self.window_length_seconds = window_lengths
         self.sampling_rates = sampling_rates
 
+        self.train_accuracy = None
+        self.train_loss = None
+        self.test_accuracy = None
+        self.test_loss = None
+        self.validation_accuracy = None
+        self.validation_loss = None
+
+        if self.files.classification_model.exists():
+            try:
+                self.event_classifier = EventClassifier.read(
+                    self.files.classification_model)
+            except Exception as e:
+                logger.error(e)
+
+        else:
+            logger.warning('The project does not contain a classification model\n'
+                           'use the add_model function to add a classification model')
+
     # def __del__(self):
     #     self.training_db_manager
 
-    def add_model(self, model: EventClassifier):
-        self.event_classifier = model
-        model.write(self.files.classification_model)
+    def add_model(self, classifier_model: useis.ai.model.EventClassifier):
+        if not isinstance(classifier_model, useis.ai.model.EventClassifier):
+            raise TypeError(f'classifier_model must be an instance of '
+                            f'useis.ai.model.EventClassifier, '
+                            f'got {type(classifier_model)} instead')
+        self.event_classifier = classifier_model
+        self.event_classifier.write(self.files.classification_model)
+
+    def add_model_from_file(self, classifier_model_path: str):
+        classifier_model = model.EventClassifier.read(classifier_model_path)
+        self.add_model(classifier_model)
+
+    def model_migration(self):
+        """
+        This function should be used when the EventClassifier object changes to ensure
+        it is up-to-date
+        """
+        new_ec = model.EventClassifier(self.num_classes, self.label_mapping)
+        new_ec.model = self.event_classifier.model
+
+        self.add_model(new_ec)
 
     def trace2spectrograms(self, trace: Trace):
         spectrograms = []
-        for window_length in window_lengths:
-            st = Stream(traces=[trace])
-
+        for window_length in self.window_length_seconds:
+            st = Stream(traces=[trace.copy()]).copy()
+            end_time = trace.stats.endtime
             start_time = end_time - window_length
             st_trimmed = st.trim(starttime=start_time, endtime=end_time,
                                  pad=True, fill_value=0)
 
             spectrogram = generate_spectrogram(st_trimmed)
 
-            training_data_path = self.settings.paths.training_dataset
+            training_data_path = self.paths.training_dataset
 
-            channel = tr.stats.channel
+            channel = trace.stats.channel
 
-            filename = f'{category}_{end_time}_ch_{channel}_sr_{sampling_rate}' \
-                       f'_{window_lengths}_sec.png'
-            path = training_data_path / filename
-            spectrogram.save(path, format='png')
-
-    def add_model_from_file(self, filename: str):
-        ec = EventClassifier.from_pretrained_model_file(filename)
-        self.event_classifier = ec
-        ec.write(self.files.classification_model)
+            # if save_file:
+            #     filename = f'{category}_{end_time}_ch_{channel}_sr_{sampling_rate}' \
+            #                f'_{window_lengths}_sec.png'
+            #     path = training_data_path / filename
+            #     spectrogram.save(path, format='png')
+            spectrograms.append(spectrogram)
+        return spectrograms
 
     def predict(self, st: uquake.core.stream.Stream):
         """
@@ -132,13 +230,22 @@ class Classifier(ProjectManager):
         :type st: uquake.core.stream.Stream
         :return:
         """
-        return self.event_classifier.predict(st)
 
-    def train_model(self):
-        pass
+        self.event_classifier.model.eval()
+        images = []
+        for tr in st.copy():
+            specs = self.trace2spectrograms(tr.copy())
+            image = dataset.SpectrogramDataset.merge_reshape(
+                specs[0][0], specs[1][0], specs[2][0]).to(self.event_classifier.device)
+            image = image.view(1, image.shape[0], image.shape[1], image.shape[2])
 
-    def create_training_data_set(self):
-        pass
+            images.append(image)
+
+        merged_images = torch.cat(images, dim=0)
+
+        return ClassifierResult(self.event_classifier.model(merged_images).cpu(),
+                                self.label_mapping,
+                                st)
 
     def build_training_data_set_list(self):
         self.files.training_dataset = \
@@ -148,7 +255,8 @@ class Classifier(ProjectManager):
         for f in self.files.training_dataset:
             pass
 
-    def spectrogram(self, stream: Stream):
+    @staticmethod
+    def spectrogram(stream: Stream):
         return generate_spectrogram(stream)
 
     def create_spectrogram_training(self, stream: Stream, event_type: str,
@@ -181,7 +289,8 @@ class Classifier(ProjectManager):
         # Get the initial sampling rate
         init_sampling_rate = stream[0].stats.sampling_rate
 
-        # Set the sampling rates to either the initial rate or the set of sampling rates to simulate
+        # Set the sampling rates to either the initial rate or the set of sampling
+        # rates to simulate
         if not simulate_magnitude:
             sampling_rates = [init_sampling_rate]
         else:
@@ -418,17 +527,141 @@ class Classifier(ProjectManager):
                     labels.append(label)
             return record_out, labels
 
-        return (dataset.SpectrogramDataset(*reorganize(train)),
-                dataset.SpectrogramDataset(*reorganize(test)),
-                dataset.SpectrogramDataset(*reorganize(validation)))
+        self.train = dataset.SpectrogramDataset(*reorganize(train),
+                                                labels_mapping=self.label_mapping)
+        self.test = dataset.SpectrogramDataset(*reorganize(test),
+                                               labels_mapping=self.label_mapping)
+        self.validation = dataset.SpectrogramDataset(*reorganize(validation),
+                                                     labels_mapping=self.label_mapping)
+
+        return self.train, self.test, self.validation
+
+    @property
+    def label_mapping(self):
+        if self.event_classifier is None:
+            unique_labels = self.training_db_manager.categories
+            label_mapping = {}
+            for i, label in enumerate(unique_labels):
+                label_mapping[label] = np.zeros(len(unique_labels))
+                label_mapping[label][i] = 1
+            return label_mapping
+        else:
+            return self.event_classifier.label_mapping
+
+    @property
+    def num_classes(self):
+        return len(self.label_mapping)
+
+    def get_label(self, probs):
+        pred_classes = torch.argmax(probs, dim=1)
+
+        # Convert the index tensor to a binary tensor
+        binary_preds = torch.zeros_like(probs)
+        binary_preds.scatter_(1, pred_classes.view(-1, 1), 1)
+        # still some work to do here.
+
+        # return
+        # set_trace()
+        # pred_classes = torch.argmax(probs, dim=1)
+        # binary_preds = torch.zeros_like(probs)
+        # binary_preds.scatter_(1, pred_classes.view(-1, 1), 1)
+        # for probabilities in enumerate(probability_vector):
+        #     index = probabilities.argmax()
+        #
+        # indices = probabilities.argmax(dim=1)
+        # normalized_label_vect = np.zeros(probabilities.shape)
+        # normalized_label_vect[indices] = 1
+        # def get_label(self, label_vect):
+        #     for key in self.label_mapping.keys():
+        #         if np.all(self.label_mapping[key] == np.array(label_vect)):
+        #             break
+        #     return key
+
+    def train(self, learning_rate: float = 0.002,
+              starting_model=None, override_current_model=False,
+              batch_size: int = 500, plot_progress: bool = True,
+              model_id: str = None, save_intermediate_models: bool = False,
+              save_final_model: bool = True, use_synthetic: bool = True):
+
+        if model_id is None:
+            model_id = str(uuid4())
+
+        if (self.event_classifier is None) | override_current_model:
+            if starting_model is None:
+                logger.info('using the ResNet34 as the default starting model')
+                starting_model = models.resnet34()
+
+        train, test, validation = self.split_dataset(use_synthetic=use_synthetic)
+
+        ec = model.EventClassifier(self.num_classes, self.label_mapping,
+                                   learning_rate=learning_rate, model=starting_model)
+
+        test_losses = []
+        test_accuracies = []
+
+        train_losses = []
+        train_accuracies = []
+
+        for epoch in tqdm(range(0, 100)):
+            ec.train(train, batch_size=batch_size)
+            accuracy, loss = ec.validate(test, batch_size=batch_size)
+
+            logger.info(f'Average iteration loss (training): {np.mean(ec.losses): 0.3f} '
+                        f'+/- {np.std(ec.losses): 0.3f}')
+            logger.info(f'Average iteration loss (test): {np.mean(loss): 0.3f} '
+                        f'+/- {np.std(loss): 0.3f}')
+
+            logger.info(f'Average iteration accuracy (training): '
+                        f'{np.mean(ec.accuracies):0.3f} '
+                        f'+/- {np.std(ec.accuracies): 0.3f}')
+            logger.info(f'Average iteration accuracy (test: {np.mean(accuracy):0.3f} '
+                        f'+/- {np.std(accuracy): 0.3f}')
+
+            test_losses.append(np.mean(loss))
+            test_accuracies.append(np.mean(accuracy))
+
+            train_losses.append(np.mean(ec.losses))
+            train_accuracies.append(np.mean(ec.accuracies))
+            # accuracies.append(np.mean(ec.accuracies))
+
+            if (epoch + 1) % 10 == 0:
+                # ec.model.eval()
+                ec.optimizer.param_groups[0]['lr'] /= np.sqrt(2)
+                if save_intermediate_models:
+                    self.add_model(ec)
+
+            if plot_progress:
+                plt.figure(1)
+                plt.clf()
+                plt.ion()
+
+                plt.xlabel('epoch')
+                plt.ylabel('accuracy')
+
+                plt.plot(test_accuracies, '.-', label='test accuracy')
+                plt.plot(train_accuracies, '.-', label='train accuracy')
+
+                plt.legend()
+                plt.draw()
+                plt.pause(0.1)
+                plt.show()
+
+        if save_final_model:
+            self.add_model(ec)
+
+        validation_accuracy, validation_loss = ec.validate(validation,
+                                                           batch_size=batch_size)
+
+        ec.validation_accuracy = validation_accuracy
+        ec.validation_loss = validation_loss
+        ec.model_id = model_id
+
+        return ec, (train, test, validation), \
+            (test_losses, test_accuracies, train_losses, train_accuracies)
 
     def event_exists(self, event_id):
         return self.training_db_manager.event_exists(event_id)
 
-    @property
-    def dataset(self):
-        filelist
-        return ClassificationDataset()
 
 
 

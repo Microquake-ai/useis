@@ -1,4 +1,5 @@
-from sqlalchemy import (create_engine, Column, Integer, String, Float, Boolean, MetaData)
+from sqlalchemy import (create_engine, Column, Integer, String, Float, Boolean, MetaData,
+                        distinct)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import sqlite3
@@ -110,6 +111,14 @@ class DBManager(object):
         con.close()
         return df
         # return pd.read_sql_table(Record.__tablename__, self.engine)
+
+    @property
+    def categories(self):
+        session = self.Session()
+        categories = [category[0] for category in
+                      session.query(distinct(Record.categories)).all()]
+        session.close()
+        return categories
 
 
 
