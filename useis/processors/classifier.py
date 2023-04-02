@@ -68,6 +68,15 @@ class ClassifierResult(object):
 
         return classes
 
+    @property
+    def class_count(self):
+        str_out = ""
+        for category in self.label_mapping.keys():
+            str_out += f'{category}: ' \
+                       f'{np.sum(np.array(self.predicted_classes) == category)}\n'
+
+        print(str_out)
+
     def __repr__(self):
         str_out = f'{self.inputs[0].stats.starttime}\n'
         for tr, predicted_class, probability in zip(self.inputs, self.predicted_classes,

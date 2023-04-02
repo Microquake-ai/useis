@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.9
 
 RUN git clone https://github.com/jeanphilippemercier/nlloc.git
 RUN apt update; apt install -y gcc-9; cp /usr/bin/gcc-9 /usr/bin/gcc
