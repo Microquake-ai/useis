@@ -34,7 +34,8 @@ from .params import *
 
 
 class EventClassifier(object):
-    def __init__(self, n_features: int, label_mapping, gpu: bool = True, learning_rate: float = 0.001,
+    def __init__(self, n_features: int, label_mapping, gpu: bool = True,
+                 learning_rate: float = 0.001,
                  model=models.resnet34(), model_id=None):
 
         # define the model

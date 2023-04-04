@@ -3,6 +3,7 @@ from fastapi import FastAPI, File
 from obspy import read
 from io import BytesIO
 from importlib import reload
+from useis.services.models.classifier import ClassifierResults
 reload(classifier)
 
 app = FastAPI()
@@ -16,16 +17,36 @@ ec = classifier.Classifier(base_directory, project, network)
 app = FastAPI()
 
 
-@app.post('/classifier/predict/stream', status_code=201)
+# Define the endpoint for handling predictions
+@app.post('/classifier/predict/stream', status_code=201,
+          response_model=ClassifierResults)
 async def predict(stream: bytes = File(...)):
+    """
+    Endpoint for making predictions on a stream of data.
+
+    Args:
+        stream (bytes, required): A byte stream of data in miniSEED format.
+
+    Returns:
+        A JSON string representing the prediction output. The string will
+        contain a list of dictionaries, where each dictionary corresponds
+        to a predicted label for a specific time window in the input stream.
+    """
+
+    # Read the stream data into a BytesIO object
     f_in = BytesIO(stream)
+
+    # Use ObsPy to read the stream data into a Stream object
     st = read(f_in)
 
+    # Make a prediction using the Stream object and a pre-trained classifier
     classifier_output = ec.predict(st)
 
+    # Print the prediction (optional)
     print(classifier_output)
 
-    return classifier_output.raw_output
+    # Convert the prediction to a JSON string and return it as the response
+    return classifier_output.to_fastapi()
 
 @app.get('/classifier/predict/stream', status_code=201)
 async def get_nothing():

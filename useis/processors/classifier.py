@@ -28,6 +28,8 @@ from uuid import uuid4
 import torch
 from torch.nn.functional import softmax
 import useis
+import json
+from useis.services.models.classifier import ClassifierResults
 
 from tqdm import tqdm
 
@@ -76,6 +78,51 @@ class ClassifierResult(object):
                        f'{np.sum(np.array(self.predicted_classes) == category)}\n'
 
         print(str_out)
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+        pass
+
+    def to_fastapi(self):
+        networks = []
+        stations = []
+        channels = []
+
+        for tr in self.inputs:
+            networks.append(tr.stats.network)
+            stations.append(tr.stats.station)
+            channels.append(tr.stats.channel)
+        return ClassifierResults(networks=networks,
+                                 stations=stations,
+                                 channels=channels,
+                                 raw_outputs=self.raw_output.detach().numpy().tolist(),
+                                 predicted_classes=self.predicted_classes,
+                                 probabilities=self.probabilities.detach().numpy(
+                                 ).tolist())
+
+    # ClassifierResults(Networks=networks,
+    #                   Stations=stations,
+    #                   channels=channels,
+    #                   raw_outputs=self.raw_output.detach().numpy().tolist(),
+    #                   labels=self.predicted_classes,
+    #                   probabilities=self.probabilities.detach().numpy(
+    #                   ).tolist())
+
+
+    def to_dict(self):
+        outputs = []
+        raw_outputs = self.raw_output.detach().numpy()
+        predicted_classes = self.predicted_classes
+        probabilities = self.probabilities.detach().numpy()
+        for i in range(0, len(raw_outputs)):
+            outputs.append({'network': self.inputs[i].stats.network,
+                            'station': self.inputs[i].stats.station,
+                            'channel': self.inputs[i].stats.channel,
+                            'raw_output': raw_outputs[i].tolist(),
+                            'predicted class': predicted_classes[i],
+                            'probability': probabilities[i].tolist()})
+
+        return outputs
 
     def __repr__(self):
         str_out = f'{self.inputs[0].stats.starttime}\n'
