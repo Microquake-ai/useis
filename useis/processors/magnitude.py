@@ -166,6 +166,8 @@ class MomentMagnitude(Magnitude):
                                max_frequency=max_frequency,
                                preferred_origin_only=preferred_origin_only)
 
+        return mag
+
 
 
 

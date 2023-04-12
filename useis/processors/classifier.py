@@ -134,8 +134,9 @@ class ClassifierResult(object):
             #            f'class: {predicted_class}, ' \
             #            f'[{", ".join(formatted_probabilities)}]\n'
 
-            str_out += f'{tr.stats.network}.{tr.stats.station}.{tr.stats.channel}, ' \
-                       f'class: {predicted_class} ({np.max(probability):0.2%})\n'
+            str_out += f'{tr.stats.network}.{tr.stats.station}.{tr.stats.location}.' \
+                       f'{tr.stats.channel}, class: {predicted_class} ' \
+                       f'({np.max(probability):0.2%})\n'
 
         return str_out
 
@@ -144,8 +145,6 @@ class ClassifierResult(object):
 
     # @property
     # def results(self):
-
-
 
 
 class Classifier(ProjectManager):

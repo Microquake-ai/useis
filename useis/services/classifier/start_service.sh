@@ -1,1 +1,1 @@
-uvicorn server:app --reload
+uvicorn server:app --workers 4 --reload

@@ -91,7 +91,7 @@ class EventClassifier(object):
         with open(path, 'rb') as input_file:
             model = pickle.load(input_file)
 
-        return cls.from_pretrained_model(model, gpu=gpu, model=model)
+        return cls.from_pretrained_model(model, gpu=gpu)
 
     # @classmethod
     # def load_model(cls, file_name):

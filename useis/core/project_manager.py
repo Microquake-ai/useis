@@ -408,7 +408,7 @@ class ProjectManager(object):
     def add_inventory_from_file(self, inventory_file: str, format='StationXML',
                                 create_srces_file: bool = True,
                                 initialize_travel_time: bool = True,
-                                xy_from_lat_lon: bool = True,
+                                xy_from_lat_lon: bool = False,
                                 input_projection=4326,
                                 output_projection=None):
         """
@@ -428,10 +428,15 @@ class ProjectManager(object):
         :return:
         """
 
-        inventory = read_inventory(inventory_file, format=format,
-                                   xy_from_lat_lon=xy_from_lat_lon,
-                                   input_projection=input_projection,
-                                   output_projection=output_projection)
+        if output_projection is not None:
+            inventory = read_inventory(inventory_file, format=format,
+                                       xy_from_lat_lon=xy_from_lat_lon,
+                                       input_projection=input_projection,
+                                       output_projection=output_projection)
+        else:
+            inventory = read_inventory(inventory_file, format=format,
+                                       xy_from_lat_lon=xy_from_lat_lon,
+                                       input_projection=input_projection)
 
         self.add_inventory(inventory, create_srces_file=create_srces_file,
                            initialize_travel_time=initialize_travel_time)
