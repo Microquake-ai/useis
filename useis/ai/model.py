@@ -402,7 +402,7 @@ class Conv1DModel(nn.Module):
 
 
 # class AIPicker(EventClassifier):
-class Picker(object):
+class AIPicker(object):
     def __init__(self, in_channels: int = 1, base_filters: int = 64,
                  kernel_size: int = 15, stride: int = 3, n_classes: int = 1,
                  groups: int = 1, n_block: int = 16, learning_rate=1e-5,
@@ -567,6 +567,11 @@ class Picker(object):
         with(open(file_name, 'wb')) as f_out:
             pickle.dump(self, f_out)
         # torch.save(self.model.state_dict(), file_name)
+
+    @classmethod
+    def read(cls, file_name):
+        with open(file_name, 'rb') as f_in:
+            return pickle.load(f_in)
 
     @classmethod
     def from_model(cls, file_name, gpu: bool = False):
