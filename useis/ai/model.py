@@ -182,14 +182,10 @@ class EventClassifier(object):
     @classmethod
     def read(cls, file_name, gpu=True):
         model_state = pickle.load(open(file_name, 'rb'))
-
-        # def __init__(self, n_features: int, label_mapping, gpu: bool = True,
-        #              learning_rate: float = 0.001,
-        #              model=models.resnet34(), model_id=None):
         ec = cls(model_state['out_features'], model_state['label_map'], gpu=gpu,
-                  learning_rate=model_state['learning_rate'],
-                  model_id=model_state['model_id'])
-        ec.model.load_state_dict(in_dict['model_state'])
+                 learning_rate=model_state['learning_rate'],
+                 model_id=model_state['model_id'])
+        ec.model.load_state_dict(model_state['model_state'])
         ec.model.eval()
         return ec
 
