@@ -162,6 +162,7 @@ class Classifier(ProjectManager):
         """
 
         self.event_classifier = None
+        self.gpu = gpu
 
         super().__init__(base_projects_path, project_name, network_code,
                          use_srces=use_srces)
@@ -223,7 +224,7 @@ class Classifier(ProjectManager):
         if self.files.classification_model.exists():
             try:
                 self.event_classifier = EventClassifier.read(
-                    self.files.classification_model)
+                    self.files.classification_model, gpu=self.gpu)
             except Exception as e:
                 logger.error(e)
 
@@ -243,7 +244,8 @@ class Classifier(ProjectManager):
         self.event_classifier.write(self.files.classification_model)
 
     def add_model_from_file(self, classifier_model_path: str):
-        classifier_model = model.EventClassifier.read(classifier_model_path)
+        classifier_model = model.EventClassifier.read(classifier_model_path,
+                                                      gpu=self.gpu)
         self.add_model(classifier_model)
 
     def model_migration(self):
