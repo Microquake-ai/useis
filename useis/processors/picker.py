@@ -144,15 +144,14 @@ class Picker(ProjectManager):
                             self.files.picker_settings)
             super().__init__(base_projects_path, project_name, network_code)
 
-        self.files.ai_picker_model = self.paths.ai_models / \
-                                     'picker_model.pickle'
+        self.files.picker_model = self.paths.ai_models / 'picker.pickle'
 
         self.ai_picker = None
 
-        if self.files.ai_picker_model.is_file():
-            if self.files.ai_picker_model.is_file():
+        if self.files.picker_model.is_file():
+            if self.files.picker_model.is_file():
                 self.ai_picker = AIPicker.read(
-                    self.files.ai_picker_model)
+                    self.files.picker_model)
 
     @staticmethod
     def read_nmx_pick(pick_file: str):
@@ -186,10 +185,14 @@ class Picker(ProjectManager):
 
         return out_picks
 
-    def add_ai_picker_from_file(self, file_path):
-        # shutil.copyfile(file_path, self.files.ai_picker_model)
+    def add_picker_model_from_file(self, file_path):
+        # shutil.copyfile(file_path, self.files.picker_model)
         self.ai_picker = AIPicker.read(file_path)
-        self.ai_picker.write(self.files.ai_picker_model)
+        self.ai_picker.write(self.files.picker_model)
+
+    def add_picker_model(self, model):
+        self.ai_picker = model
+        self.ai_picker.write(self.files.picker_model)
 
     def snr_repick(self, stream: uquake.core.stream.Stream,
                    picks: uquake.core.event.Pick, ai_enhanced=True,

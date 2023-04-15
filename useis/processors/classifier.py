@@ -645,6 +645,8 @@ class Classifier(ProjectManager):
             if starting_model is None:
                 logger.info('using the ResNet34 as the default starting model')
                 starting_model = models.resnet34()
+        else:
+            starting_model = self.event_classifier.model
 
         train, test, validation = self.split_dataset(use_synthetic=use_synthetic)
 

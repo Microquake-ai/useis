@@ -32,6 +32,8 @@ for e in tqdm(range(0, epoch)):
         train_dataset, batch_size=batch_size)
     train_losses.append(train_loss_mean)
 
+    print(f'test loss: {test_loss_mean:0.2f}\ntrain loss: {train_loss_mean:0.2f}')
+
 picker.save('/data_1/ai_models/ai_picker.pickle')
 
 plt.figure(1)

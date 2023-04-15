@@ -1,4 +1,5 @@
 from torchvision import models
+from torchvision.models import resnet34
 from .dataset import (Dataset, PickingDataset, ClassifierDataset1D,
                       spectrogram)
 from torch.utils.data import DataLoader
@@ -17,20 +18,8 @@ from torch import nn
 from .resnet1d import ResNet1D
 from importlib import reload
 from ipdb import set_trace
-# from .dataset as dataset
-# reload(dataset)
 
 from .params import *
-# sampling_rate = 6000
-# # num_threads = int(np.ceil(cpu_count() - 10))
-# num_threads = 10
-# replication_level = 5
-# snr_threshold = 10
-# sequence_length_second = 2
-# perturbation_range_second = 1
-# image_width = 256
-# image_height = 64
-# buffer_image_fraction = 0.05
 
 
 class EventClassifier(object):
@@ -66,13 +55,12 @@ class EventClassifier(object):
             else:
                 logger.info('GPU will be used')
         else:
-            device = 'cpu'
+            device = torch.device('cpu')
             logger.info('The CPU will be used')
 
         self.device = device
 
         self.model = self.model.to(self.device)
-        # self.display_memory()
         self.accuracies = []
         self.losses = []
 
@@ -176,16 +164,38 @@ class EventClassifier(object):
         memory = torch.cuda.memory_allocated(self.device)
         logger.info("{:.3f} GB".format(memory / 1024 ** 3))
 
+    @property
+    def model_state(self):
+        out_dict = {'model_state': ec.model.state_dict(),
+                    'out_features': ec.n_features,
+                    'label_map': ec.label_mapping,
+                    'learning_rate': ec.learning_rate,
+                    'model_id': ec.model_id}
+        return out_dict
+
     def save(self, file_name):
-        return pickle.dump(self, open(file_name, 'wb'))
+        return pickle.dump(self.model_state, open(file_name, 'wb'))
 
     def write(self, file_name):
         return self.save(file_name)
 
     @classmethod
-    def read(cls, file_name):
-        with open(file_name, 'rb') as f_in:
-            return pickle.load(f_in)
+    def read(cls, file_name, gpu=True):
+        model_state = pickle.load(open(file_name, 'rb'))
+
+        # def __init__(self, n_features: int, label_mapping, gpu: bool = True,
+        #              learning_rate: float = 0.001,
+        #              model=models.resnet34(), model_id=None):
+        ec = cls(model_state['out_features'], model_state['label_map'], gpu=gpu,
+                  learning_rate=model_state['learning_rate'],
+                  model_id=model_state['model_id'])
+        ec.model.load_state_dict(in_dict['model_state'])
+        ec.model.eval()
+        return ec
+
+    @classmethod
+    def load(cls, file_name, gpu=True):
+        return cls.read(file_name, gpu=gpu)
 
     @staticmethod
     def measure_accuracy(targets, predictions):
@@ -567,6 +577,9 @@ class AIPicker(object):
         with(open(file_name, 'wb')) as f_out:
             pickle.dump(self, f_out)
         # torch.save(self.model.state_dict(), file_name)
+
+    def write(self, file_name):
+        self.save(file_name)
 
     @classmethod
     def read(cls, file_name):

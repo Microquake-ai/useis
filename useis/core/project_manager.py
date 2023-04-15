@@ -188,7 +188,8 @@ class ProjectManager(object):
                       'hdf5_tt': self.paths.hdf5_times /
                                  'travel_times_tables.h5f',
                       'classification_model': self.paths.ai_models /
-                                              'classification.pickle'}
+                                              'classification.pickle',
+                      'picker_model': self.paths.ai_models / 'picker.pickle'}
 
         self.files = AttribDict(self.files)
         self.databases = AttribDict()
