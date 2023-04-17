@@ -11,20 +11,20 @@ for i, station in enumerate(inventory[0]):
         station_number = int(station.historical_code.split('_')[0][4:])
         location_code = int(station.historical_code.split('_')[1][0])
         inventory[0][i].code = f'UG{station_number:02d}'
+        if 'ACC' in station.historical_code:
+            # Accelerometer
+            channel_prefix = 'GN'
+            if station_number in [1, 2, 3, 4, 5]:
+                location_code = 1
+        else:
+            # Geophone
+            channel_prefix = 'GP'
+            if station_number in [1, 2, 3, 4, 5]:
+                location_code = 2
     else:
         station_number = int(station.historical_code.split('_')[0][2:])
         location_code = int(station.historical_code.split('_')[1][0])
         inventory[0][i].code = f'SS{station_number:02d}'
-    if 'ACC' in station.historical_code:
-        # Accelerometer
-        channel_prefix = 'GN'
-        if station_number in [1, 2, 3, 4, 5]:
-            location_code = 1
-    else:
-        # Geophone
-        channel_prefix = 'GP'
-        if station_number in [1, 2, 3, 4, 5]:
-            location_code = 2
 
     for extra_key in inventory[0][i].extra.keys():
         inventory[0][i].extra[extra_key].namespace = ns

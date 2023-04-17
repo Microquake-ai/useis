@@ -39,10 +39,11 @@ reload(model)
 
 
 class ClassifierResult(object):
-    def __init__(self, raw_output, label_mapping, inputs):
+    def __init__(self, raw_output, label_mapping, inputs, inventory):
         self.raw_output = raw_output
         self.label_mapping = label_mapping
         self.inputs = inputs
+        self.inventory = inventory
 
     @property
     def predictions(self):
@@ -69,6 +70,34 @@ class ClassifierResult(object):
             classes.append(key)
 
         return classes
+
+    def predicted_class_ensemble(self, event_location):
+        """
+        Predicted class for the trace ensemble. Prediction from each individual trace is
+        weighted with the inverse of the distance. Provides a probability for each class
+        @param event_location:
+        @return:
+        """
+
+        distances = []
+        probabilities = {}
+        for label in self.label_mapping.keys():
+            probabilities[label] = 0
+        for trace, prob in zip(self.inputs, self.probabilities.detach().numpy()):
+            site_loc = self.inventory.select(station=trace.stats.station,
+                                             location=trace.stats.location).sites[0].loc
+
+            distance = np.linalg.norm(site_loc - event_location)
+
+            for i, label in enumerate(self.label_mapping.keys()):
+                probabilities[label] += prob[i] / distance
+
+            distances.append(distance)
+
+        for label in self.label_mapping.keys():
+            probabilities[label] /= np.sum(1 / np.array(distances))
+
+        return probabilities
 
     @property
     def class_count(self):
@@ -107,7 +136,6 @@ class ClassifierResult(object):
     #                   labels=self.predicted_classes,
     #                   probabilities=self.probabilities.detach().numpy(
     #                   ).tolist())
-
 
     def to_dict(self):
         outputs = []
@@ -302,7 +330,7 @@ class Classifier(ProjectManager):
 
         return ClassifierResult(self.event_classifier.model(merged_images).cpu(),
                                 self.label_mapping,
-                                st)
+                                st, self.inventory.copy())
 
     def build_training_data_set_list(self):
         self.files.training_dataset = \

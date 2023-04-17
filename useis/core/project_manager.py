@@ -393,6 +393,7 @@ class ProjectManager(object):
 
         inventory.write(str(self.files.inventory))
         self.srces = Srces.from_inventory(inventory)
+        self.inventory = inventory
         if create_srces_file:
             with open(self.files.srces, 'wb') as srces_file:
                 pickle.dump(self.srces, srces_file)

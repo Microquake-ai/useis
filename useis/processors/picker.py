@@ -257,8 +257,8 @@ class Picker(ProjectManager):
             
         if ai_enhanced:
             if self.ai_picker is None:
-                logger.error('no ai picker model in the project\n'
-                             'to add a ai picker model please use the'
+                logger.error('no picker picker model in the project\n'
+                             'to add a picker picker model please use the'
                              'add_ai_picker_from_file method')
             else:
                 self.ai_pick(stream.copy(), out_picks)

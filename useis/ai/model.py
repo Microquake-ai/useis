@@ -18,29 +18,47 @@ from torch import nn
 from .resnet1d import ResNet1D
 from importlib import reload
 from ipdb import set_trace
+# import urllib.request
+import requests
+from io import BytesIO
+from uquake.core.util.requests import download_file_from_url
 
 from .params import *
 
 
+# class SeismicResnet34(type(resnet34())):
+#     def __init__(self, num_input_channels=3, n_out_features=3):
+#         super(SeismicResnet34, self).__init__()
+#         self.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
+#                                padding=3, bias=False)
+#
+#         self.fc = nn.Linear(self.fc.in_features, n_out_features)
+
+
 class EventClassifier(object):
-    def __init__(self, n_features: int, label_mapping, gpu: bool = True,
-                 learning_rate: float = 0.001,
-                 model=models.resnet34(), model_id=None):
+    def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
+                 learning_rate: float = 0.001, model_id=None):
 
         # define the model
-        self.model = model
+        self.model = resnet34()
+        num_input_channels = 3
+        self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
+                               padding=3, bias=False)
+
+        self.model.fc = nn.Linear(self.model.fc.in_features, n_out_features)
+
         self.model_id = model_id
 
         num_input_channels = 3
         self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
                                      padding=3, bias=False)
 
-        self.n_features = n_features
-        self.num_classes = n_features
+        self.n_features = n_out_features
+        self.num_classes = n_out_features
         self.learning_rate = learning_rate
 
         # Replace the last fully-connected layer to output the desired number of classes
-        self.model.fc = nn.Linear(self.model.fc.in_features, n_features)
+        self.model.fc = nn.Linear(self.model.fc.in_features, n_out_features)
 
         # self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
@@ -98,6 +116,9 @@ class EventClassifier(object):
         for inputs, targets in tqdm(training_loader):
             self.iterate(inputs, targets)
             torch.cuda.empty_cache()
+
+    def forward(self, x):
+        return self.model.forward(x)
 
     def iterate(self, inputs, targets):
 
@@ -166,11 +187,11 @@ class EventClassifier(object):
 
     @property
     def model_state(self):
-        out_dict = {'model_state': ec.model.state_dict(),
-                    'out_features': ec.n_features,
-                    'label_map': ec.label_mapping,
-                    'learning_rate': ec.learning_rate,
-                    'model_id': ec.model_id}
+        out_dict = {'model_state': self.model.state_dict(),
+                    'out_features': self.n_features,
+                    'label_map': self.label_mapping,
+                    'learning_rate': self.learning_rate,
+                    'model_id': self.model_id}
         return out_dict
 
     def save(self, file_name):
@@ -180,8 +201,7 @@ class EventClassifier(object):
         return self.save(file_name)
 
     @classmethod
-    def read(cls, file_name, gpu=True):
-        model_state = pickle.load(open(file_name, 'rb'))
+    def from_model_state(cls, model_state, gpu=True):
         ec = cls(model_state['out_features'], model_state['label_map'], gpu=gpu,
                  learning_rate=model_state['learning_rate'],
                  model_id=model_state['model_id'])
@@ -190,44 +210,63 @@ class EventClassifier(object):
         return ec
 
     @classmethod
-    def load(cls, file_name, gpu=True):
-        return cls.read(file_name, gpu=gpu)
+    def read(cls, file_name, gpu=True):
+        model_state = pickle.load(open(file_name, 'rb'))
+        return cls.from_model_state(model_state, gpu=gpu)
+
+    @classmethod
+    def load(cls, gpu=True):
+        """
+        load the most recent model
+        """
+
+        # Download the model from Dropbox
+        url = 'https://www.dropbox.com/s/5d76v8hfi3dwsm0/classification_model.useis?dl=1'
+
+        model_data = download_file_from_url(url)
+
+        # Load the model from the BytesIO object
+        model_state = pickle.load(model_data)
+
+        return cls.from_model_state(model_state, gpu=gpu)
+
 
     @staticmethod
     def measure_accuracy(targets, predictions):
         max_index = predictions.max(dim=1)[1]
         return (max_index == targets).sum() / len(targets)
 
-    def predict(self, stream: Stream):
-        """
-
-        :param stream: A uquake.core.stream.Stream object containing the
-        waveforms
-        :return:
-        """
-        specs = generate_spectrogram(stream)
-        return self.predict_spectrogram(specs)
-
-    def predict_spectrogram(self, specs):
-        self.model.eval()
-        if isinstance(specs, list):
-            specs = np.array(specs)
-        if len(specs.shape) == 2:
-            specs = torch.from_numpy(specs).view(1, 1, specs.shape[0],
-                                                 specs.shape[1])
-        else:
-            specs = torch.from_numpy(specs).view(specs.shape[0], 1,
-                                                 specs.shape[1],
-                                                 specs.shape[2])
-
-        specs = specs.to(self.device)
-        # self.model.train()
-        with torch.no_grad():
-            predictions = (self.model(specs).argmax(axis=1).cpu(),
-                           self.model(specs).cpu())
-
-        self.model.train()
-        return predictions
+    # These function are no longer working
+    # def predict(self, stream: Stream):
+    #     """
+    #
+    #     :param stream: A uquake.core.stream.Stream object containing the
+    #     waveforms
+    #     :return:
+    #     """
+    #     specs = generate_spectrogram(stream)
+    #     return self.predict_spectrogram(specs)
+    #
+    # def predict_spectrogram(self, specs):
+    #     self.model.eval()
+    #     if isinstance(specs, list):
+    #         specs = np.array(specs)
+    #     if len(specs.shape) == 2:
+    #         specs = torch.from_numpy(specs).view(1, 1, specs.shape[0],
+    #                                              specs.shape[1])
+    #     else:
+    #         specs = torch.from_numpy(specs).view(specs.shape[0], 1,
+    #                                              specs.shape[1],
+    #                                              specs.shape[2])
+    #
+    #     specs = specs.to(self.device)
+    #     # self.model.train()
+    #     with torch.no_grad():
+    #         predictions = (self.model(specs).argmax(axis=1).cpu(),
+    #                        self.model(specs).cpu())
+    #
+    #     self.model.train()
+    #     return predictions
 
 
 def read_classifier(file_name):
@@ -245,8 +284,6 @@ def generate_spectrogram(stream: Stream):
         trs.append(tr.copy())
 
     st2 = Stream(traces=trs)
-    # st2 = st2.trim(endtime=tr.stats.starttime + 2, pad=True,
-    #                fill_value=0)
     st2 = st2.detrend('demean').detrend('linear')
 
     st2 = st2.taper(max_percentage=1, max_length=1e-2)

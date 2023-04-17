@@ -12,7 +12,7 @@ project = 'classifier'
 network = 'OT'
 base_directory = '/data_1/projects/'
 
-ec = classifier.Classifier(base_directory, project, network)
+ec = classifier.Classifier(base_directory, project, network, gpu=False)
 
 app = FastAPI()
 
