@@ -133,3 +133,8 @@ dmypy.json
 
 # models
 *.pickle
+*.useis
+
+# seismic data
+*.mseed
+

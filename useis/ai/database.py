@@ -1,5 +1,5 @@
 from sqlalchemy import (create_engine, Column, Integer, String, Float, Boolean, MetaData,
-                        distinct)
+                        distinct, Table)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import sqlite3
@@ -17,6 +17,9 @@ class Record(Base):
     id = Column(Integer, primary_key=True)
     event_id = Column(String)
     spectrogram_filename = Column(String)
+    station = Column(String)
+    location = Column(String)
+    channel = Column(String)
     channel_id = Column(Integer)
     magnitude = Column(Float)
     duration = Column(Float)
@@ -50,7 +53,8 @@ class DBManager(object):
         Base.metadata.create_all(self.engine)
         self.table_name = Record.__tablename__
 
-    def add_record(self, event_id=None, spectrogram_filename=None, channel_id=None,
+    def add_record(self, event_id=None, spectrogram_filename=None,
+                   station=None, location=None, channel=None, channel_id=None,
                    magnitude=None, duration=None, end_time=None,
                    sampling_rate=None, categories=None, original_event_type=None,
                    mseed_file=None, sensor_type=None, bounding_box=None,
@@ -65,6 +69,9 @@ class DBManager(object):
 
         record = Record(event_id=event_id,
                         spectrogram_filename=spectrogram_filename,
+                        station=station,
+                        location=location,
+                        channel=channel,
                         channel_id=channel_id,
                         magnitude=magnitude,
                         duration=duration,
@@ -83,13 +90,24 @@ class DBManager(object):
         session.commit()
         session.close()
 
-    def clear_database(self):
-        self.metadata.reflect()
+    # def clear_database(self):
+    #     self.metadata.reflect()
+    #
+    #     for table in reversed(metadata.sorted_tables):
+    #         conn = engine.connect()
+    #         conn.execute(table.delete())
+    #         conn.close()
 
-        for table in reversed(metadata.sorted_tables):
-            conn = engine.connect()
-            conn.execute(table.delete())
-            conn.close()
+    def clear_database(self):
+        # Get the table object based on the table name stored in the class
+
+        table = Table(self.table_name, self.metadata, sqlite3_autoload=True,
+                      autoload_with=self.engine)
+
+        # Delete all records from the table
+        delete_statement = table.delete()
+        self.session.execute(delete_statement)
+        self.session.commit()
 
     def event_exists(self, event_id):
         session = self.Session()

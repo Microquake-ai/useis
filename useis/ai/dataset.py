@@ -16,6 +16,7 @@ from .params import *
 from typing import List, Dict
 import random
 from torchvision import transforms
+from ipdb import set_trace
 
 
 def get_file_list(input_directory, suffix, extension='png'):
@@ -181,8 +182,8 @@ buffer_image_sample = int(image_width * buffer_image_fraction)
 def spectrogram(trace: Trace):
 
     sequence_length_second = trace.stats.endtime - trace.stats.starttime
-    sampling_rate = trace.stats.sampling_rate
-    trace.detrend('demean').detrend('linear').taper(max_percentage=0.1)
+    # sampling_rate = trace.stats.sampling_rate
+    trace.detrend('demean').detrend('linear').taper(max_percentage=0.1, max_length=0.01)
     # from ipdb import set_trace
     # set_trace()
     hop_length = int(np.floor(sequence_length_second * sampling_rate /
@@ -426,6 +427,75 @@ class SpectrogramDataset(Dataset):
         return rgb
 
 
+class SpectrogramDataset2(Dataset):
+    def __init__(self, file_list: List[Dict], labels: List[int], labels_mapping: Dict,
+                 random_seed: int = 10):
+        self.file_list = file_list
+        self.labels = labels
+        self.random_seed = random_seed
+        self.window_lengths = []
+
+        self.unique_labels = np.unique(self.labels)
+        self.label_mapping = labels_mapping
+
+        # Set random seed for reproducibility
+        random.seed(self.random_seed)
+
+        # Define image transforms
+    @classmethod
+    def transform(cls, image):
+        transform = transforms.Compose([
+            transforms.Resize((224, 224)),
+            transforms.Grayscale(num_output_channels=1),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])
+        ])
+
+        ts_image = transform(image)
+        image_tensor = ts_image
+        # image_tensor = ts_image.unsqueeze(0)
+        return image_tensor
+
+    def get_label(self, label_vect):
+        for key in self.label_mapping.keys():
+            if np.all(self.label_mapping[key] == np.array(label_vect)):
+                break
+        return key
+
+    @property
+    def num_classes(self):
+        return len(self.unique_labels)
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, idx):
+        # Load the three channel images and combine them into an RGB image
+        # red_image_path = self.file_list[idx]['s1']
+        # green_image_path = self.file_list[idx]['s2']
+        # blue_image_path = self.file_list[idx]['s3']
+        # red_image = Image.open(red_image_path)
+        # green_image = Image.open(green_image_path)
+        # blue_image = Image.open(blue_image_path)
+        # rgb_image = self.merge_reshape(red_image, green_image, blue_image)
+
+        # Get the corresponding label
+        label = self.label_mapping[self.labels[idx]]
+        image = Image.open(self.file_list[idx]['s1'])
+
+        return self.transform(image), label
+
+    # @classmethod
+    # def merge_reshape(cls, short, medium, long):
+    #     """
+    #
+    #     @param short: spectrogram from the short window
+    #     @param medium: spectrogram from the medium size window
+    #     @param long: spectrogram from the long window
+    #     @return: the merge and transformed image
+    #     """
+    #     rgb = cls.transform(Image.merge("RGB", (short, medium, long)))
+    #     return rgb
 
 
 

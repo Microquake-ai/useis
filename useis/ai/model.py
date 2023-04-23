@@ -37,11 +37,12 @@ from .params import *
 
 class EventClassifier(object):
     def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
-                 learning_rate: float = 0.001, model_id=None):
+                 learning_rate: float = 0.001, model_id=None, model=models.resnet34()):
 
         # define the model
-        self.model = resnet34()
+        self.model = model
         num_input_channels = 3
+        self.num_imput_channels = num_input_channels
         self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
                                padding=3, bias=False)
 
@@ -49,7 +50,6 @@ class EventClassifier(object):
 
         self.model_id = model_id
 
-        num_input_channels = 3
         self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
                                      padding=3, bias=False)
 
@@ -230,43 +230,77 @@ class EventClassifier(object):
 
         return cls.from_model_state(model_state, gpu=gpu)
 
-
     @staticmethod
     def measure_accuracy(targets, predictions):
         max_index = predictions.max(dim=1)[1]
         return (max_index == targets).sum() / len(targets)
 
-    # These function are no longer working
-    # def predict(self, stream: Stream):
-    #     """
+
+class EventClassifier2(EventClassifier):
+    def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
+                 learning_rate: float = 0.001, model=models.resnet34(), model_id=None):
+        super().__init__(n_out_features, label_mapping, gpu=gpu,
+                                               learning_rate=learning_rate,
+                                               model_id=model_id, model=model)
+        self.num_input_channels = 1
+
+        self.model.conv1 = nn.Conv2d(self.num_input_channels, 64, kernel_size=7,
+                                     stride=2, padding=3, bias=False)
+
+        self.model.to(self.device)
+
+    @staticmethod
+    def trace2spectrogram(trace: Trace):
+        return generate_spectrogram(Stream(traces=[trace]))
+
+    @staticmethod
+    def stream2spectrogram(stream: Stream):
+        return generate_spectrogram(stream)
+
+    @property
+    def model_state(self):
+        out_dict = {'model_state': self.model.state_dict(),
+                    'out_features': self.n_features,
+                    'label_map': self.label_mapping,
+                    'learning_rate': self.learning_rate,
+                    'model_id': self.model_id}
+        return out_dict
+
+    def save(self, file_name):
+        return pickle.dump(self.model_state, open(file_name, 'wb'))
+
+    def write(self, file_name):
+        return self.save(file_name)
+
+    @classmethod
+    def from_model_state(cls, model_state, gpu=True):
+        ec = cls(model_state['out_features'], model_state['label_map'],
+                 gpu=gpu, learning_rate=model_state['learning_rate'],
+                 model_id=model_state['model_id'])
+        ec.model.load_state_dict(model_state['model_state'])
+        ec.model.eval()
+        return ec
+
+    @classmethod
+    def read(cls, file_name, gpu=True):
+        model_state = pickle.load(open(file_name, 'rb'))
+        return cls.from_model_state(model_state, gpu=gpu)
+
+    @classmethod
+    def load(cls, gpu=True):
+        """
+        load the most recent model
+        """
     #
-    #     :param stream: A uquake.core.stream.Stream object containing the
-    #     waveforms
-    #     :return:
-    #     """
-    #     specs = generate_spectrogram(stream)
-    #     return self.predict_spectrogram(specs)
+    #     # Download the model from Dropbox
+    #     url = 'https://www.dropbox.com/s/5d76v8hfi3dwsm0/classification_model.useis?dl=1'
     #
-    # def predict_spectrogram(self, specs):
-    #     self.model.eval()
-    #     if isinstance(specs, list):
-    #         specs = np.array(specs)
-    #     if len(specs.shape) == 2:
-    #         specs = torch.from_numpy(specs).view(1, 1, specs.shape[0],
-    #                                              specs.shape[1])
-    #     else:
-    #         specs = torch.from_numpy(specs).view(specs.shape[0], 1,
-    #                                              specs.shape[1],
-    #                                              specs.shape[2])
+    #     model_data = download_file_from_url(url)
     #
-    #     specs = specs.to(self.device)
-    #     # self.model.train()
-    #     with torch.no_grad():
-    #         predictions = (self.model(specs).argmax(axis=1).cpu(),
-    #                        self.model(specs).cpu())
+    #     # Load the model from the BytesIO object
+    #     model_state = pickle.load(model_data)
     #
-    #     self.model.train()
-    #     return predictions
+    #     return cls.from_model_state(model_state, gpu=gpu)
 
 
 def read_classifier(file_name):
