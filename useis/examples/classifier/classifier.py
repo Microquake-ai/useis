@@ -1,5 +1,6 @@
 from useis.processors import classifier
 from importlib import reload
+from useis.ai import model
 reload(classifier)
 
 base_directory = '.'
