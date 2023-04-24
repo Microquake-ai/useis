@@ -146,7 +146,7 @@ for context_mseed in filenames[121:]:
         input(output.predicted_class_ensemble(cat[0].preferred_origin().loc))
 
         plot_results(st2, output.predicted_classes,
-                    attention_end=end_time - end_time_perturbation)
+                     attention_end=end_time - end_time_perturbation)
 
     # end_time = st_context[0].stats.endtime
     # outputs = []

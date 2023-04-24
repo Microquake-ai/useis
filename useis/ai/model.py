@@ -37,7 +37,8 @@ from .params import *
 
 class EventClassifier(object):
     def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
-                 learning_rate: float = 0.001, model_id=None, model=models.resnet34()):
+                 learning_rate: float = 0.001, model_id=None, model=models.resnet34(),
+                 weight_decay: float = 0.001):
 
         # define the model
         self.model = model
@@ -50,18 +51,17 @@ class EventClassifier(object):
 
         self.model_id = model_id
 
-        self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
-                                     padding=3, bias=False)
-
         self.n_features = n_out_features
         self.num_classes = n_out_features
         self.learning_rate = learning_rate
+        self.weight_decay = weight_decay
 
         # Replace the last fully-connected layer to output the desired number of classes
         self.model.fc = nn.Linear(self.model.fc.in_features, n_out_features)
 
         # self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate,
+                                          weight_decay=weight_decay)
         self.criterion = nn.CrossEntropyLoss()
         self.gpu = gpu
 
@@ -238,16 +238,45 @@ class EventClassifier(object):
 
 class EventClassifier2(EventClassifier):
     def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
-                 learning_rate: float = 0.001, model=models.resnet34(), model_id=None):
+                 learning_rate: float = 0.001, model=models.resnet34(), model_id=None,
+                 weight_decay: float = 0.001, dropout_prob: float = 0.3):
         super().__init__(n_out_features, label_mapping, gpu=gpu,
-                                               learning_rate=learning_rate,
-                                               model_id=model_id, model=model)
+                         learning_rate=learning_rate, model_id=model_id, model=model,
+                         weight_decay=weight_decay)
         self.num_input_channels = 1
 
         self.model.conv1 = nn.Conv2d(self.num_input_channels, 64, kernel_size=7,
                                      stride=2, padding=3, bias=False)
 
         self.model.to(self.device)
+
+        self.dropout = nn.Dropout(p=dropout_prob)
+
+    def forward(self, x):
+        x = self.resnet34.conv1(x)
+        x = self.resnet34.bn1(x)
+        x = self.resnet34.relu(x)
+        x = self.resnet34.maxpool(x)
+
+        # Stage 1
+        x = self.resnet34.layer1(x)
+
+        # Stage 2
+        x = self.resnet34.layer2(x)
+
+        # Stage 3
+        x = self.resnet34.layer3(x)
+
+        # Stage 4
+        x = self.resnet34.layer4(x)
+
+        # Apply dropout to the output of the last convolutional layer
+        x = self.dropout(x)
+
+        x = self.resnet34.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.resnet34.fc(x)
+        return x
 
     @staticmethod
     def trace2spectrogram(trace: Trace):
@@ -336,7 +365,7 @@ class EventClassifier1D(EventClassifier):
     def __init__(self, n_classes: int, in_channels: int = 1,
                  base_filters: int = 16, kernel_size: int = 7,
                  stride: int = 3, groups: int = 1, n_block: int = 8,
-                 learning_rate=1e-3, gpu: bool = True):
+                 learning_rate=1e-3, gpu: bool = True, weight_decay: float = 0.001):
 
         if gpu:
             device = torch.device("cuda:0" if
@@ -371,7 +400,8 @@ class EventClassifier1D(EventClassifier):
                               n_classes).to(self.device)
 
         self.optimizer = torch.optim.Adam(self.model.parameters(),
-                                          lr=learning_rate)
+                                          lr=learning_rate,
+                                          weight_decay=weight_decay)
         # self.optimizer = torch.optim.SGD(self.model.parameters(),
         #                                  lr=learning_rate)
         self.criterion = nn.CrossEntropyLoss()

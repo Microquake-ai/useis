@@ -73,6 +73,22 @@ class ClassifierResult(object):
 
         return classes
 
+    @property
+    def raw_output_strings(self):
+        output_strings = []
+        for raw_output in self.raw_output.detach().numpy():
+            output_string = ''
+            indices = np.argsort(raw_output)[::-1]
+            keys = [key for key in self.label_mapping.keys()]
+            for j, i in enumerate(indices):
+                output_string += f'{keys[i]}: {raw_output[i]:02.0f}'
+                if j < 2:
+                    # add divider
+                    output_string += ' | '
+
+            output_strings.append(output_string)
+        return output_strings
+
     def predicted_class_ensemble(self, event_location=None):
         """
         Predicted class for the trace ensemble. Prediction from each individual trace is
@@ -891,7 +907,7 @@ class Classifier2(Classifier):
 
     def add_model_from_file(self, classifier_model_path: str):
         classifier_model = model.EventClassifier2.read(classifier_model_path,
-                                                      gpu=self.gpu)
+                                                       gpu=self.gpu)
         self.add_model(classifier_model)
 
     def model_migration(self):
@@ -908,8 +924,10 @@ class Classifier2(Classifier):
               starting_model=None, override_current_model=False,
               batch_size: int = 500, plot_progress: bool = True,
               model_id: str = None, save_intermediate_models: bool = False,
+              intermediate_model_saving_interval: int = 10,
               save_final_model: bool = True, use_synthetic: bool = True,
-              nb_epoch: int = 100):
+              nb_epoch: int = 100, weight_decay: float = 0.001,
+              dropout_prob: float = 0.2):
 
         if model_id is None:
             model_id = str(uuid4())
@@ -925,7 +943,9 @@ class Classifier2(Classifier):
 
         ec = model.EventClassifier2(self.num_classes, self.label_mapping,
                                     learning_rate=learning_rate,
-                                    model=starting_model)
+                                    model=starting_model,
+                                    weight_decay=weight_decay,
+                                    dropout_prob=dropout_prob)
 
         test_losses = []
         test_accuracies = []
@@ -955,7 +975,7 @@ class Classifier2(Classifier):
             train_accuracies.append(np.mean(ec.accuracies))
             # accuracies.append(np.mean(ec.accuracies))
 
-            if (epoch + 1) % 10 == 0:
+            if (epoch + 1) % intermediate_model_saving_interval == 0:
                 # ec.model.eval()
                 ec.optimizer.param_groups[0]['lr'] /= np.sqrt(2)
                 if save_intermediate_models:
@@ -1233,7 +1253,7 @@ class Classifier2(Classifier):
         return Stream(traces=traces)
 
     def predict(self, st: uquake.core.stream.Stream, cut_from_start=True,
-                event_locaiton=None):
+                event_location=None):
         """
         :param st: the waveforms
         :type st: uquake.core.stream.Stream
@@ -1284,7 +1304,7 @@ class Classifier2(Classifier):
 
         return ClassifierResult(self.event_classifier.model(merged_images).cpu(),
                                 self.label_mapping,
-                                st, self.inventory.copy(), event_location=event_locaiton)
+                                st, self.inventory.copy(), event_location=event_location)
 
 
 
