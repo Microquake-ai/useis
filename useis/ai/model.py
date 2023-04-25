@@ -202,11 +202,12 @@ class EventClassifier(object):
                     'label_map': self.label_mapping,
                     'learning_rate': self.learning_rate,
                     'model_id': self.model_id}
-        self.model.to(self.device)
         return out_dict
 
     def save(self, file_name):
-        return pickle.dump(self.model_state, open(file_name, 'wb'))
+        pickle.dump(self.model_state, open(file_name, 'wb'))
+        self.model.to(self.device)
+        return
 
     def write(self, file_name):
         return self.save(file_name)
