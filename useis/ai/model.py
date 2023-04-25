@@ -39,28 +39,34 @@ class EventClassifier(object):
 
     model_url = \
             'https://www.dropbox.com/s/5d76v8hfi3dwsm0/classification_model.useis?dl=1'
-    def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
-                 learning_rate: float = 0.001, model_id=None, model=models.resnet34(),
-                 weight_decay: float = 0.001):
+    n_out_features = 3
+    label_mapping = {
+        'noise': np.array([1., 0., 0.]),
+        'blast': np.array([0., 1., 0.]),
+        'seismic event': np.array([0., 0., 1.])
+    }
+
+    def __init__(self, gpu: bool = True, learning_rate: float = 0.001, model_id=None,
+                 model=models.resnet34(), weight_decay: float = 0.001):
 
         # define the model
         self.model = model
         num_input_channels = 3
         self.num_imput_channels = num_input_channels
         self.model.conv1 = nn.Conv2d(num_input_channels, 64, kernel_size=7, stride=2,
-                               padding=3, bias=False)
+                                     padding=3, bias=False)
 
-        self.model.fc = nn.Linear(self.model.fc.in_features, n_out_features)
+        self.model.fc = nn.Linear(self.model.fc.in_features, self.n_out_features)
 
         self.model_id = model_id
 
-        self.n_features = n_out_features
-        self.num_classes = n_out_features
+        self.n_features = self.n_out_features
+        self.num_classes = self.n_out_features
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
 
         # Replace the last fully-connected layer to output the desired number of classes
-        self.model.fc = nn.Linear(self.model.fc.in_features, n_out_features)
+        self.model.fc = nn.Linear(self.model.fc.in_features, self.n_out_features)
 
         # self.optimizer = torch.optim.SGD(self.model.parameters(), lr=learning_rate)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate,
@@ -75,13 +81,11 @@ class EventClassifier(object):
         self.losses = []
 
         self.iteration = 0
-        self.label_mapping = label_mapping
         # Download the model from Dropbox
 
     @classmethod
     def from_pretrained_model(cls, model, gpu: bool = True):
-        n_features = model.fc.out_features
-        cls_tmp = cls(n_features, gpu=gpu, model=model)
+        cls_tmp = cls(gpu=gpu, model=model)
         # cls_tmp.model = model.to(cls_tmp.device)
         return cls_tmp
 
@@ -102,10 +106,9 @@ class EventClassifier(object):
 
 
     @classmethod
-    def from_pretrained_model_file(cls, path, gpu: bool = True):
-        with open(path, 'rb') as input_file:
-            model = pickle.load(input_file)
-
+    def from_pretrained_model_file(cls, file_name, gpu: bool = True):
+        # with open(path, 'rb') as input_file:
+        model = torch.load(file_name, map_location=cls.select_device(gpu=gpu))
         return cls.from_pretrained_model(model, gpu=gpu)
 
     # @classmethod
@@ -194,38 +197,37 @@ class EventClassifier(object):
         memory = torch.cuda.memory_allocated(self.device)
         logger.info("{:.3f} GB".format(memory / 1024 ** 3))
 
-    @property
-    def model_state(self):
-        self.model.to('cpu')
-        out_dict = {'model_state': self.model.state_dict(),
-                    'out_features': self.n_features,
-                    'label_map': self.label_mapping,
-                    'learning_rate': self.learning_rate,
-                    'model_id': self.model_id}
-        return out_dict
+    # @property
+    # def model_state(self):
+    #     self.model.to('cpu')
+    #     out_dict = {'model_state': self.model.state_dict(),
+    #                 'out_features': self.n_features,
+    #                 'label_map': self.label_mapping,
+    #                 'learning_rate': self.learning_rate,
+    #                 'model_id': self.model_id}
+    #     return out_dict
 
     def save(self, file_name):
-        pickle.dump(self.model_state, open(file_name, 'wb'))
-        self.model.to(self.device)
+        torch.save(self.model_state, file_name)
         return
 
     def write(self, file_name):
         return self.save(file_name)
 
     @classmethod
-    def from_model_state(cls, model_state, gpu=True):
-        ec = cls(model_state['out_features'], model_state['label_map'], gpu=gpu,
-                 learning_rate=model_state['learning_rate'],
-                 model_id=model_state['model_id'])
-        ec.model.load_state_dict(model_state['model_state'])
+    def from_model_state(cls, state_dict, gpu=True):
+        ec = cls(gpu=gpu)
+        ec.model.load_state_dict(state_dict)
         ec.model.eval()
-        ec.model.to(self.device)
+        ec.model.to(cls.select_device(gpu=gpu))
         return ec
 
     @classmethod
     def read(cls, file_name, gpu=True):
-        model_state = pickle.load(open(file_name, 'rb'))
-        return cls.from_model_state(model_state, gpu=gpu)
+        device = cls.select_device(gpu=gpu)
+        state_dict = torch.load(file_name, map_location=device)
+        # model_state = pickle.load(open(file_name, 'rb'))
+        return cls.from_model_state(state_dict, gpu=gpu)
 
     @classmethod
     def load(cls, gpu=True):
@@ -261,10 +263,10 @@ class EventClassifier2(EventClassifier):
     model_url = \
         'https://www.dropbox.com/s/6u6a3db5wc3oyfl/classification_1s_trace.pickle?dl=1'
 
-    def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
+    def __init__(self, gpu: bool = True,
                  learning_rate: float = 0.001, model=models.resnet34(), model_id=None,
                  weight_decay: float = 0.001, dropout_prob: float = 0.3):
-        super().__init__(n_out_features, label_mapping, gpu=gpu,
+        super().__init__(gpu=gpu,
                          learning_rate=learning_rate, model_id=model_id, model=model,
                          weight_decay=weight_decay)
         self.num_input_channels = 1
@@ -319,25 +321,25 @@ class EventClassifier2(EventClassifier):
                     'model_id': self.model_id}
         return out_dict
 
-    def save(self, file_name):
-        return pickle.dump(self.model_state, open(file_name, 'wb'))
+    # def save(self, file_name):
+    #     return pickle.dump(self.model_state, open(file_name, 'wb'))
+    #
+    # def write(self, file_name):
+    #     return self.save(file_name)
+    #
+    # @classmethod
+    # def from_model_state(cls, model_state, gpu=True):
+    #     ec = cls(model_state['out_features'], model_state['label_map'],
+    #              gpu=gpu, learning_rate=model_state['learning_rate'],
+    #              model_id=model_state['model_id'])
+    #     ec.model.load_state_dict(model_state['model_state'])
+    #     ec.model.eval()
+    #     return ec
 
-    def write(self, file_name):
-        return self.save(file_name)
-
-    @classmethod
-    def from_model_state(cls, model_state, gpu=True):
-        ec = cls(model_state['out_features'], model_state['label_map'],
-                 gpu=gpu, learning_rate=model_state['learning_rate'],
-                 model_id=model_state['model_id'])
-        ec.model.load_state_dict(model_state['model_state'])
-        ec.model.eval()
-        return ec
-
-    @classmethod
-    def read(cls, file_name, gpu=True):
-        model_state = pickle.load(open(file_name, 'rb'))
-        return cls.from_model_state(model_state, gpu=gpu)
+    # @classmethod
+    # def read(cls, file_name, gpu=True):
+    #     model_state = pickle.load(open(file_name, 'rb'))
+    #     return cls.from_model_state(model_state, gpu=gpu)
 
 
 def read_classifier(file_name):
