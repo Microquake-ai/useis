@@ -239,19 +239,16 @@ class EventClassifier(object):
 
         # Load the model from the BytesIO object
 
-        device = self.select_device(gpu=gpu)
+        device = cls.select_device(gpu=gpu)
 
         state_dict = torch.load(model_data, map_location=device)
-        cls.from_model_state(state_dict)
+        return cls.from_model_state(state_dict, gpu=gpu)
         # model = MyModel(...)
         # model.model.load_state_dict(state_dict['model_state'])
         # model.n_features = state_dict['out_features']
         # model.label_mapping = state_dict['label_map']
         # model.learning_rate = state_dict['learning_rate']
         # model.model_id = state_dict['model_id']
-        return model
-
-        return cls.from_model_state(model_state, gpu=gpu)
 
     @staticmethod
     def measure_accuracy(targets, predictions):
@@ -261,7 +258,7 @@ class EventClassifier(object):
 
 class EventClassifier2(EventClassifier):
     model_url = \
-        'https://www.dropbox.com/s/6u6a3db5wc3oyfl/classification_1s_trace.pickle?dl=1'
+        'https://www.dropbox.com/s/yxlb54xx4lzs876/classification_1s_trace.pt?dl=1'
 
     def __init__(self, gpu: bool = True,
                  learning_rate: float = 0.001, model=models.resnet34(), model_id=None,
