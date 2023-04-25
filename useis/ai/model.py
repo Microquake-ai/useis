@@ -68,18 +68,7 @@ class EventClassifier(object):
         self.criterion = nn.CrossEntropyLoss()
         self.gpu = gpu
 
-        if gpu:
-            device = torch.device("cuda:0" if
-                                  torch.cuda.is_available() else "cpu")
-            if device == "cpu":
-                logger.warning('GPU is not available, the CPU will be used')
-            else:
-                logger.info('GPU will be used')
-        else:
-            device = torch.device('cpu')
-            logger.info('The CPU will be used')
-
-        self.device = device
+        self.device = self.select_device(gpu=gpu)
 
         self.model = self.model.to(self.device)
         self.accuracies = []
@@ -95,6 +84,22 @@ class EventClassifier(object):
         cls_tmp = cls(n_features, gpu=gpu, model=model)
         # cls_tmp.model = model.to(cls_tmp.device)
         return cls_tmp
+
+    @staticmethod
+    def select_device(gpu=True):
+        if gpu:
+            device = torch.device("cuda:0" if
+                                  torch.cuda.is_available() else "cpu")
+            if device == "cpu":
+                logger.warning('GPU is not available, the CPU will be used')
+            else:
+                logger.info('GPU will be used')
+        else:
+            device = torch.device('cpu')
+            logger.info('The CPU will be used')
+
+        return device
+
 
     @classmethod
     def from_pretrained_model_file(cls, path, gpu: bool = True):
@@ -191,11 +196,13 @@ class EventClassifier(object):
 
     @property
     def model_state(self):
+        self.model.to('cpu')
         out_dict = {'model_state': self.model.state_dict(),
                     'out_features': self.n_features,
                     'label_map': self.label_mapping,
                     'learning_rate': self.learning_rate,
                     'model_id': self.model_id}
+        self.model.to(self.device)
         return out_dict
 
     def save(self, file_name):
@@ -211,6 +218,7 @@ class EventClassifier(object):
                  model_id=model_state['model_id'])
         ec.model.load_state_dict(model_state['model_state'])
         ec.model.eval()
+        ec.model.to(self.device)
         return ec
 
     @classmethod
@@ -227,7 +235,18 @@ class EventClassifier(object):
         model_data = download_file_from_url(cls.model_url)
 
         # Load the model from the BytesIO object
-        model_state = pickle.load(model_data)
+
+        device = self.select_device(gpu=gpu)
+
+        state_dict = torch.load(model_data, map_location=device)
+        cls.from_model_state(state_dict)
+        # model = MyModel(...)
+        # model.model.load_state_dict(state_dict['model_state'])
+        # model.n_features = state_dict['out_features']
+        # model.label_mapping = state_dict['label_map']
+        # model.learning_rate = state_dict['learning_rate']
+        # model.model_id = state_dict['model_id']
+        return model
 
         return cls.from_model_state(model_state, gpu=gpu)
 
