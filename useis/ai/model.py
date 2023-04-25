@@ -208,8 +208,7 @@ class EventClassifier(object):
     #     return out_dict
 
     def save(self, file_name):
-        torch.save(self.model_state, file_name)
-        return
+        return torch.save(self.model.state_dict(), file_name)
 
     def write(self, file_name):
         return self.save(file_name)

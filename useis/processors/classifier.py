@@ -219,7 +219,7 @@ class ClassifierResult(object):
 
 class Classifier(ProjectManager):
     def __init__(self, base_projects_path: Path, project_name: str,
-                 network_code: str, use_srces: bool=False, reset_training=False,
+                 network_code: str, use_srces: bool = False, reset_training = False,
                  sampling_rates=[3000, 4000, 6000], window_lengths=[1, 3, 10],
                  gpu: bool = True, load_model: bool = True):
 
@@ -1339,7 +1339,7 @@ class Classifier2(Classifier):
         specs = specs.to(self.event_classifier.device)
 
         return ClassifierResult(self.event_classifier.model(specs).cpu(),
-                                self.label_mapping, st, specs, self.inventory.copy(),
+                                self.label_mapping, st, specs, self.inventory,
                                 event_location=event_location)
 
         # # st2 = self.__filter_adequate_trace_length__(st.copy())

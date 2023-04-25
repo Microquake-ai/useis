@@ -138,3 +138,6 @@ dmypy.json
 # seismic data
 *.mseed
 
+# poetry
+poetry.lock
+
