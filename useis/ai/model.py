@@ -36,6 +36,9 @@ from .params import *
 
 
 class EventClassifier(object):
+
+    model_url = \
+            'https://www.dropbox.com/s/5d76v8hfi3dwsm0/classification_model.useis?dl=1'
     def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
                  learning_rate: float = 0.001, model_id=None, model=models.resnet34(),
                  weight_decay: float = 0.001):
@@ -84,6 +87,7 @@ class EventClassifier(object):
 
         self.iteration = 0
         self.label_mapping = label_mapping
+        # Download the model from Dropbox
 
     @classmethod
     def from_pretrained_model(cls, model, gpu: bool = True):
@@ -220,10 +224,7 @@ class EventClassifier(object):
         load the most recent model
         """
 
-        # Download the model from Dropbox
-        url = 'https://www.dropbox.com/s/5d76v8hfi3dwsm0/classification_model.useis?dl=1'
-
-        model_data = download_file_from_url(url)
+        model_data = download_file_from_url(cls.model_url)
 
         # Load the model from the BytesIO object
         model_state = pickle.load(model_data)
@@ -237,6 +238,9 @@ class EventClassifier(object):
 
 
 class EventClassifier2(EventClassifier):
+    model_url = \
+        'https://www.dropbox.com/s/6u6a3db5wc3oyfl/classification_1s_trace.pickle?dl=1'
+
     def __init__(self, n_out_features: int, label_mapping, gpu: bool = True,
                  learning_rate: float = 0.001, model=models.resnet34(), model_id=None,
                  weight_decay: float = 0.001, dropout_prob: float = 0.3):
@@ -314,22 +318,6 @@ class EventClassifier2(EventClassifier):
     def read(cls, file_name, gpu=True):
         model_state = pickle.load(open(file_name, 'rb'))
         return cls.from_model_state(model_state, gpu=gpu)
-
-    @classmethod
-    def load(cls, gpu=True):
-        """
-        load the most recent model
-        """
-    #
-    #     # Download the model from Dropbox
-    #     url = 'https://www.dropbox.com/s/5d76v8hfi3dwsm0/classification_model.useis?dl=1'
-    #
-    #     model_data = download_file_from_url(url)
-    #
-    #     # Load the model from the BytesIO object
-    #     model_state = pickle.load(model_data)
-    #
-    #     return cls.from_model_state(model_state, gpu=gpu)
 
 
 def read_classifier(file_name):
