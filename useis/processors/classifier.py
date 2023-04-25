@@ -32,6 +32,7 @@ import json
 from useis.services.models.classifier import ClassifierResults
 import multiprocessing
 from tqdm import tqdm
+from torchaudio.transforms import MelSpectrogram, AmplitudeToDB
 
 reload(ai_database)
 reload(dataset)
@@ -39,13 +40,14 @@ reload(model)
 
 
 class ClassifierResult(object):
-    def __init__(self, raw_output, label_mapping, inputs, inventory,
+    def __init__(self, raw_output, label_mapping, inputs, spectrograms, inventory,
                  event_location=None):
         self.raw_output = raw_output
         self.label_mapping = label_mapping
         self.inputs = inputs
         self.inventory = inventory
         self.event_location = event_location
+        self.spectrograms = spectrograms
 
     @property
     def predictions(self):
@@ -121,11 +123,11 @@ class ClassifierResult(object):
             for label in self.label_mapping.keys():
                 probabilities[label] /= np.sum(1 / np.array(distances))
         else:
+            nb_prob = 0
             for prob in self.probabilities.detach().numpy():
-                nb_prob = 0
                 for i, label in enumerate(self.label_mapping.keys()):
                     probabilities[label] += prob[i]
-                    nb_prob += 1
+                nb_prob += 1
 
             for label in self.label_mapping.keys():
                 probabilities[label] /= nb_prob
@@ -340,10 +342,6 @@ class Classifier(ProjectManager):
 
             spectrogram = generate_spectrogram(st_trimmed)
 
-            training_data_path = self.paths.training_dataset
-
-            channel = trace.stats.channel
-
             # if save_file:
             #     filename = f'{category}_{end_time}_ch_{channel}_sr_{sampling_rate}' \
             #                f'_{window_lengths}_sec.png'
@@ -372,8 +370,8 @@ class Classifier(ProjectManager):
         merged_images = torch.cat(images, dim=0)
 
         return ClassifierResult(self.event_classifier.model(merged_images).cpu(),
-                                self.label_mapping,
-                                st, self.inventory.copy(), event_location=event_location)
+                                self.label_mapping, st, image, self.inventory.copy(),
+                                event_location=event_location)
 
     def build_training_data_set_list(self):
         self.files.training_dataset = \
@@ -383,9 +381,9 @@ class Classifier(ProjectManager):
         for f in self.files.training_dataset:
             pass
 
-    @staticmethod
-    def spectrogram(stream: Stream):
-        return generate_spectrogram(stream)
+    # @staticmethod
+    # def spectrogram(stream: Stream):
+    #     return generate_spectrogram(stream)
 
     def create_spectrogram_training(self, stream: Stream, event_type: str,
                                     original_event_type: str,
@@ -469,7 +467,7 @@ class Classifier(ProjectManager):
                     # Trim the trace
                     tr_trimmed = tr_resampled.trim(
                         starttime=end_time_resampled - window_length,
-                        endtime=end_time_resampled)
+                        endtime=end_time_resampled, pad=True, fill_value=0)
 
                     # Create a new stream with the trimmed trace
                     st_trimmed = Stream(traces=[tr_trimmed])
@@ -800,7 +798,7 @@ class Classifier2(Classifier):
                                           sampling_rates=sampling_rates, gpu=gpu,
                                           load_model=False)
 
-        self.window_length_seconds = [1]
+        self.window_length_seconds = self.settings.classifier.window_lengths
 
         if self.files.classification_model.exists():
             self.event_classifier = EventClassifier2.read(
@@ -810,6 +808,78 @@ class Classifier2(Classifier):
             logger.warning('The project does not contain a classification model\n'
                            'use the add_model function to add a classification '
                            'model')
+
+        self.image_width = self.settings.classifier.image_width
+        self.image_height = self.settings.classifier.image_height
+        self.buffer_image_fraction = self.settings.classifier.buffer_image_fraction
+        self.sampling_rate = self.settings.classifier.sampling_rate
+        self.sequence_length_seconds = self.settings.classifier.window_lengths[0]
+
+        self.buffer_image_sample = int(self.image_width * self.buffer_image_fraction)
+
+        self.hop_length = int(np.floor(self.sequence_length_seconds * self.sampling_rate /
+                                  (self.image_width + 2 * self.buffer_image_sample)))
+
+        mel_spec = MelSpectrogram(sample_rate=self.sampling_rate,
+                                  n_mels=self.image_height,
+                                  hop_length=self.hop_length,
+                                  power=1,
+                                  pad_mode='reflect',
+                                  normalized=True)
+
+        self.mel_spectrogram = mel_spec
+
+        self.amplitude_to_db = AmplitudeToDB()
+
+    def spectrogram(self, trace: Trace, trim_from_start=True):
+
+        tr = trace.copy().resample(self.settings.classifier.sampling_rate)
+        wl = self.window_length_seconds[0]
+
+        specs = []
+
+        if trim_from_start:
+            starttime = trace.stats.starttime
+            endtime = trace.stats.starttime + wl
+        else:
+            endtime = trace.stats.endtime
+            starttime = trace.stats.starttime - wl
+
+        tr.detrend('demean').taper(max_percentage=0.1, max_length=0.01)
+        tr.trim(starttime=starttime, endtime=endtime, pad=True, fill_value=0)
+
+        data = tr.data
+        data -= np.mean(data)
+
+        torch_data = torch.tensor(data).type(torch.float32)
+
+        spec = (self.mel_spectrogram(torch_data))
+        spec -= spec.min()
+        spec = spec / np.abs(spec).max() * 255
+        # spec /= spec.max()
+        # spec_db = self.amplitude_to_db(spec.abs() + 1e-3)
+        # spec_db = (spec_db - spec_db.min()).numpy()
+        # spec_db = spec_db[:, self.buffer_image_sample:-self.buffer_image_sample]
+        # if spec_db.shape[1] > self.image_width:
+        #     spec_db = spec_db[:, spec_db.shape[1] - self.image_width:]
+        #
+        # spec_db = spec_db - spec_db.min()
+        # spec_db = spec_db / np.abs(spec_db).max() * 255
+        # set_trace()
+        spec = Image.fromarray(np.array(spec.tolist()).astype(np.uint8))
+
+        image = dataset.SpectrogramDataset2.transform(spec)
+        image_tensor = image.unsqueeze(0)
+
+        return image_tensor
+
+    def spectrogram_stream(self, stream, trim_from_start=True):
+        specs = []
+        for tr in stream:
+            spec = self.spectrogram(tr, trim_from_start=trim_from_start)
+            specs.append(spec)
+        specs = torch.cat(specs, dim=0)
+        return specs
 
     def split_dataset(self, split_test=0.2, split_validation=0.1, use_synthetic=True):
         """
@@ -1265,46 +1335,58 @@ class Classifier2(Classifier):
         else:
             cut_from = 'end'
 
-        # st2 = self.__filter_adequate_trace_length__(st.copy())
-        # set_trace()
+        specs = self.spectrogram_stream(st, trim_from_start=cut_from_start)
+        specs = specs.to(self.event_classifier.device)
 
-        self.event_classifier.model.eval()
-        images = []
-        for tr in st.copy():
-            trace_length = tr.stats.endtime - tr.stats.starttime
-            if trace_length > self.window_length_seconds[0]:
-                logger.warning(f'The traces {tr.stats.site} length ({trace_length} '
-                               f'is longer than {self.window_length_seconds[0]:0.2f} '
-                               f'and '
-                               f'will be cut from the {cut_from} of the trace')
-                tr2 = tr.trim(starttime=tr.stats.starttime, endtime=tr.stats.starttime +
-                              self.window_length_seconds[0])
+        return ClassifierResult(self.event_classifier.model(specs).cpu(),
+                                self.label_mapping, st, specs, self.inventory.copy(),
+                                event_location=event_location)
 
-            elif trace_length < self.window_length_seconds[0]:
-                logger.warning(f'The traces {tr.stats.site} length ({trace_length} '
-                               f'is shorter than {self.window_length_seconds[0]:0.2f} '
-                               f'and '
-                               f'will be padded to fit the required length. This may '
-                               f'result is a reduced prediction accuracy')
-
-            specs = self.trace2spectrograms(tr.copy())
-            try:
-                specs = self.trace2spectrograms(tr.copy())[0][0]
-            except Exception as e:
-                logger.error(e)
-                continue
-            image = dataset.SpectrogramDataset2.transform(specs)
-            image_tensor = image.unsqueeze(0)
-
-            images.append(image_tensor)
-
-        merged_images = torch.cat(images, dim=0)
-
-        merged_images = merged_images.to(self.event_classifier.device)
-
-        return ClassifierResult(self.event_classifier.model(merged_images).cpu(),
-                                self.label_mapping,
-                                st, self.inventory.copy(), event_location=event_location)
+        # # st2 = self.__filter_adequate_trace_length__(st.copy())
+        # # set_trace()
+        #
+        # self.event_classifier.model.eval()
+        # images = []
+        # for tr in st.copy():
+        #     tr.detrend('demean').detrend('linear')
+        #     trace_length = tr.stats.endtime - tr.stats.starttime
+        #     if trace_length > self.window_length_seconds[0]:
+        #         logger.warning(f'The traces {tr.stats.site} length ({trace_length} '
+        #                        f'is longer than {self.window_length_seconds[0]:0.2f} '
+        #                        f'and '
+        #                        f'will be cut from the {cut_from} of the trace')
+        #         # tr2 = tr.trim(starttime=tr.stats.starttime, endtime=tr.stats.starttime +
+        #         #               self.window_length_seconds[0], pad=True, fill_value=0)
+        #
+        #     # elif trace_length < self.window_length_seconds[0]:
+        #     #     logger.warning(f'The traces {tr.stats.site} length ({trace_length} '
+        #     #                    f'is shorter than {self.window_length_seconds[0]:0.2f} '
+        #     #                    f'and '
+        #     #                    f'will be padded to fit the required length. This may '
+        #     #                    f'result is a reduced prediction accuracy')
+        #     #
+        #     #     tr2 = tr.trim(starttime=tr.stats.starttime, endtime=tr.stats.starttime +
+        #     #                   self.window_length_seconds[0], pad=True, fill_value=0)
+        #
+        #     try:
+        #         # specs = self.trace2spectrograms(tr2.copy())[0][0]
+        #
+        #     except Exception as e:
+        #         logger.error(e)
+        #         continue
+        #     set_trace()
+        #     image = dataset.SpectrogramDataset2.transform(specs)
+        #     image_tensor = image.unsqueeze(0)
+        #
+        #     images.append(image_tensor)
+        #
+        # merged_images = torch.cat(images, dim=0)
+        #
+        # merged_images = merged_images.to(self.event_classifier.device)
+        #
+        # return ClassifierResult(self.event_classifier.model(merged_images).cpu(),
+        #                         self.label_mapping, st, images, self.inventory.copy(),
+        #                         event_location=event_location)
 
 
 

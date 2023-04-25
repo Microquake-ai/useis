@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import random
 from uquake.core.stream import Stream
+from time import time
 reload(classifier)
 
 
@@ -78,29 +79,43 @@ project_name = 'classification_2'
 network_name = 'test'
 
 ec = classifier.Classifier2('/data_1/projects/', 'classification_2', 'test',
-                            sampling_rates=[6000])
+                            gpu=False)
 
-records = ec.training_db_manager.filter(categories='blast')
-
+records = ec.training_db_manager.filter(categories='seismic event')
 root_dir = Path('/data_1/ot-reprocessed-data/')
-
 filenames = np.unique([record.mseed_file for record in records])
+
+# filenames = [f for f in Path('/data_1/redlake/project/data/MSEED').glob('*.mseed')]
 np.random.shuffle(filenames)
 
 for f in filenames:
     filename = root_dir / f
     st = read(filename).detrend('demean')
-    indices = np.array(random.sample(range(0, len(st)), np.min([20, len(st)])))
-    traces = []
-    for i in indices:
-        traces.append(st[i])
-
-    st = Stream(traces=traces)
+    # indices = np.array(random.sample(range(0, len(st)), np.min([20, len(st)])))
+    # traces = []
+    # for i in indices:
+    #     tr = st[i].copy().filter('highpass', freq=50).detrend('demean').taper(
+    #         max_length=0.01, max_percentage=0.1)
+    #     # ec.spectrogram(st[i].copy())
+    #     if 'FN' in st[i].stats.channel:
+    #         tr = tr.integrate()
+    #
+    #     # tr.resample(6000)
+    #     traces.append(st[i])
+    #
+    #     # tr.stats.sampling_rate /= 3
+    #
+    # st = Stream(traces=traces)
 
     start_time = st[0].stats.starttime
     end_time = start_time + 1
     cat = read_events(filename.with_suffix('.xml'))
+    t0 = time()
     cr = ec.predict(st, event_location=cat[0].origins[-1].loc)
+    t1 = time()
+    # cr = ec.predict(st, cut_from_start=True)
     print(cr)
+    input(f'done predicting in {t1 - t0:0.2f} seconds, for {len(st)} traces')
     # print(cr.predicted_class_ensemble(cat[0].origins[-1].loc))
-    plot_results(cr, attention_end=end_time)
+    cr.inputs.filter('highpass', freq=100)
+    # plot_results(cr, attention_end=end_time)
