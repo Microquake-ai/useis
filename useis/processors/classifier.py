@@ -385,6 +385,61 @@ class Classifier(ProjectManager):
     # def spectrogram(stream: Stream):
     #     return generate_spectrogram(stream)
 
+    def spectrogram(self, trace: Trace, trim_from_start=True, return_image=False):
+
+        tr = trace.copy().resample(self.settings.classifier.sampling_rate)
+        wl = self.window_length_seconds[0]
+
+        specs = []
+
+        if trim_from_start:
+            starttime = trace.stats.starttime
+            endtime = trace.stats.starttime + wl
+        else:
+            endtime = trace.stats.endtime
+            starttime = trace.stats.starttime - wl
+
+        tr.detrend('demean').taper(max_percentage=0.1, max_length=0.01)
+        tr.trim(starttime=starttime, endtime=endtime, pad=True, fill_value=0)
+
+        data = tr.data
+        data -= np.mean(data)
+
+        torch_data = torch.tensor(data).type(torch.float32)
+
+        spec = (self.mel_spectrogram(torch_data))
+        spec -= spec.min()
+        spec = spec / np.abs(spec).max() * 255
+        # spec /= spec.max()
+        # spec_db = self.amplitude_to_db(spec.abs() + 1e-3)
+        # spec_db = (spec_db - spec_db.min()).numpy()
+        # spec_db = spec_db[:, self.buffer_image_sample:-self.buffer_image_sample]
+        # if spec_db.shape[1] > self.image_width:
+        #     spec_db = spec_db[:, spec_db.shape[1] - self.image_width:]
+        #
+        # spec_db = spec_db - spec_db.min()
+        # spec_db = spec_db / np.abs(spec_db).max() * 255
+        # set_trace()
+        spec = Image.fromarray(np.array(spec.tolist()).astype(np.uint8))
+        if return_image:
+            return spec
+
+        image = dataset.SpectrogramDataset2.transform(spec)
+        image_tensor = image.unsqueeze(0)
+
+        return image_tensor
+
+    def spectrogram_stream(self, stream, trim_from_start=True, return_image=False):
+        specs = []
+        for tr in stream:
+            spec = self.spectrogram(tr, trim_from_start=trim_from_start,
+                                    return_image=return_image)
+            specs.append(spec)
+        if return_image:
+            return specs
+        specs = torch.cat(specs, dim=0)
+        return specs
+
     def create_spectrogram_training(self, stream: Stream, event_type: str,
                                     original_event_type: str,
                                     event_id: str, end_time: UTCDateTime,
@@ -412,129 +467,83 @@ class Classifier(ProjectManager):
         :param simulate_magnitude: Whether to simulate the magnitude.
         :type simulate_magnitude: bool
         """
-        # Get the initial sampling rate
-        init_sampling_rate = stream[0].stats.sampling_rate
+        for window_length in self.window_length_seconds:
+            for tr in stream.copy():
+                sampling_rate = tr.stats.sampling_rate
 
-        # Set the sampling rates to either the initial rate or the set of sampling
-        # rates to simulate
-        if not simulate_magnitude:
-            sampling_rates = [init_sampling_rate]
-        else:
-            sampling_rates = self.sampling_rates
+                # Resample the trace
+                tr_resampled = tr.copy()
+                tr_resampled.stats.sampling_rate = sampling_rate
 
-        # Get the start time
-        starttime = stream[0].stats.starttime
+                # Trim the trace
+                tr_trimmed = tr_resampled.trim(
+                    starttime=end_time - window_length,
+                    endtime=end_time, pad=True, fill_value=0)
 
-        # Calculate the end time in samples
-        end_time_sample = (end_time - starttime) * init_sampling_rate
+                # Create a new stream with the trimmed trace
+                st_trimmed = Stream(traces=[tr_trimmed])
+                st_trimmed = st_trimmed.detrend('demean').detrend('linear').taper(
+                    max_percentage=1, max_length=0.01
+                )
 
-        # Loop over each sampling rate
-        for sampling_rate in sampling_rates:
-            synthetic = False
-            magnitude_change = np.log(init_sampling_rate / sampling_rate) / np.log(3)
-            correction = (1 - init_sampling_rate / sampling_rate) * 0.8
+                # Generate spectrograms for the trimmed stream
+                spectrograms = [self.spectrogram(tr_trimmed, return_image=True)]
+                # spectrograms = generate_spectrogram(st_trimmed)
 
-            # If the magnitude is not given, set it to -1
-            if magnitude == -999:
-                magnitude = -1
+                # Write the spectrograms to disk
+                filenames = self.write_spectrogram(spectrograms, event_type,
+                                                   end_time, magnitude,
+                                                   window_length, tr.stats.station,
+                                                   tr.stats.location,
+                                                   tr.stats.channel)
 
-            # Calculate the new magnitude
-            new_magnitude = magnitude + magnitude_change
+                # Get the channel code for the resampled trace
+                channel_code = tr_resampled.stats.channel
 
-            # If the magnitude doesn't change, set synthetic to True
-            if magnitude_change == 0:
-                synthetic = True
+                # Determine the sensor type based on the channel code
+                if 'GP' in channel_code:
+                    sensor_type = 'geophone'
+                else:
+                    sensor_type = 'accelerometer'
 
-            # Calculate the end time at the new sampling rate
-            end_time_resampled = starttime + end_time_sample / sampling_rate + correction
+                # Get the spectrogram filename, original event type, and other
+                # metadata
+                if len(filenames) == 0:
+                    return
+                sfn = filenames[0]
+                oet = event_type_lookup[original_event_type]
 
-            # Loop over each window length
-            if not isinstance(self.window_length_seconds, list):
-                window_lengths = [self.window_length_seconds]
-            else:
-                window_lengths = self.window_length_seconds
-            for window_length in window_lengths:
-                trs_resampled = []
+                # Add the record to the training database
+                self.training_db_manager.add_record(event_id=event_id,
+                                                    spectrogram_filename=sfn,
+                                                    station=tr.stats.station,
+                                                    location=tr.stats.location,
+                                                    channel=tr.stats.channel,
+                                                    channel_id=tr.stats.channel,
+                                                    magnitude=magnitude,
+                                                    duration=window_length,
+                                                    end_time=str(end_time),
+                                                    sampling_rate=sampling_rate,
+                                                    categories=event_type,
+                                                    original_event_type=oet,
+                                                    mseed_file=event_id,
+                                                    sensor_type=sensor_type,
+                                                    bounding_box=[0, 0],
+                                                    synthetic=False)
 
-                # Loop over each trace in the stream
-                for tr in stream.copy():
+                # Save a thumbnail image of the spectrogram
+                for filename, tr in zip(filenames, st_trimmed):
+                    plt.clf()
+                    plt.plot(tr.data, 'k')
+                    plt.axis('off')
+                    plt.tight_layout()
+                    filename = Path(filename)
+                    classifier_dataset_path = self.paths.training_dataset
+                    plt.savefig(
+                        f'{classifier_dataset_path / event_type / filename.stem}'
+                        f'_td.png')
 
-                    # Resample the trace
-                    tr_resampled = tr.copy()
-                    tr_resampled.stats.sampling_rate = sampling_rate
-                    trs_resampled.append(tr_resampled)
-
-                    # Trim the trace
-                    tr_trimmed = tr_resampled.trim(
-                        starttime=end_time_resampled - window_length,
-                        endtime=end_time_resampled, pad=True, fill_value=0)
-
-                    # Create a new stream with the trimmed trace
-                    st_trimmed = Stream(traces=[tr_trimmed])
-                    st_trimmed = st_trimmed.detrend('demean').detrend('linear').taper(
-                        max_percentage=1, max_length=0.01
-                    )
-
-                    # Generate spectrograms for the trimmed stream
-                    spectrograms = generate_spectrogram(st_trimmed)
-
-                    # Write the spectrograms to disk
-                    duration = end_time_resampled - starttime
-                    filenames = self.write_spectrogram(spectrograms, event_type,
-                                                       end_time_resampled, magnitude,
-                                                       duration, tr.stats.station,
-                                                       tr.stats.location,
-                                                       tr.stats.channel)
-
-                    # Get the channel code for the resampled trace
-                    channel_code = tr_resampled.stats.channel
-
-                    # Determine the sensor type based on the channel code
-                    if 'GP' in channel_code:
-                        sensor_type = 'geophone'
-                    else:
-                        sensor_type = 'accelerometer'
-
-                    # Get the spectrogram filename, original event type, and other
-                    # metadata
-                    if len(filenames) == 0:
-                        return
-                    sfn = filenames[0]
-                    oet = event_type_lookup[original_event_type]
-
-                    # Add the record to the training database
-                    self.training_db_manager.add_record(event_id=event_id,
-                                                        spectrogram_filename=sfn,
-                                                        station=tr.stats.station,
-                                                        location=tr.stats.location,
-                                                        channel=tr.stats.channel,
-                                                        channel_id=tr.stats.channel,
-                                                        magnitude=new_magnitude,
-                                                        duration=window_length,
-                                                        end_time=str(end_time),
-                                                        sampling_rate=sampling_rate,
-                                                        categories=event_type,
-                                                        original_event_type=oet,
-                                                        mseed_file=event_id,
-                                                        sensor_type=sensor_type,
-                                                        bounding_box=[0, 0],
-                                                        synthetic=synthetic)
-
-                    # Save a thumbnail image of the spectrogram
-                    for filename, tr in zip(filenames, st_trimmed):
-                        plt.clf()
-                        plt.plot(tr.data, 'k')
-                        plt.axis('off')
-                        plt.tight_layout()
-                        filename = Path(filename)
-                        classifier_dataset_path = self.paths.training_dataset
-                        plt.savefig(
-                            f'{classifier_dataset_path / event_type / filename.stem}'
-                            f'_td.png')
-
-                    # Continue to the next iteration if there are no resampled traces
-                    if not trs_resampled:
-                        continue
+            # Continue to the next iteration if there are no resampled traces
 
     def write_spectrogram(self, spectrograms, event_type, end_time, magnitude, duration,
                           station, location, channel):
@@ -831,56 +840,6 @@ class Classifier2(Classifier):
 
         self.amplitude_to_db = AmplitudeToDB()
 
-    def spectrogram(self, trace: Trace, trim_from_start=True):
-
-        tr = trace.copy().resample(self.settings.classifier.sampling_rate)
-        wl = self.window_length_seconds[0]
-
-        specs = []
-
-        if trim_from_start:
-            starttime = trace.stats.starttime
-            endtime = trace.stats.starttime + wl
-        else:
-            endtime = trace.stats.endtime
-            starttime = trace.stats.starttime - wl
-
-        tr.detrend('demean').taper(max_percentage=0.1, max_length=0.01)
-        tr.trim(starttime=starttime, endtime=endtime, pad=True, fill_value=0)
-
-        data = tr.data
-        data -= np.mean(data)
-
-        torch_data = torch.tensor(data).type(torch.float32)
-
-        spec = (self.mel_spectrogram(torch_data))
-        spec -= spec.min()
-        spec = spec / np.abs(spec).max() * 255
-        # spec /= spec.max()
-        # spec_db = self.amplitude_to_db(spec.abs() + 1e-3)
-        # spec_db = (spec_db - spec_db.min()).numpy()
-        # spec_db = spec_db[:, self.buffer_image_sample:-self.buffer_image_sample]
-        # if spec_db.shape[1] > self.image_width:
-        #     spec_db = spec_db[:, spec_db.shape[1] - self.image_width:]
-        #
-        # spec_db = spec_db - spec_db.min()
-        # spec_db = spec_db / np.abs(spec_db).max() * 255
-        # set_trace()
-        spec = Image.fromarray(np.array(spec.tolist()).astype(np.uint8))
-
-        image = dataset.SpectrogramDataset2.transform(spec)
-        image_tensor = image.unsqueeze(0)
-
-        return image_tensor
-
-    def spectrogram_stream(self, stream, trim_from_start=True):
-        specs = []
-        for tr in stream:
-            spec = self.spectrogram(tr, trim_from_start=trim_from_start)
-            specs.append(spec)
-        specs = torch.cat(specs, dim=0)
-        return specs
-
     def split_dataset(self, split_test=0.2, split_validation=0.1, use_synthetic=True):
         """
         Split the dataset into training, testing, and validation sets.
@@ -968,9 +927,9 @@ class Classifier2(Classifier):
         return self.train, self.test, self.validation
 
     def add_model(self, classifier_model: useis.ai.model.EventClassifier2):
-        if not isinstance(classifier_model, useis.ai.model.EventClassifier2):
+        if not isinstance(classifier_model, EventClassifier2):
             raise TypeError(f'classifier_model must be an instance of '
-                            f'useis.ai.model.EventClassifier, '
+                            f'useis.ai.model.EventClassifier2, '
                             f'got {type(classifier_model)} instead')
         self.event_classifier = classifier_model
         self.event_classifier.write(self.files.classification_model)
@@ -1087,14 +1046,6 @@ class Classifier2(Classifier):
         if reset_training:
             self.training_db_manager.clear_database()
 
-        # if enable_multiprocessing:
-        #     num_cores = multiprocessing.cpu_count()
-        #     pool = multiprocessing.Pool(num_cores - 10)
-        #
-        #     list(tqdm(pool.imap(self.process, mseed_files),
-        #               total=len(mseed_files)))
-        #
-        # else:
         for mseed_file in tqdm(mseed_files):
             self.__process__(mseed_file)
 
@@ -1109,6 +1060,11 @@ class Classifier2(Classifier):
         origin = cat[0].preferred_origin()
         if origin is None:
             origin = cat[0].origins[-1]
+
+        magnitude = cat[0].preferred_magnitude()
+        if magnitude is None:
+            magnitude = cat[0].magnitudes[-1]
+
         if len(st) == 0:
             return
         if event_type_lookup[cat[0].event_type] == 'seismic event':
@@ -1117,6 +1073,8 @@ class Classifier2(Classifier):
             self.__process_seismic_event__(st, cat, f)
         elif event_type_lookup[cat[0].event_type] == 'blast':
             if origin.evaluation_status == 'rejected':
+                return
+            if magnitude.mag < 0.2:
                 return
             # if self.__get_magnitude__(cat) < -0.5:
             #     if self.__get_magnitude__(cat) > -3:
@@ -1130,6 +1088,11 @@ class Classifier2(Classifier):
                     self.__process_noise__(st, cat, f)
 
     def __process_seismic_event__(self, st, cat, f, snr_threshold=12):
+        st = self.__remove_noisy_traces__(st, threshold=snr_threshold)
+
+        if len(st) == 0:
+            return
+
         origin = cat[0].preferred_origin()
         if origin is None:
             origin = cat[0].origins[-1]
@@ -1159,27 +1122,42 @@ class Classifier2(Classifier):
             st2 = st.select(station=station,
                             location=location).copy()
 
-            if st2 is None:
-                continue
+            min_perturbation = 0.2
+            for i in range(5):
+                perturbation = min_perturbation + self.window_length_seconds[0] * \
+                               (1 - min_perturbation) * np.random.rand() * 0.8
+                end_window = arrival.time + perturbation
 
-            if len(st2) == 0:
-                continue
 
-            try:
-                end_window = self.__find_end_window__(st2)
-            except:
-                continue
+                magnitude = self.__get_magnitude__(cat)
 
-            if end_window is None:
-                continue
+                if len(st2) == 0:
+                    continue
 
-            magnitude = self.__get_magnitude__(cat)
-
-            self.create_spectrogram_training(st2, 'seismic event', cat[0].event_type,
-                                             f.name, end_window, magnitude,
-                                             simulate_magnitude=True)
+                self.create_spectrogram_training(st2, 'seismic event', cat[0].event_type,
+                                                 f.name, end_window, magnitude,
+                                                 simulate_magnitude=True)
 
             # specs = model.EventClassifier2.stream2spectrogram(st2)
+
+    @staticmethod
+    def __remove_noisy_traces__(st, threshold):
+
+        traces = []
+        st2 = st.copy()
+        for tr in st.copy():
+            tr.filter('highpass', freq=15)
+
+            mean = tr.data.mean()
+            var = np.var(tr.data)
+
+            z = np.max(np.abs((tr.data - mean) / np.sqrt(var)))
+
+            if z < threshold:
+                continue
+            traces.append(tr)
+
+        return Stream(traces=traces)
 
     def __find_end_window__(self, st2):
         starttime = st2[0].stats.starttime
@@ -1215,6 +1193,7 @@ class Classifier2(Classifier):
         return end_window
 
     def __process_blast__(self, st, cat, f):
+        st = self.__remove_noisy_traces__(st, threshold=12)
         traces = []
         for tr in tqdm(st):
             max_sample = np.argmax(tr.data)
@@ -1251,8 +1230,25 @@ class Classifier2(Classifier):
             available_end_window = endtime - min_end_window
 
             end_window = min_end_window + np.random.rand() * available_end_window
+            start_window = end_window - self.window_length_seconds[0]
 
             magnitude = self.__get_magnitude__(cat)
+
+            tr = tr.detrend('demean').detrend('linear').trim(starttime=start_window,
+                                                             endtime=end_window)
+
+            if np.random.rand() > 0.6:
+                side = np.random.choice(['left', 'right', 'both'])
+
+                if side != 'right':
+                    length = np.random.rand() * 0.6 * self.window_length_seconds[0]
+                    tr = tr.taper(max_percentage=20,
+                                  max_length=length,
+                                  side='left', type='gaussian', std=0.1)
+                if side != 'left':
+                    length = np.random.rand() * 0.6 * self.window_length_seconds[0]
+                    tr = tr.taper(max_percentage=20, max_length=length,
+                                  side='right', type='gaussian', std=0.1)
 
             self.create_spectrogram_training(Stream(traces=[tr]), 'noise',
                                              cat[0].event_type,

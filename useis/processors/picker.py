@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-
 from ..core.project_manager import ProjectManager
 from pathlib import Path
 import os
@@ -19,6 +18,7 @@ from typing import List
 from obspy.realtime.signal import kurtosis
 from numpy.fft import fftshift
 from loguru import logger
+from typing import List
 
 
 class PickerResult(object):
@@ -194,8 +194,23 @@ class Picker(ProjectManager):
         self.ai_picker = model
         self.ai_picker.write(self.files.picker_model)
 
+    def synthetic_pick(self, origin_location, origin_time):
+        tts = self.travel_times.travel_time(origin_location)
+
+        picks = []
+        for phase in ['P', 'S']:
+            for tt in tts[phase]:
+                t = origin_time + tt
+                waveform_id = WaveformStreamID(network_code=self.network_code,
+                                               station_code=self.station_code)
+                # pk = Pick(time=t, )
+                picks.append()
+
+
+
     def snr_repick(self, stream: uquake.core.stream.Stream,
-                   picks: uquake.core.event.Pick, ai_enhanced=True,
+                   picks: List[uquake.core.event.Pick],
+                   ai_enhanced=False,
                    setting_section='snr_repicker'):
 
         """
