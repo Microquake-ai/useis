@@ -1,5 +1,5 @@
 from sqlalchemy import (create_engine, Column, Integer, String, Float, Boolean, MetaData,
-                        distinct, Table)
+                        distinct, Table, select)
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 import sqlite3
@@ -121,6 +121,15 @@ class DBManager(object):
         query = session.query(Record).filter_by(**kwargs)
         session.close()
         return query
+
+    def all_unique(self, field):
+        records = Record.__table__
+        query = select(getattr(records.c, field))
+        session = self.Session()
+        results = session.execute(query).fetchall()
+        unique_records = list(set(result[0] for result in results))
+        session.close()
+        return unique_records
 
     def to_pandas(self):
         con = sqlite3.connect(self.db_path)

@@ -256,8 +256,7 @@ class EventClassifier(object):
 
 
 class EventClassifier2(EventClassifier):
-    model_url = \
-        'https://www.dropbox.com/s/yxlb54xx4lzs876/classification_1s_trace.pt?dl=1'
+    model_url = 'https://www.dropbox.com/s/klk2nfalqt8ugjj/1s_model_2023_04_30.pt?dl=1'
 
     def __init__(self, gpu: bool = True,
                  learning_rate: float = 0.001, model=models.resnet34(), model_id=None,

@@ -75,13 +75,13 @@ def plot_results(classifier_results, attention_end):
 
 
 root_dir = '/data_1/projects/'
-project_name = 'classification_2'
-network_name = 'test'
+project_name = 'classification_3'
+network_name = 'OT'
 
-ec = classifier.Classifier2('/data_1/projects/', 'classification_2', 'test',
+ec = classifier.Classifier2('/data_1/projects/', 'classification_3', 'OT',
                             gpu=False)
 
-records = ec.training_db_manager.filter(categories='seismic event')
+records = ec.training_db_manager.filter(categories='noise')
 root_dir = Path('/data_1/ot-reprocessed-data/')
 filenames = np.unique([record.mseed_file for record in records])
 
@@ -91,6 +91,8 @@ np.random.shuffle(filenames)
 for f in filenames:
     filename = root_dir / f
     st = read(filename).detrend('demean')
+    cat = read_events(filename.with_suffix('.xml'))
+    st2 = ec.__select_based_on_distance__(st, cat, n_sites=10)
     # indices = np.array(random.sample(range(0, len(st)), np.min([20, len(st)])))
     # traces = []
     # for i in indices:
@@ -111,11 +113,11 @@ for f in filenames:
     end_time = start_time + 1
     cat = read_events(filename.with_suffix('.xml'))
     t0 = time()
-    cr = ec.predict(st, event_location=cat[0].origins[-1].loc)
+    cr = ec.predict(st2, event_location=cat[0].origins[-1].loc)
     t1 = time()
     # cr = ec.predict(st, cut_from_start=True)
     print(cr)
     input(f'done predicting in {t1 - t0:0.2f} seconds, for {len(st)} traces')
     # print(cr.predicted_class_ensemble(cat[0].origins[-1].loc))
-    cr.inputs.filter('highpass', freq=100)
-    # plot_results(cr, attention_end=end_time)
+    # cr.inputs.filter('highpass', freq=100)
+    plot_results(cr, attention_end=end_time)

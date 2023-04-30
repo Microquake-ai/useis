@@ -469,11 +469,11 @@ class Classifier(ProjectManager):
         """
         for window_length in self.window_length_seconds:
             for tr in stream.copy():
-                sampling_rate = tr.stats.sampling_rate
-
-                # Resample the trace
-                tr_resampled = tr.copy()
-                tr_resampled.stats.sampling_rate = sampling_rate
+                # sampling_rate = tr.stats.sampling_rate
+                #
+                # # Resample the trace
+                tr_resampled = tr.copy().detrend('demean').detrend('linear')
+                # tr_resampled.stats.sampling_rate = sampling_rate
 
                 # Trim the trace
                 tr_trimmed = tr_resampled.trim(
@@ -523,7 +523,7 @@ class Classifier(ProjectManager):
                                                     magnitude=magnitude,
                                                     duration=window_length,
                                                     end_time=str(end_time),
-                                                    sampling_rate=sampling_rate,
+                                                    sampling_rate=tr.stats.sampling_rate,
                                                     categories=event_type,
                                                     original_event_type=oet,
                                                     mseed_file=event_id,
@@ -857,28 +857,9 @@ class Classifier2(Classifier):
 
         # Filter the data by category and synthetic status
 
-        session = self.training_db_manager.Session()
-
-        wl = self.window_length_seconds[0]
-
-        # df = self.training_db_manager.to_pandas()
-        # df_gb = df.groupby(['event_id', 'channel_id'])
-
-        if use_synthetic:
-            seismic_events = self.training_db_manager.filter(categories='seismic event',
-                                                             duration=wl)
-
-            # seismic_events_groups = df[(df['categories'] == 'seismic event') &
-            #                            (df['synthetic'] == False)].groupby(
-            #     ['event_id', 'channel_id', 'end_time'])
-        else:
-            seismic_events = self.training_db_manager.filter(synthetic=False,
-                                                             categories='seismic event',
-                                                             duration=wl)
-        blasts = self.training_db_manager.filter(categories='blast', duration=wl)
-        noises = self.training_db_manager.filter(categories='noise', duration=wl)
-
-        df = self.training_db_manager.to_pandas()
+        seismic_events = self.training_db_manager.filter(categories='seismic event')
+        blasts = self.training_db_manager.filter(categories='blast')
+        noises = self.training_db_manager.filter(categories='noise')
 
         # Determine the size of the smallest category
         n_samples = min(seismic_events.count(), blasts.count(), noises.count())
@@ -927,10 +908,10 @@ class Classifier2(Classifier):
         return self.train, self.test, self.validation
 
     def add_model(self, classifier_model: useis.ai.model.EventClassifier2):
-        if not isinstance(classifier_model, EventClassifier2):
-            raise TypeError(f'classifier_model must be an instance of '
-                            f'useis.ai.model.EventClassifier2, '
-                            f'got {type(classifier_model)} instead')
+        # if not isinstance(classifier_model, EventClassifier2):
+        #     raise TypeError(f'classifier_model must be an instance of '
+        #                     f'useis.ai.model.EventClassifier2, '
+        #                     f'got {type(classifier_model)} instead')
         self.event_classifier = classifier_model
         self.event_classifier.write(self.files.classification_model)
 
@@ -944,7 +925,7 @@ class Classifier2(Classifier):
         This function should be used when the EventClassifier object changes to ensure
         it is up-to-date
         """
-        new_ec = model.EventClassifier2(self.num_classes, self.label_mapping)
+        new_ec = model.EventClassifier2()
         new_ec.model = self.event_classifier.model
 
         self.add_model(new_ec)
@@ -970,8 +951,7 @@ class Classifier2(Classifier):
 
         train, test, validation = self.split_dataset(use_synthetic=use_synthetic)
 
-        ec = model.EventClassifier2(self.num_classes, self.label_mapping,
-                                    learning_rate=learning_rate,
+        ec = model.EventClassifier2(learning_rate=learning_rate,
                                     model=starting_model,
                                     weight_decay=weight_decay,
                                     dropout_prob=dropout_prob)
@@ -1039,9 +1019,12 @@ class Classifier2(Classifier):
         return ec, (train, test, validation), \
             (test_losses, test_accuracies, train_losses, train_accuracies)
 
-    def create_training_dataset(self, data_path, reset_training=True):
+    def create_training_dataset(self, data_path, reset_training=False, resume=True):
         data_path = Path(data_path)
         mseed_files = [filename for filename in data_path.glob('*.mseed')]
+        if resume:
+            processed_mseed_files = self.training_db_manager.all_unique('mseed_file')
+            mseed_files = [f for f in mseed_files if f.name not in processed_mseed_files]
 
         if reset_training:
             self.training_db_manager.clear_database()
@@ -1055,15 +1038,9 @@ class Classifier2(Classifier):
         st = self.__filter_adequate_trace_length__(st)
         st = st.detrend('linear').detrend('demean')
 
-        noise_counter = 0
-
         origin = cat[0].preferred_origin()
         if origin is None:
             origin = cat[0].origins[-1]
-
-        magnitude = cat[0].preferred_magnitude()
-        if magnitude is None:
-            magnitude = cat[0].magnitudes[-1]
 
         if len(st) == 0:
             return
@@ -1072,92 +1049,90 @@ class Classifier2(Classifier):
                 return
             self.__process_seismic_event__(st, cat, f)
         elif event_type_lookup[cat[0].event_type] == 'blast':
-            if origin.evaluation_status == 'rejected':
+            # if origin.evaluation_status == 'rejected':
+            #     return
+            if self.__get_magnitude__(cat) < -0.0:
                 return
-            if magnitude.mag < 0.2:
-                return
-            # if self.__get_magnitude__(cat) < -0.5:
-            #     if self.__get_magnitude__(cat) > -3:
-            #         self.__process_seismic_event__(st, cat, f)
             self.__process_blast__(st, cat, f)
         else:
             if event_type_lookup[cat[0].event_type] == 'impulsive noise':
                 self.__process_noise__(st, cat, f)
             else:
-                if np.random.randint(0, 3) == 1:
+                if np.random.randint(0, 2) == 0:
                     self.__process_noise__(st, cat, f)
 
-    def __process_seismic_event__(self, st, cat, f, snr_threshold=12):
-        st = self.__remove_noisy_traces__(st, threshold=snr_threshold)
-
-        if len(st) == 0:
-            return
+    def __process_seismic_event__(self, st, cat, f, snr_threshold=7):
+        st, noise = self.__identify_noisy_traces__(st, threshold=snr_threshold)
 
         origin = cat[0].preferred_origin()
         if origin is None:
             origin = cat[0].origins[-1]
+        travel_times = self.travel_times.travel_time(origin.loc)['P']
+        origin_time = origin.time
 
-        arrival_sites, indices = np.unique([arrival.site for arrival in origin.arrivals],
-                                           return_index=True)
-        arrival_station = np.array([arrival.station for arrival in
-                                    origin.arrivals])[indices]
-        arrival_location = np.array([arrival.location for arrival in
-                                    origin.arrivals])[indices]
+        magnitude = self.__get_magnitude__(cat)
 
-        arrivals = []
-        for i, arrival in enumerate(origin.arrivals):
-            if i in indices:
-                arrivals.append(arrival)
-
-        for station, location, arrival in tqdm(zip(arrival_station, arrival_location,
-                                                   arrivals),
-                                               total=len(arrival_sites)):
-
-            if arrival.pick.snr is None:
+        for tr in tqdm(st):
+            if tr.stats.site not in travel_times.keys():
                 continue
+            predicted_p = origin_time + travel_times[tr.stats.site]
+            tr2 = tr.copy().detrend('demean').detrend('linear')
+            # data augmentation
+            for i in range(3):
+                perturbation = np.random.rand() * 0.7 * self.window_length_seconds[0]
+                starttime = predicted_p - perturbation
+                endtime = starttime + self.window_length_seconds[0]
 
-            if arrival.pick.snr < snr_threshold:
-                continue
+                tr2 = tr2.trim(starttime=starttime, endtime=endtime, pad=True,
+                               fill_value=0)
 
-            st2 = st.select(station=station,
-                            location=location).copy()
+                self.create_spectrogram_training(Stream(traces=[tr2]), 'seismic event',
+                                                 cat[0].event_type,
+                                                 f.name, endtime, magnitude,
+                                                 simulate_magnitude=False)
 
-            min_perturbation = 0.2
-            for i in range(5):
-                perturbation = min_perturbation + self.window_length_seconds[0] * \
-                               (1 - min_perturbation) * np.random.rand() * 0.8
-                end_window = arrival.time + perturbation
-
-
-                magnitude = self.__get_magnitude__(cat)
-
-                if len(st2) == 0:
-                    continue
-
-                self.create_spectrogram_training(st2, 'seismic event', cat[0].event_type,
-                                                 f.name, end_window, magnitude,
-                                                 simulate_magnitude=True)
-
-            # specs = model.EventClassifier2.stream2spectrogram(st2)
+        self.__process_noise__(noise, cat, f)
 
     @staticmethod
-    def __remove_noisy_traces__(st, threshold):
+    def __identify_noisy_traces__(st, threshold, lower_threshold=3):
 
         traces = []
-        st2 = st.copy()
+        noises = []
         for tr in st.copy():
-            tr.filter('highpass', freq=15)
 
             mean = tr.data.mean()
             var = np.var(tr.data)
 
-            z = np.max(np.abs((tr.data - mean) / np.sqrt(var)))
+            data = tr.data[tr.data != 0]
+
+            if len(data) == 0:
+                noises.append(tr)
+                continue
+
+            z = np.max(np.abs((data - mean) / np.sqrt(var)))
 
             if z < threshold:
+                if z < lower_threshold:
+                    noises.append(tr)
+                else:
+                    continue
+
+            # test for periodicity
+            dft = np.abs(np.fft.fft(data))
+
+            # Find the index of the frequency component with maximum amplitude
+            max_idx = np.argmax(dft)
+
+            # Calculate the ratio of the maximum amplitude to the sum of all amplitudes
+            amplitude_ratio = dft[max_idx] / np.sum(dft)
+
+            if amplitude_ratio > 0.05:
+                noises.append(tr)
                 continue
+
             traces.append(tr)
 
-        return Stream(traces=traces)
+        return Stream(traces=traces), Stream(traces=noises)
 
     def __find_end_window__(self, st2):
         starttime = st2[0].stats.starttime
@@ -1193,11 +1168,10 @@ class Classifier2(Classifier):
         return end_window
 
     def __process_blast__(self, st, cat, f):
-        st = self.__remove_noisy_traces__(st, threshold=12)
+        st, noise = self.__identify_noisy_traces__(st, threshold=7)
         traces = []
         for tr in tqdm(st):
             max_sample = np.argmax(tr.data)
-            max_time = tr.stats.starttime + max_sample / tr.stats.sampling_rate
 
             st2 = Stream(traces=[tr])
             try:
@@ -1210,16 +1184,21 @@ class Classifier2(Classifier):
 
             magnitude = self.__get_magnitude__(cat)
 
+            if np.all(tr.data == 0):
+                noise.traces.append(tr)
+
             self.create_spectrogram_training(Stream(traces=[tr]), 'blast',
                                              cat[0].event_type,
                                              f.name, end_window, magnitude,
                                              simulate_magnitude=False)
 
+        self.__process_noise__(noise, cat, f)
+
     def __process_noise__(self, st, cat, f):
 
         # st2 = self.__select_trace_based_on_amplitude__(st)
 
-        st2 = self.__select_based_on_distance__(st, cat)
+        st2 = self.__select_based_on_distance__(st, cat, n_sites=40)
 
         for tr in tqdm(st2):
             starttime = tr.stats.starttime
@@ -1235,7 +1214,8 @@ class Classifier2(Classifier):
             magnitude = self.__get_magnitude__(cat)
 
             tr = tr.detrend('demean').detrend('linear').trim(starttime=start_window,
-                                                             endtime=end_window)
+                                                             endtime=end_window,
+                                                             pad=True, fill_value=0)
 
             if np.random.rand() > 0.6:
                 side = np.random.choice(['left', 'right', 'both'])
