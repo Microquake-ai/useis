@@ -1,4 +1,4 @@
-from useis.services.grid_service import client
+from useis.services.grid import client
 from uquake.grid.nlloc import VelocityGrid3D
 from uquake.nlloc.nlloc import Srces
 from uquake.core import read_inventory

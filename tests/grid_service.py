@@ -5,7 +5,7 @@ from uquake.grid.nlloc import VelocityGridEnsemble
 from loguru import logger
 import numpy as np
 from useis.services.models.grid import VelocityGrid3D
-from useis.services.grid_service.server import Server
+from useis.services.grid.server import Server
 
 root_dir = 'projects'
 test_project = 'test_project'
