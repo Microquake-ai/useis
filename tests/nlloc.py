@@ -53,7 +53,6 @@ class NLLOC(unittest.TestCase):
         self.assertTrue(distance < 3 * result.uncertainty)
 
 
-
 if __name__ == '__main__':
     unittest.main()
     shutil.rmtree(root_dir)

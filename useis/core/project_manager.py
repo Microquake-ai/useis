@@ -15,11 +15,105 @@ from uquake.core.event import AttribDict
 from uquake.grid.hdf5 import H5TTable
 from .projection import Projection
 from pydantic import conlist
+import string
+import secrets
+import json
 
 
 def read_srces(fname):
     with open(fname, 'rb') as srces_file:
         return pickle.load(srces_file)
+
+
+class SiteCodeMapping(object):
+    """
+    The purpose of this class is to provide an encoding to four character should the
+    site code length be longer than 6 characters. NLLOC does not support more than 6
+    characters for the site/station name
+    """
+    def __init__(self, site_name_list):
+        short_site_ids = self.generate_unique_sequences(len(site_name_list))
+
+        self.site_code_mapping = {}
+        for short_site_id, site_code in zip(short_site_ids, site_name_list):
+            if len(site_code) < 7:
+                self.site_code_mapping[site_code] = site_code
+            else:
+                self.site_code_mapping[short_site_id] = site_code
+
+    def encode(self, encoded_site_name):
+        return self.site_code_mapping_reverse[encoded_site_name]
+
+    def decode(self, site_name):
+        return self.site_code_mapping[site_name]
+
+    def write(self, filepath):
+        with open(filepath, 'w') as json_file:
+            json.dump(self.site_code_mapping, json_file)
+
+    @property
+    def site_code_mapping_reverse(self):
+        scmr = {}
+        for key in self.site_code_mapping:
+            scmr[self.site_code_mapping[key]] = key
+        return scmr
+
+    def add_site_mapping(self, site):
+
+        if site.label in self.site_code_mapping_reverse.keys():
+            raise ValueError('duplicate label')
+
+        if len(site.label) < 7:
+            self.site_code_mapping[site.label] = site.label
+        else:
+            condition = True
+            while condition:
+                alternate_label = self.generate_unique_sequences(1)[0]
+                if alternate_label not in self.site_code_mapping.keys():
+                    self.site_code_mapping[alternate_label] = site.label
+                    condition = False
+
+    def __repr__(self):
+        str_out = ''
+        for key in self.site_code_mapping_reverse:
+            str_out += f'{key} -> {self.site_code_mapping_reverse[key]}\n'
+
+        return str_out
+
+    @staticmethod
+    def generate_unique_sequences(n):
+        sequences = set()
+
+        while len(sequences) < n:
+            sequence = ''.join(secrets.choice(string.ascii_letters) for _ in range(6))
+            sequences.add(sequence)
+
+        return list(sequences)
+
+    @classmethod
+    def from_file(cls, filepath):
+        with open(filepath, 'r') as json_file:
+            site_code_mapping = json.load(json_file)
+            file_list = []
+            site_code_mapping_reverse = {}
+            for key in site_code_mapping.keys():
+                file_list.append(site_code_mapping[key])
+                site_code_mapping_reverse[site_code_mapping[key]] = key
+
+        scm = cls(file_list)
+        scm.site_code_mapping = site_code_mapping
+        return scm
+
+    @classmethod
+    def from_inventory(cls, inventory):
+        site_list = []
+        for site in inventory.sites:
+            site_list.append(site.code)
+        return cls(site_list)
+
+    @classmethod
+    def from_srces(cls, srces):
+        pass
 
 
 class ProjectManager(object):
@@ -152,6 +246,7 @@ class ProjectManager(object):
 
         self.project_name = project_name
         self.network_code = network_code
+        self.site_code_mapping = {}
 
         p_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(network_code,
                                                                   'P')
@@ -177,6 +272,8 @@ class ProjectManager(object):
         self.paths = AttribDict(self.paths)
 
         self.files = {'inventory': self.paths.inventory / 'inventory.xml',
+                      'site_code_mapping': self.paths.inventory /
+                                           'site_code_mapping.json',
                       'srces': self.paths.inventory / 'srces.pickle',
                       'settings': self.paths.config / 'settings.toml',
                       'services_settings': self.paths.config /
@@ -230,6 +327,8 @@ class ProjectManager(object):
         if self.files.inventory.exists():
             self.inventory = read_inventory(str(self.files.inventory))
             self.srces = Srces.from_inventory(self.inventory)
+            self.site_code_mapping = SiteCodeMapping.from_file(
+                str(self.files.site_code_mapping))
         elif self.files.srces.exists():
             with open(self.files.srces, 'rb') as srces_file:
                 self.srces = pickle.load(srces_file)
@@ -362,7 +461,9 @@ class ProjectManager(object):
         logger.info('initializing the travel time grids')
         t0 = time()
         seeds = self.srces.locs
-        seed_labels = self.srces.labels
+
+        seed_labels = [self.site_code_mapping.site_code_mapping_reverse[label]
+                       for label in self.srces.labels]
 
         tt = self.velocities.to_time(seeds, seed_labels,
                                      multi_threaded=multi_threaded)
@@ -393,7 +494,12 @@ class ProjectManager(object):
 
         inventory.write(str(self.files.inventory))
         self.srces = Srces.from_inventory(inventory)
+
         self.inventory = inventory
+
+        self.site_code_mapping = SiteCodeMapping.from_inventory(inventory)
+        self.site_code_mapping.write(self.files.site_code_mapping)
+
         if create_srces_file:
             with open(self.files.srces, 'wb') as srces_file:
                 pickle.dump(self.srces, srces_file)
@@ -406,6 +512,20 @@ class ProjectManager(object):
                            'be out of sync. To initialize the travel time '
                            'grids make sure initialize_travel_time is set to '
                            'True')
+
+    @property
+    def travel_times_dict(self):
+        tt_grid_dict = {}
+        for phase in ['P', 'S']:
+            tt_grid_dict[phase] = {}
+            for key in self.site_code_mapping.site_code_mapping.keys():
+                tt = self.travel_times.select(key, phase)
+                if len(tt) == 0:
+                    continue
+                tt_grid_dict[phase][self.site_code_mapping.site_code_mapping[key]] \
+                    = tt[0]
+
+        return tt_grid_dict
 
     def add_inventory_from_file(self, inventory_file: str, format='StationXML',
                                 create_srces_file: bool = True,
