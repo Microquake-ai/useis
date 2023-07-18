@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "useis"
-version = "1.1.2"
+version = "1.1.7"
 description = ""
 authors = ["jpmercier <jpmercier01@gmail.com>"]
 license = "MIT"
@@ -31,7 +31,7 @@ pillow = "^9.4.0"
 #torch = {path = "/data_1/libraries/torch-1.11.0+cu115-cp39-cp39-linux_x86_64.whl"}
 #torchaudio = {url = "https://download.pytorch.org/whl/cu115/torchaudio-0.11.0%2Bcu115-cp39-cp39-linux_x86_64.whl"}
 #torchvision = {url = "https://download.pytorch.org/whl/cu115/torchvision-0.12.0%2Bcu115-cp39-cp39-linux_x86_64.whl"}
-uquake = "^1.4.3"
+uquake = "^1.4.7"
 
 [tool.poetry.dev-dependencies]
 ipdb = "^0.13.9"
