@@ -1,6 +1,0 @@
-[submodule "libraries/uquake"]
-	path = libraries/uquake
-	url = git@github.com:jeanphilippemercier/uquake.git
-[submodule "libraries/uquake-xseis"]
-	path = libraries/uquake-xseis
-	url = git@github.com:jeanphilippemercier/uquake-xseis.git

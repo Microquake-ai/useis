@@ -10,7 +10,7 @@ app = FastAPI()
 
 project = 'classifier'
 network = 'OT'
-base_directory = '/data_1/projects/'
+base_directory = 'projects/'
 
 ec = classifier.Classifier(base_directory, project, network, gpu=False)
 
@@ -48,10 +48,6 @@ async def predict(stream: bytes = File(...)):
     # Convert the prediction to a JSON string and return it as the response
     return classifier_output.to_fastapi()
 
-@app.get('/classifier/predict/stream', status_code=201)
-async def get_nothing():
-    return 'bla bla bla'
-
 
 def custom_openapi():
     if app.openapi_schema:
@@ -64,6 +60,7 @@ def custom_openapi():
     )
     app.openapi_schema = openapi_schema
     return app.openapi_schema
+
 
 @app.get("/docs", include_in_schema=False)
 async def get_documentation():
