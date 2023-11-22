@@ -10,8 +10,10 @@ RUN cp nlloc/Time2EQ /usr/bin/.; cp nlloc/Vel2Grid /usr/bin/.
 RUN cp nlloc/fmm2grid /usr/bin/.; cp nlloc/fpfit2hyp /usr/bin/.; cp nlloc/oct2grid /usr/bin/.
 RUN cp nlloc/scat2latlon /usr/bin/.
 
-COPY . useis
-RUN cd useis; pip install poetry; poetry install
+ADD . /src/useis
+WORKDIR /src/useis
+RUN pip install poetry==1.3.2; poetry config installer.max-workers 10;  \
+    RUN poetry install --no-interaction --no-ansi -vvv; poetry install
 
 WORKDIR useis
 ENTRYPOINT poetry shell

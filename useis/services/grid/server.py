@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, File, UploadFile, Query
+import uvicorn
 from typing import Optional, List
 from io import BytesIO
 import pickle
@@ -159,6 +160,32 @@ async def get_network_list(project: str) -> List[str]:
     networks = [str(f).split(os.path.sep)[-1]
                 for f in root_dir.glob(f'{project}/*') if f.is_dir()]
     return networks
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title="GRID API",
+        version="0.1.0",
+        description="Your API description",
+        routes=app.routes,
+    )
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+@app.get("/docs", include_in_schema=False)
+async def get_documentation():
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title="Your API title",
+    )
+
+@app.get("/openapi.json", include_in_schema=False)
+async def get_openapi_schema():
+    return custom_openapi()
+
+def start():
+    uvicorn.run("useis.services.grid.server:app", reload=True)
 
 
 
