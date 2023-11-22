@@ -12,7 +12,6 @@ import os
 import shutil
 from ..settings.settings import Settings
 from uquake.core.event import AttribDict
-from uquake.grid.hdf5 import H5TTable
 from .projection import Projection
 from pydantic import conlist
 import string
