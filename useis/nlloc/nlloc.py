@@ -40,6 +40,7 @@ from obspy import UTCDateTime
 from uquake.core.inventory import Inventory
 from uquake.core.logging import logger
 from uquake.core.event import (Catalog)
+from uquake.core.coordinates import Coordinates
 
 from uuid import uuid4
 from pathlib import Path
@@ -916,7 +917,10 @@ class Srces:
 
         :Example:
 
-        >>> instrument = Instrument(label='test', x=1000, y=1000, z=1000, elev=0.0)
+        >>> from uquake.core.inventory import Inventory, Instrument
+        >>> from uquake.core.coordinates import Coordinates
+        >>> coordinates = Coordinates(x=1000, y=1000, z=1000)
+        >>> instrument = Instrument(label='test', coordinates=coordinates)
         >>> instrument = [instrument]
         >>> srces = Srces(instruments)
 
@@ -937,8 +941,7 @@ class Srces:
 
         instruments = []
         for instrument, short_id in zip(inventory.instruments, inventory.short_ids):
-            instruments.append(Instrument(short_id,
-                                        instrument.x, instrument.y, instrument.z))
+            instruments.append(Instrument(short_id, instrument.coordinates))
         return cls(instruments)
 
     @classmethod
@@ -964,7 +967,8 @@ class Srces:
         for i, point in enumerate(gd.generate_random_points_in_grid(
                 n_points=n_srces)):
             label = f'{label_root}{i:02d}'
-            location = Instrument(label, point[0], point[1], point[2])
+            coordinates = coordinates(point[0], point[1], point[2])
+            location = Instrument(label, coordinates)
             srces.append(location)
         return cls(srces)
 
