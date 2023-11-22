@@ -181,13 +181,14 @@ class Grid2Time:
 
             ctrl.write(f'GTMODE GRID3D {angle_mode}\n')
 
-            for location in self.inventory.locations:
+            for short_id, instruments in \
+                    self.inventory.short_ids, self.inventory.instruments:
                 # test if location name is shorter than 6 characters
 
-                out_line = f'GTSRCE {location.code} XYZ ' \
-                           f'{location.x / 1000:>10.6f} ' \
-                           f'{location.y / 1000 :>10.6f} ' \
-                           f'{location.z / 1000 :>10.6f} ' \
+                out_line = f'GTSRCE {short_id} XYZ ' \
+                           f'{instrument.x / 1000:>10.6f} ' \
+                           f'{instrument.y / 1000 :>10.6f} ' \
+                           f'{instrument.z / 1000 :>10.6f} ' \
                            f'0.00\n'
 
                 ctrl.write(out_line)
@@ -874,17 +875,28 @@ class GridTimeMode:
         return f'GTMODE {self.grid_mode} {self.angle_mode}'
 
 
-class Location:
+class Instrument:
 
-    def __init__(self, label, x, y, z, elev=None, time_correction=0):
+    def __init__(self, label, coordinates, time_correction=0):
+        self.coordinates = coordinates
         self.label = label
-        self.x = x
-        self.y = y
-        self.z = z
-        self.elev = elev
         self.time_correction = 0
-        if elev is None:
-            self.elev = z
+
+    @property
+    def x(self):
+        return self.coordinate.x
+
+    @property
+    def y(self):
+        return self.coordinates.y
+
+    @property
+    def z(self):
+        return self.coordinates.z
+
+    @property
+    def elev(self):
+        return self.coordinates.up
 
     @property
     def loc(self):
@@ -904,7 +916,7 @@ class Srces:
 
         :Example:
 
-        >>> location = Location(label='test', x=1000, y=1000, z=1000, elev=0.0)
+        >>> location = Instrument(label='test', x=1000, y=1000, z=1000, elev=0.0)
         >>> locations = [location]
         >>> srces = Srces(locations)
 
@@ -924,8 +936,9 @@ class Srces:
         """
 
         locations = []
-        for location in inventory.locations:
-            locations.append(Location(location.code, location.x, location.y, location.z))
+        for short_id, instrument in inventory.instruments, inventory.short_ids:
+            locations.append(Instrument(short_id,
+                                        instrument.x, instrument.y, instrument.z))
         return cls(locations)
 
     @classmethod
@@ -951,7 +964,7 @@ class Srces:
         for i, point in enumerate(gd.generate_random_points_in_grid(
                 n_points=n_srces)):
             label = f'{label_root}{i:02d}'
-            location = Location(label, point[0], point[1], point[2])
+            location = Instrument(label, point[0], point[1], point[2])
             srces.append(location)
         return cls(srces)
 
@@ -1024,7 +1037,7 @@ class Srces:
         for key in obj.keys():
             if key == 'locations':
                 for site_dict in obj[key]:
-                    locations.append(Location(**site_dict))
+                    locations.append(Instrument(**site_dict))
 
         obj['locations'] = locations
 
