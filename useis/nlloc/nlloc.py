@@ -37,9 +37,9 @@ from struct import unpack
 import numpy as np
 
 from obspy import UTCDateTime
-from libraries.uquake.uquake.core.inventory import Inventory
-from libraries.uquake.uquake.core.logging import logger
-from libraries.uquake.uquake.core.event import (Catalog)
+from uquake.core.inventory import Inventory
+from uquake.core.logging import logger
+from uquake.core.event import (Catalog)
 
 from uuid import uuid4
 from pathlib import Path
