@@ -2,9 +2,9 @@ from pathlib import Path
 import pickle
 from uquake.core.inventory import read_inventory
 from uquake.core.logging import logger
-from uquake.nlloc import (Srces)
+from useis.nlloc import (Srces)
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
-from uquake.grid import nlloc as nlloc_grid
+from uquake.grid import extended as nlloc_grid
 from uquake.grid import read_grid
 from time import time
 import numpy as np
