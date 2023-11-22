@@ -936,7 +936,7 @@ class Srces:
         """
 
         instruments = []
-        for short_id, instrument in zip(inventory.instruments, inventory.short_ids):
+        for instrument, short_id in zip(inventory.instruments, inventory.short_ids):
             instruments.append(Instrument(short_id,
                                         instrument.x, instrument.y, instrument.z))
         return cls(instruments)
