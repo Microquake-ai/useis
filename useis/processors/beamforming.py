@@ -39,7 +39,7 @@ class Beamforming(ProjectManager):
         black_list = self.settings.black_list
 
         logger.info('reading the hdf5 file')
-        sitelocs = self.htt.locations
+        sitelocs = self.htt.instruments
         ttable = (self.htt.hf["ttp"][:] * sample_rate_decimated).astype(
             np.uint16)
         ttable_s = (self.htt.hf["tts"][:] * sample_rate_decimated).astype(
@@ -224,7 +224,7 @@ class Beamforming(ProjectManager):
 #         whiten_corner_freqs = np.array(self.params.whiten_corner_freqs,
 #                                        dtype=np.float32)
 #
-#         stalocs = self.htt.locations
+#         stalocs = self.htt.instruments
 #         ttable = (self.htt.hf["ttp"][:] * sample_rate_decimated).astype(
 #             np.uint16)
 #         ttable_s = (self.htt.hf["tts"][:] * sample_rate_decimated).astype(

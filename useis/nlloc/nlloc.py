@@ -907,25 +907,25 @@ class Srces:
 
     __valid_measurement_units__ = ['METERS', 'KILOMETERS']
 
-    def __init__(self, locations=[], units='METERS'):
+    def __init__(self, instruments=[], units='METERS'):
         """
         specifies a series of source location from an inventory object
-        :param locations: a list of locations containing at least the location,
+        :param instruments: a list of instruments containing at least the location,
         and location label
-        :type locations: list of dictionary
+        :type instruments: list of dictionary
 
         :Example:
 
-        >>> location = Instrument(label='test', x=1000, y=1000, z=1000, elev=0.0)
-        >>> locations = [location]
-        >>> srces = Srces(locations)
+        >>> instrument = Instrument(label='test', x=1000, y=1000, z=1000, elev=0.0)
+        >>> instrument = [instrument]
+        >>> srces = Srces(instruments)
 
         """
 
         validate(units, self.__valid_measurement_units__)
         self.units = units
 
-        self.locations = locations
+        self.instruments = instruments
 
     @classmethod
     def from_inventory(cls, inventory):
@@ -935,11 +935,11 @@ class Srces:
         :type inventory: uquake.core.inventory.Inventory
         """
 
-        locations = []
-        for short_id, instrument in inventory.instruments, inventory.short_ids:
-            locations.append(Instrument(short_id,
+        instruments = []
+        for short_id, instrument in zip(inventory.instruments, inventory.short_ids):
+            instruments.append(Instrument(short_id,
                                         instrument.x, instrument.y, instrument.z))
-        return cls(locations)
+        return cls(instruments)
 
     @classmethod
     def generate_random_srces_in_grid(cls, gd, n_srces=1, label_root='sta'):
@@ -997,7 +997,7 @@ class Srces:
     def __repr__(self):
         line = ""
 
-        for location in self.locations:
+        for location in self.instruments:
             # test if location name is shorter than 6 characters
 
             line += f'GTSRCE {location.label} XYZ ' \
@@ -1014,46 +1014,46 @@ class Srces:
 
     def __next__(self):
         if self.__i__ < len(self):
-            location = self.locations[self.__i__]
+            location = self.instruments[self.__i__]
             self.__i__ += 1
             return location
         else:
             raise StopIteration
 
     def __len__(self):
-        return len(self.locations)
+        return len(self.instruments)
 
     @property
     def json(self):
         dict_out = vars(self)
-        for i, location in enumerate(dict_out['locations']):
-            dict_out['locations'][i] = vars(dict_out['locations'][i])
+        for i, location in enumerate(dict_out['instruments']):
+            dict_out['instruments'][i] = vars(dict_out['instruments'][i])
         return json.dumps(dict_out)
 
     @classmethod
     def from_json(cls, json_obj):
         obj = json.loads(json_obj)
-        locations = []
+        instruments = []
         for key in obj.keys():
-            if key == 'locations':
+            if key == 'instruments':
                 for site_dict in obj[key]:
-                    locations.append(Instrument(**site_dict))
+                    instruments.append(Instrument(**site_dict))
 
-        obj['locations'] = locations
+        obj['instruments'] = instruments
 
         cls.__init__(**obj)
 
     @property
     def locs(self):
         seeds = []
-        for location in self.locations:
+        for location in self.instruments:
             seeds.append([location.x, location.y, location.z])
         return np.array(seeds)
 
     @property
     def labels(self):
         seed_labels = []
-        for location in self.locations:
+        for location in self.instruments:
             seed_labels.append(location.label)
 
         return np.array(seed_labels)

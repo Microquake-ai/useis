@@ -102,7 +102,7 @@ for context_mseed in filenames[121:]:
 
     distances = []
     stations = []
-    locations = []
+    instruments = []
     for tr in st:
         sites = classifier_project.inventory.select(station=tr.stats.station,
                                                     location=tr.stats.location).sites
@@ -111,14 +111,14 @@ for context_mseed in filenames[121:]:
         site = sites[0]
         distances.append(np.linalg.norm(site.loc - event_loc))
         stations.append(site.station_code)
-        locations.append(site.location_code)
+        instruments.append(site.location_code)
 
     indices = np.argsort(distances)
     distances = np.array(distances)
     stations = np.array(stations)
-    locations = np.array(locations)
+    instruments = np.array(instruments)
 
-    sta_loc = [f'{sta}.{loc}' for sta, loc in zip(stations, locations)]
+    sta_loc = [f'{sta}.{loc}' for sta, loc in zip(stations, instruments)]
 
     _, i1 = np.unique(sta_loc, return_index=True)
 
@@ -126,7 +126,7 @@ for context_mseed in filenames[121:]:
 
     traces = []
     for index in indices[:10]:
-        for tr in st.select(station=stations[index], location=locations[index]).copy():
+        for tr in st.select(station=stations[index], location=instruments[index]).copy():
             # tr.stats.station = f'{int(distances[index]):04d}'
             traces.append(tr)
 

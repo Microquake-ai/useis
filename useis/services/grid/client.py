@@ -82,7 +82,7 @@ class GridClient:
 
     def generate_random_points_in_grid(self, n_points: Optional[int] = 1):
         url = self.base_url / 'test' / self.project / self.network / \
-              'random_locations'
+              'random_instruments'
 
         params = {'n_points': n_points}
         response = requests.get(url, params=params)
