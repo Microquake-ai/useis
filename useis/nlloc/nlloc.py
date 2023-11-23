@@ -1004,7 +1004,7 @@ class Srces:
         for instrument in self.instruments:
             # test if location name is shorter than 6 characters
 
-            line += f'GTSRCE {instrument.label} XYZ ' \
+            line += f'GTSRCE {instrument.code} XYZ ' \
                     f'{instrument.x / 1000:>15.6f} ' \
                     f'{instrument.y / 1000:>15.6f} ' \
                     f'{instrument.z / 1000:>15.6f} ' \
@@ -1058,7 +1058,7 @@ class Srces:
     def labels(self):
         seed_labels = []
         for instrument in self.instruments:
-            seed_labels.append(instrument.label)
+            seed_labels.append(instrument.code)
 
         return np.array(seed_labels)
 
