@@ -1001,13 +1001,13 @@ class Srces:
     def __repr__(self):
         line = ""
 
-        for location in self.instruments:
+        for instrument in self.instruments:
             # test if location name is shorter than 6 characters
 
-            line += f'GTSRCE {location.label} XYZ ' \
-                    f'{location.x / 1000:>15.6f} ' \
-                    f'{location.y / 1000:>15.6f} ' \
-                    f'{location.z / 1000:>15.6f} ' \
+            line += f'GTSRCE {instrument.label} XYZ ' \
+                    f'{instrument.x / 1000:>15.6f} ' \
+                    f'{instrument.y / 1000:>15.6f} ' \
+                    f'{instrument.z / 1000:>15.6f} ' \
                     f'0.00\n'
 
         return line
@@ -1058,7 +1058,7 @@ class Srces:
     def labels(self):
         seed_labels = []
         for instrument in self.instruments:
-            seed_labels.append(instrument.code)
+            seed_labels.append(instrument.label)
 
         return np.array(seed_labels)
 
