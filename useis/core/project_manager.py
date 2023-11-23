@@ -466,7 +466,7 @@ class ProjectManager(object):
         #                    label] for label in self.srces.labels]
 
 
-        tt = self.velocities.to_time(self.Srces, multi_threaded=multi_threaded)
+        tt = self.velocities.to_time(self.srces, multi_threaded=multi_threaded)
 
         self.travel_times = tt
 
