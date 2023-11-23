@@ -1052,6 +1052,7 @@ class Srces:
 
     @property
     def seeds(self):
+        return self.seed_ensemble
 
 
 
