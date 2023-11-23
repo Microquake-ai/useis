@@ -24,58 +24,58 @@ def read_srces(fname):
         return pickle.load(srces_file)
 
 
-class SiteCodeMapping(object):
+class InstrumentCodeMapping(object):
     """
     The purpose of this class is to provide an encoding to four character should the
-    site code length be longer than 6 characters. NLLOC does not support more than 6
-    characters for the site/station name
+    instrument code length be longer than 6 characters. NLLOC does not support more than 6
+    characters for the instrument/station name
     """
-    def __init__(self, site_name_list):
-        short_site_ids = self.generate_unique_sequences(len(site_name_list))
+    def __init__(self, instrument_name_list):
+        short_instrument_ids = self.generate_unique_sequences(len(instrument_name_list))
 
-        self.site_code_mapping = {}
-        for short_site_id, site_code in zip(short_site_ids, site_name_list):
-            if len(site_code) < 7:
-                self.site_code_mapping[site_code] = site_code
+        self.instrument_code_mapping = {}
+        for short_instrument_id, instrument_code in zip(short_instrument_ids, instrument_name_list):
+            if len(instrument_code) < 7:
+                self.instrument_code_mapping[instrument_code] = instrument_code
             else:
-                self.site_code_mapping[short_site_id] = site_code
+                self.instrument_code_mapping[short_instrument_id] = instrument_code
 
-    def encode(self, encoded_site_name):
-        return self.site_code_mapping_reverse[encoded_site_name]
+    def encode(self, encoded_instrument_name):
+        return self.instrument_code_mapping_reverse[encoded_instrument_name]
 
-    def decode(self, site_name):
-        return self.site_code_mapping[site_name]
+    def decode(self, instrument_name):
+        return self.instrument_code_mapping[instrument_name]
 
     def write(self, filepath):
         with open(filepath, 'w') as json_file:
-            json.dump(self.site_code_mapping, json_file)
+            json.dump(self.instrument_code_mapping, json_file)
 
     @property
-    def site_code_mapping_reverse(self):
-        scmr = {}
-        for key in self.site_code_mapping:
-            scmr[self.site_code_mapping[key]] = key
-        return scmr
+    def instrument_code_mapping_reverse(self):
+        icmr = {}
+        for key in self.instrument_code_mapping:
+            icmr[self.instrument_code_mapping[key]] = key
+        return icmr
 
-    def add_site_mapping(self, site):
+    def add_instrument_mapping(self, instrument):
 
-        if site.label in self.site_code_mapping_reverse.keys():
+        if instrument.label in self.instrument_code_mapping_reverse.keys():
             raise ValueError('duplicate label')
 
-        if len(site.label) < 7:
-            self.site_code_mapping[site.label] = site.label
+        if len(instrument.label) < 7:
+            self.instrument_code_mapping[instrument.label] = instrument.label
         else:
             condition = True
             while condition:
                 alternate_label = self.generate_unique_sequences(1)[0]
-                if alternate_label not in self.site_code_mapping.keys():
-                    self.site_code_mapping[alternate_label] = site.label
+                if alternate_label not in self.instrument_code_mapping.keys():
+                    self.instrument_code_mapping[alternate_label] = instrument.label
                     condition = False
 
     def __repr__(self):
         str_out = ''
-        for key in self.site_code_mapping_reverse:
-            str_out += f'{key} -> {self.site_code_mapping_reverse[key]}\n'
+        for key in self.instrument_code_mapping_reverse:
+            str_out += f'{key} -> {self.instrument_code_mapping_reverse[key]}\n'
 
         return str_out
 
@@ -92,26 +92,26 @@ class SiteCodeMapping(object):
     @classmethod
     def from_file(cls, filepath):
         with open(filepath, 'r') as json_file:
-            site_code_mapping = json.load(json_file)
+            instrument_code_mapping = json.load(json_file)
             file_list = []
-            site_code_mapping_reverse = {}
-            for key in site_code_mapping.keys():
-                file_list.append(site_code_mapping[key])
-                site_code_mapping_reverse[site_code_mapping[key]] = key
+            instrument_code_mapping_reverse = {}
+            for key in instrument_code_mapping.keys():
+                file_list.append(instrument_code_mapping[key])
+                instrument_code_mapping_reverse[instrument_code_mapping[key]] = key
 
-        scm = cls(file_list)
-        scm.site_code_mapping = site_code_mapping
-        return scm
+        icm = cls(file_list)
+        icm.instrument_code_mapping = instrument_code_mapping
+        return icm
 
     @classmethod
     def from_inventory(cls, inventory):
-        site_list = []
-        for site in inventory.sites:
-            site_list.append(site.code)
-        return cls(site_list)
+        instrument_list = []
+        for instrument in inventory.instruments:
+            instrument_list.append(instrument.code)
+        return cls(instrument_list)
 
     @classmethod
-    def from_srces(cls, srces):
+    def from_instruments(cls, instruments):
         pass
 
 
@@ -326,7 +326,7 @@ class ProjectManager(object):
         if self.files.inventory.exists():
             self.inventory = read_inventory(str(self.files.inventory))
             self.srces = Srces.from_inventory(self.inventory)
-            self.site_code_mapping = SiteCodeMapping.from_file(
+            self.site_code_mapping = InstrumentCodeMapping.from_file(
                 str(self.files.site_code_mapping))
         elif self.files.srces.exists():
             with open(self.files.srces, 'rb') as srces_file:
@@ -496,7 +496,7 @@ class ProjectManager(object):
 
         self.inventory = inventory
 
-        self.site_code_mapping = SiteCodeMapping.from_inventory(inventory)
+        self.site_code_mapping = InstrumentCodeMapping.from_inventory(inventory)
         self.site_code_mapping.write(self.files.site_code_mapping)
 
         if create_srces_file:
