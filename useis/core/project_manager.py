@@ -4,6 +4,7 @@ from uquake.core.inventory import read_inventory
 from uquake.core.logging import logger
 # from useis.nlloc import (Srces)
 from uquake.grid.extended import SeedEnsemble as Srces
+from uquake.grid.extended import SeedEnsemble
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
 from uquake.grid import extended as nlloc_grid
 from uquake.grid import read_grid
@@ -464,7 +465,8 @@ class ProjectManager(object):
         # seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[
         #                    label] for label in self.srces.labels]
 
-        tt = self.velocities.to_time(self.srces, multi_threaded=multi_threaded)
+
+        tt = self.velocities.to_time(self.Srces, multi_threaded=multi_threaded)
 
         self.travel_times = tt
 
@@ -478,7 +480,7 @@ class ProjectManager(object):
                     f'{t1 - t0:0.2f} seconds')
 
     def add_inventory(self, inventory, create_srces_file: bool = True,
-                      initialize_travel_time: bool = True):
+                      initialize_travel_times: bool = True):
         """
         adding a inventory object to the project
         :param inventory: station xml inventory object
