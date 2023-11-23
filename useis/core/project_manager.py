@@ -173,11 +173,14 @@ class ProjectManager(object):
                                               'classification.pt',
                       'picker_model': self.paths.ai_models / 'picker.pickle'}
 
-        self.formats = {'velocity': 'PICKLE',
-                        'times': 'PICKLE'}
 
         self.files = AttribDict(self.files)
         self.databases = AttribDict()
+
+        self.formats = {'velocity': 'PICKLE',
+                        'times': 'PICKLE'}
+
+        self.formats = AttribDict(self.formats)
 
         # create the directory if it does not exist
         self.paths.root.mkdir(parents=True, exist_ok=True)
@@ -231,7 +234,7 @@ class ProjectManager(object):
         self.s_velocity = None
         try:
             fname = self.files.s_velocity
-            self.s_velocity = read_grid(fname, format=self.format.velocity)
+            self.s_velocity = read_grid(fname, format=self.formats.velocity)
         except Exception as e:
             logger.warning(e)
 
