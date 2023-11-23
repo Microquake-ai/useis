@@ -134,125 +134,11 @@ class ProjectManager(object):
         :type network_code: str
         :param use_srces: if True use the srces files instead of the the
         inventory file should both files be present (default=False)
-        :Example:
-        >>> from uquake.grid import nlloc as nlloc_grid
-        >>> from uquake.nlloc import nlloc
-        # initialize the project with the root path of the project,
-        the project and the network names
-        >>> project_name = 'test'
-        >>> network_code = 'test'
-        >>> root_path=''
-        >>> pm = nlloc.ProjectManager(root_path, project_name, network_code)
-        # this will initialize the project and create a specific directory
-        # structure if the directories do not exist.
-
-        # add an inventory file to the project
-        >>> path_to_uquake_inventory_file = 'PATH/TO/THE/INVENTORY/FILE.xml'
-
-        ..note :: the uquake inventory object inherit from the obspy inventory
-                  and
-                  behaves in a very similar way. It, however, differs from
-                  its parent has it implements properties specific to local
-                  earthquake who are either expressed using UTM coordinates
-                  system or a local coordinates system that cannot necessarily
-                  be translated to latitude and longitude. Beyond this minor
-                  difference, uquake inventory structure also differs from
-                  the standard inventory and implements a slightly different
-                  hierarchy more representative of mine monitoring systems.
-                  The uquake Inventory object hierarchy is as follows:
-                 1. Inventory
-                    1.1. Networks: A useis network. a network includes at
-                                   least one data acquisition station.
-                        1.1.1 Stations: A place where the data acquisition is
-                                        performed. For instance, station
-                                        usually includes power, communication
-                                        and data acquisition equipment. One
-                                        or more instrument can be connected to a
-                                        station.
-                            1.1.1.1 instruments: A instrument converting a
-                                             physical phenomenon to data either
-                                             digital or analog. A instrument
-                                             comprises one or more channel.
-                                1.1.1.1.1 Channels: A channel is a the smallest
-                                                    unit of measuring.
-
-
-        >>> inventory = read_inventory(path_to_uquake_inventory_file)
-        >>> pm.add_inventory(inventory)
-
-        # alternatively, instruments can be added to the using the srces object.
-        # instruments can be added this way from a nlloc.nlloc.Srces object using
-        the .add_srces method.
-        ..note:: srces stands for sources and it is the nomenclature used in
-                 NonLinLoc. This might be a soure of confusion for the users.
-                 In addition, what NonLinLoc refers to as station is called a
-                 instruments in this context.
-
-        # srces object can be constructed from an inventory as follows:
-        >>> srces = Srces.from_inventory(inventory)
-        # alternatively, each instruments can be added individually using the
-        .add_instrument method. As follows:
-        >>> srces = Srces()
-        >>> x = 250
-        >>> y = 250
-        >>> z = 250
-        >>> elevation = 0
-        >>> srces.add_instrument('instrument label', x, y, z, elev=elevation)
-
-        # Srces can be added to the project as follows:
-        >>> pm.add_srces(srces)
-
-        # add the velocity models to the project. P- and S-wave velocity models
-        can be added separately from a nlloc.grid.VelocityGrid3D
-        using the .add_velocity method or from a nlloc.grid.VelocityEnsemble
-        object using the .add_velocities method
-
-        >>> origin = [0, 0, 0]
-        >>> spacing = [25, 25, 25]
-        >>> dimensions = [100, 100, 100]
-
-        >>> nlloc_grid.VelocityGrid3D()
-        >>> vp = 5000  # P-wave velocity in m/s
-        >>> vs = 3500  # S-wave velocity in m/s
-        >>> p_velocity = nlloc_grid.VelocityGrid3D(network_code, dimensions,
-        >>>                                        origin, spacing, phase='P',
-        >>>                                        value=5000)
-        >>> s_velocity = nlloc_grid.VelocityGrid3D(network_code, dimensions,
-        >>>                                        origin, spacing, phase='S',
-        >>>                                        value=5000 )
-        >>> pm.add_velocity(p_velocity)
-        >>> pm.add_velocity(s_velocity)
-        # Alternatively
-        >>> velocities = nlloc_grid.VelocityGridEnsemble(p_velocity,
-        >>>                                              s_velocity)
-        >>> pm.add_velocities(velocities)
-        # Adding a velocity model of the velocity models triggers the
-        # calculation of the travel time grids.
-        # It is possible to manually trigger the calculation of the travel
-        # time grid by invoking
-        >>> pm.init_travel_time_grids()
-        # this should not, however, be required.
-
-        # prior to running the location, NonLinLoc need to be configured.
-        # configuring NonLinLoc can be done using the nlloc.nlloc.NonLinLoc
-        # object
-        >>> nonlinloc = nlloc.NonLinLoc()
-        # this will initialize the nonlinloc object sith default value. Those
-        # value have been used to locate useis events in a volumes of
-        # approximately 3000 m x 3000 m x 1500 m. The parameters should be
-        # provide adequate results for volumes of similar scale but would need
-        # to be adapted to smaller or larger volumes.
-
         """
 
         self.project_name = project_name
         self.network_code = network_code
         self.instrument_code_mapping = {}
-
-        p_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(network_code,
-                                                                  'P')
-        s_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(network_code,
-                                                                  'S')
 
         self.base_projects_path = Path(base_projects_path)
         base_project_path = Path(base_projects_path)
@@ -263,8 +149,8 @@ class ProjectManager(object):
                       'inventory': root / 'inventory',
                       'config': root / 'config',
                       'velocities': root / 'velocities',
+                      'nlloc_times': root / 'nlloc_times',
                       'times': root / 'times',
-                      'hdf5_times': root / 'hdf5_times',
                       'ai_models': root / 'ai_models',
                       'debug': root / 'debug',
                       'index': root / 'index',
@@ -281,13 +167,14 @@ class ProjectManager(object):
                                            'services_settings.toml',
                       'projection_settings': self.paths.config /
                                              'projection_settings.toml',
-                      'p_velocity': self.paths.velocities / p_vel_base_name,
-                      's_velocity': self.paths.velocities / s_vel_base_name,
-                      'hdf5_tt': self.paths.hdf5_times /
-                                 'travel_times_tables.h5f',
+                      'p_velocity': self.paths.velocities / 'P.pickle',
+                      's_velocity': self.paths.velocities / 'S.pickle',
                       'classification_model': self.paths.ai_models /
                                               'classification.pt',
                       'picker_model': self.paths.ai_models / 'picker.pickle'}
+
+        self.formats = {'velocity': 'PICKLE',
+                        'times': 'PICKLE'}
 
         self.files = AttribDict(self.files)
         self.databases = AttribDict()
@@ -336,15 +223,15 @@ class ProjectManager(object):
 
         self.p_velocity = None
         try:
-            fname = str(self.paths.velocities / p_vel_base_name)
-            self.p_velocity = read_grid(fname, format='NLLOC')
+            fname = self.files.p_velocity
+            self.p_velocity = read_grid(fname, format=self.formats.velocity)
         except Exception as e:
             logger.warning(e)
 
         self.s_velocity = None
         try:
-            fname = str(self.paths.velocities / s_vel_base_name)
-            self.s_velocity = read_grid(fname, format='NLLOC')
+            fname = self.files.s_velocity
+            self.s_velocity = read_grid(fname, format=self.format.velocity)
         except Exception as e:
             logger.warning(e)
 
@@ -474,8 +361,8 @@ class ProjectManager(object):
         for fle in self.paths.times.glob('*time*'):
             fle.unlink(missing_ok=True)
 
-        self.travel_times.write_nlloc(self.paths.times)
-        # self.travel_times.write(self.files.hdf5_tt)
+        self.travel_times.write(self.paths.nlloc_times, format='NLLOC')
+        self.travel_times.write(self.path.times, format=self.formats.times)
         t1 = time()
         logger.info(f'done initializing the travel time grids in '
                     f'{t1 - t0:0.2f} seconds')
@@ -662,11 +549,10 @@ class ProjectManager(object):
 
         if velocity.phase.upper() == 'P':
             self.p_velocity = velocity
+            velocity.write(self.files.p_velocity, format = self.format.velocity)
         elif velocity.phase.upper() == 'S':
             self.s_velocity = velocity
-
-        velocity.write(self.paths.velocities / f'{velocity.phase.upper()}.pickle',
-                       format='PICKLE')
+            velocity.write(self.files.s_velocity, format=self.format.velocity)
 
         if initialize_travel_times:
             try:
