@@ -425,8 +425,7 @@ class ProjectManager(object):
                                                    northing=northing,
                                                    z=z)
 
-    def transform_to_local(self, longitude: float = 0, latitude: float = 0,
-                           z: float = 0):
+    def transform_to_local(self, longitude: float = 0, latitude: float = 0):
         return self.projection.transform_to_local(longitude=longitude,
                                                   latitude=latitude)
 
@@ -461,8 +460,8 @@ class ProjectManager(object):
         t0 = time()
         seeds = self.srces.locs
 
-        seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[label]
-                       for label in self.srces.labels]
+        seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[
+                           label] for label in self.srces.labels]
 
         tt = self.velocities.to_time(seeds, seed_labels,
                                      multi_threaded=multi_threaded)
@@ -521,8 +520,8 @@ class ProjectManager(object):
                 tt = self.travel_times.select(key, phase)
                 if len(tt) == 0:
                     continue
-                tt_grid_dict[phase][self.instrument_code_mapping.instrument_code_mapping[key]] \
-                    = tt[0]
+                tt_grid_dict[phase][
+                    self.instrument_code_mapping.instrument_code_mapping[key]] = tt[0]
 
         return tt_grid_dict
 

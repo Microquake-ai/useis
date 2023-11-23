@@ -938,11 +938,11 @@ class Srces:
         :param inventory:
         :type inventory: uquake.core.inventory.Inventory
         """
-
-        instruments = []
-        for instrument, short_id in zip(inventory.instruments, inventory.short_ids):
-            instruments.append(Instrument(short_id, instrument.coordinates))
-        return cls(instruments)
+        #
+        # instruments = [instrument for instrument in inventory.instruments]
+        # for instrument, short_id in zip(inventory.instruments, inventory.short_ids):
+        #     instruments.append(Instrument(short_id, instrument.coordinates))
+        return cls(inventory.instruments)
 
     @classmethod
     def generate_random_srces_in_grid(cls, gd, n_srces=1, label_root='sta'):
@@ -972,31 +972,31 @@ class Srces:
             srces.append(location)
         return cls(srces)
 
-    def add_site(self, label, x, y, z, elev=None, units='METERS'):
-        """
-        Add a single location to the source list
-        :param label: location label
-        :type label: str
-        :param x: x location relative to geographic origin expressed
-        in the units of measurements for location/source
-        :type x: float
-        :param y: y location relative to geographic origin expressed
-        in the units of measurements for location/source
-        :type y: float
-        :param z: z location relative to geographic origin expressed
-        in the units of measurements for location/source
-        :type z: float
-        :param elev: elevation above z grid position (positive UP) in
-        kilometers for location (Default = None)
-        :type elev: float
-        :param units: units of measurement used to express x, y, and z
-        ( 'METERS' or 'KILOMETERS')
-
-        """
-
-        validate(units.upper(), self.__valid_measurement_units__)
-
-        self.units = units.upper()
+    # def add_site(self, label, x, y, z, elev=None, units='METERS'):
+    #     """
+    #     Add a single location to the source list
+    #     :param label: location label
+    #     :type label: str
+    #     :param x: x location relative to geographic origin expressed
+    #     in the units of measurements for location/source
+    #     :type x: float
+    #     :param y: y location relative to geographic origin expressed
+    #     in the units of measurements for location/source
+    #     :type y: float
+    #     :param z: z location relative to geographic origin expressed
+    #     in the units of measurements for location/source
+    #     :type z: float
+    #     :param elev: elevation above z grid position (positive UP) in
+    #     kilometers for location (Default = None)
+    #     :type elev: float
+    #     :param units: units of measurement used to express x, y, and z
+    #     ( 'METERS' or 'KILOMETERS')
+    #
+    #     """
+    #
+    #     validate(units.upper(), self.__valid_measurement_units__)
+    #
+    #     self.units = units.upper()
 
     def __repr__(self):
         line = ""
