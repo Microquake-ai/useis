@@ -459,13 +459,12 @@ class ProjectManager(object):
 
         logger.info('initializing the travel time grids')
         t0 = time()
-        seeds = self.srces.locs
+        # seeds = self.srces.locs
+        #
+        # seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[
+        #                    label] for label in self.srces.labels]
 
-        seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[
-                           label] for label in self.srces.labels]
-
-        tt = self.velocities.to_time(seeds, seed_labels,
-                                     multi_threaded=multi_threaded)
+        tt = self.velocities.to_time(self.srces, multi_threaded=multi_threaded)
 
         self.travel_times = tt
 
