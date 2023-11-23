@@ -665,7 +665,7 @@ class ProjectManager(object):
         elif velocity.phase.upper() == 'S':
             self.s_velocity = velocity
 
-        velocity.write(self.paths.velocities)
+        velocity.write(self.paths.velocities, format='PICKLE')
 
         if initialize_travel_times:
             try:
