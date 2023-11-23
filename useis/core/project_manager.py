@@ -465,8 +465,9 @@ class ProjectManager(object):
         # seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[
         #                    label] for label in self.srces.labels]
 
+        seeds = self.srces.seeds
 
-        tt = self.velocities.to_time(self.srces, multi_threaded=multi_threaded)
+        tt = self.velocities.to_time(seeds, multi_threaded=multi_threaded)
 
         self.travel_times = tt
 
