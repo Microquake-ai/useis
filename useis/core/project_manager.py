@@ -474,8 +474,8 @@ class ProjectManager(object):
         for fle in self.paths.times.glob('*time*'):
             fle.unlink(missing_ok=True)
 
-        self.travel_times.write(self.paths.times)
-        self.travel_times.write_hdf5(self.files.hdf5_tt)
+        self.travel_times.write_nlloc(self.paths.times)
+        self.travel_times.write(self.files.hdf5_tt)
         t1 = time()
         logger.info(f'done initializing the travel time grids in '
                     f'{t1 - t0:0.2f} seconds')
