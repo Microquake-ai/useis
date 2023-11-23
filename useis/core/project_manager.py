@@ -504,7 +504,7 @@ class ProjectManager(object):
             with open(self.files.srces, 'wb') as srces_file:
                 pickle.dump(self.srces, srces_file)
 
-        if initialize_travel_time:
+        if initialize_travel_times:
             self.init_travel_time_grids()
         else:
             logger.warning('the travel time grids will not be initialized, '
