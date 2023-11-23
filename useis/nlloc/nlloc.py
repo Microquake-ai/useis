@@ -885,7 +885,7 @@ class Instrument:
 
     @property
     def x(self):
-        return self.coordinate.x
+        return self.coordinates.x
 
     @property
     def y(self):
