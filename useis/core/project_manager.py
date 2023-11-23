@@ -549,10 +549,10 @@ class ProjectManager(object):
 
         if velocity.phase.upper() == 'P':
             self.p_velocity = velocity
-            velocity.write(self.files.p_velocity, format = self.format.velocity)
+            velocity.write(self.files.p_velocity, format = self.formats.velocity)
         elif velocity.phase.upper() == 'S':
             self.s_velocity = velocity
-            velocity.write(self.files.s_velocity, format=self.format.velocity)
+            velocity.write(self.files.s_velocity, format=self.formats.velocity)
 
         if initialize_travel_times:
             try:
