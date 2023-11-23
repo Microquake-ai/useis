@@ -165,11 +165,11 @@ class ProjectManager(object):
                                         performed. For instance, station
                                         usually includes power, communication
                                         and data acquisition equipment. One
-                                        or more site can be connected to a
+                                        or more instrument can be connected to a
                                         station.
-                            1.1.1.1 sites: A instrument converting a
+                            1.1.1.1 instruments: A instrument converting a
                                              physical phenomenon to data either
-                                             digital or analog. A site
+                                             digital or analog. A instrument
                                              comprises one or more channel.
                                 1.1.1.1.1 Channels: A channel is a the smallest
                                                     unit of measuring.
@@ -178,24 +178,24 @@ class ProjectManager(object):
         >>> inventory = read_inventory(path_to_uquake_inventory_file)
         >>> pm.add_inventory(inventory)
 
-        # alternatively, sites can be added to the using the srces object.
-        # sites can be added this way from a nlloc.nlloc.Srces object using
+        # alternatively, instruments can be added to the using the srces object.
+        # instruments can be added this way from a nlloc.nlloc.Srces object using
         the .add_srces method.
         ..note:: srces stands for sources and it is the nomenclature used in
                  NonLinLoc. This might be a soure of confusion for the users.
                  In addition, what NonLinLoc refers to as station is called a
-                 sites in this context.
+                 instruments in this context.
 
         # srces object can be constructed from an inventory as follows:
         >>> srces = Srces.from_inventory(inventory)
-        # alternatively, each sites can be added individually using the
-        .add_site method. As follows:
+        # alternatively, each instruments can be added individually using the
+        .add_instrument method. As follows:
         >>> srces = Srces()
         >>> x = 250
         >>> y = 250
         >>> z = 250
         >>> elevation = 0
-        >>> srces.add_site('site label', x, y, z, elev=elevation)
+        >>> srces.add_instrument('instrument label', x, y, z, elev=elevation)
 
         # Srces can be added to the project as follows:
         >>> pm.add_srces(srces)
@@ -245,7 +245,7 @@ class ProjectManager(object):
 
         self.project_name = project_name
         self.network_code = network_code
-        self.site_code_mapping = {}
+        self.instrument_code_mapping = {}
 
         p_vel_base_name = nlloc_grid.VelocityGrid3D.get_base_name(network_code,
                                                                   'P')
@@ -271,8 +271,8 @@ class ProjectManager(object):
         self.paths = AttribDict(self.paths)
 
         self.files = {'inventory': self.paths.inventory / 'inventory.xml',
-                      'site_code_mapping': self.paths.inventory /
-                                           'site_code_mapping.json',
+                      'instrument_code_mapping': self.paths.inventory /
+                                           'instrument_code_mapping.json',
                       'srces': self.paths.inventory / 'srces.pickle',
                       'settings': self.paths.config / 'settings.toml',
                       'services_settings': self.paths.config /
@@ -326,8 +326,8 @@ class ProjectManager(object):
         if self.files.inventory.exists():
             self.inventory = read_inventory(str(self.files.inventory))
             self.srces = Srces.from_inventory(self.inventory)
-            self.site_code_mapping = InstrumentCodeMapping.from_file(
-                str(self.files.site_code_mapping))
+            self.instrument_code_mapping = InstrumentCodeMapping.from_file(
+                str(self.files.instrument_code_mapping))
         elif self.files.srces.exists():
             with open(self.files.srces, 'rb') as srces_file:
                 self.srces = pickle.load(srces_file)
@@ -461,7 +461,7 @@ class ProjectManager(object):
         t0 = time()
         seeds = self.srces.locs
 
-        seed_labels = [self.site_code_mapping.site_code_mapping_reverse[label]
+        seed_labels = [self.instrument_code_mapping.instrument_code_mapping_reverse[label]
                        for label in self.srces.labels]
 
         tt = self.velocities.to_time(seeds, seed_labels,
@@ -496,8 +496,8 @@ class ProjectManager(object):
 
         self.inventory = inventory
 
-        self.site_code_mapping = InstrumentCodeMapping.from_inventory(inventory)
-        self.site_code_mapping.write(self.files.site_code_mapping)
+        self.instrument_code_mapping = InstrumentCodeMapping.from_inventory(inventory)
+        self.instrument_code_mapping.write(self.files.instrument_code_mapping)
 
         if create_srces_file:
             with open(self.files.srces, 'wb') as srces_file:
@@ -517,11 +517,11 @@ class ProjectManager(object):
         tt_grid_dict = {}
         for phase in ['P', 'S']:
             tt_grid_dict[phase] = {}
-            for key in self.site_code_mapping.site_code_mapping.keys():
+            for key in self.instrument_code_mapping.instrument_code_mapping.keys():
                 tt = self.travel_times.select(key, phase)
                 if len(tt) == 0:
                     continue
-                tt_grid_dict[phase][self.site_code_mapping.site_code_mapping[key]] \
+                tt_grid_dict[phase][self.instrument_code_mapping.instrument_code_mapping[key]] \
                     = tt[0]
 
         return tt_grid_dict
@@ -566,7 +566,7 @@ class ProjectManager(object):
                   multi_threaded: bool=True):
         """
         add a list of sources to the projects
-        :param srces: list of sources or sites
+        :param srces: list of sources or instruments
         :param force: force the insertion of the srces object if an inventory
         file is present
         :param initialize_travel_time: if True, initialize the travel time
@@ -575,8 +575,8 @@ class ProjectManager(object):
         :param multi_threaded: if true, use multi-threading
         :type multi_threaded: bool
 
-        ..warning:: travel time should be initialized when the sites/srces
-        are updated. Not doing so, may cause the sites/source and the
+        ..warning:: travel time should be initialized when the instruments/srces
+        are updated. Not doing so, may cause the instruments/source and the
         travel time grids to be incompatible.
         """
 
@@ -614,8 +614,8 @@ class ProjectManager(object):
         :param initialize_travel_times: if True, initialize the travel time
         grid
 
-        ..warning:: travel time should be initialized when the sites/srces
-        are updated. Not doing so, may cause the sites/source and the
+        ..warning:: travel time should be initialized when the instruments/srces
+        are updated. Not doing so, may cause the instruments/source and the
         travel time grids to be incompatible.
         """
 
@@ -653,8 +653,8 @@ class ProjectManager(object):
         :type velocity: uquake.grid.nlloc.VelocityGrid3D
         :param initialize_travel_times: if true initialize the travel time grids
 
-        ..warning:: travel time should be initialized when the sites/srces
-        are updated. Not doing so, may cause the sites/source and the
+        ..warning:: travel time should be initialized when the instruments/srces
+        are updated. Not doing so, may cause the instruments/source and the
         travel time grids to be incompatible.
         """
 
