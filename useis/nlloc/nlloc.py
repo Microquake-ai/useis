@@ -1050,15 +1050,15 @@ class Srces:
     @property
     def locs(self):
         seeds = []
-        for location in self.instruments:
-            seeds.append([location.x, location.y, location.z])
+        for instrument in self.instruments:
+            seeds.append([instrument.x, instrument.y, instrument.z])
         return np.array(seeds)
 
     @property
     def labels(self):
         seed_labels = []
-        for location in self.instruments:
-            seed_labels.append(location.label)
+        for instrument in self.instruments:
+            seed_labels.append(instrument.code)
 
         return np.array(seed_labels)
 
