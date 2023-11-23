@@ -1029,7 +1029,7 @@ class Srces:
 
         seeds = []
         for instrument in self.instruments:
-            seeds.append(Seed(instrument.station, instrument.location,
+            seeds.append(Seed(instrument.station_code, instrument.location_code,
                               instrument.coordinates))
 
         return SeedEnsemble(seeds)
