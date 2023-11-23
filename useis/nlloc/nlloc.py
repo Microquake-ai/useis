@@ -41,6 +41,7 @@ from uquake.core.inventory import Inventory
 from uquake.core.logging import logger
 from uquake.core.event import (Catalog)
 from uquake.core.coordinates import Coordinates
+from uquake.grid.extended import Seeds
 
 from uuid import uuid4
 from pathlib import Path
@@ -182,11 +183,10 @@ class Grid2Time:
 
             ctrl.write(f'GTMODE GRID3D {angle_mode}\n')
 
-            for short_id, instruments in \
-                    self.inventory.short_ids, self.inventory.instruments:
+            for instrument in self.inventory.instruments:
                 # test if location name is shorter than 6 characters
 
-                out_line = f'GTSRCE {short_id} XYZ ' \
+                out_line = f'GTSRCE {instrument.code} XYZ ' \
                            f'{instrument.x / 1000:>10.6f} ' \
                            f'{instrument.y / 1000 :>10.6f} ' \
                            f'{instrument.z / 1000 :>10.6f} ' \
@@ -1061,6 +1061,10 @@ class Srces:
             seed_labels.append(instrument.code)
 
         return np.array(seed_labels)
+
+    @property
+    def seeds(self):
+
 
 
 __valid_search_grid_type__ = ['MISFIT', 'PROB_DENSITY']
