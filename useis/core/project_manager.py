@@ -365,7 +365,7 @@ class ProjectManager(object):
             fle.unlink(missing_ok=True)
 
         self.travel_times.write(self.paths.nlloc_times, format='NLLOC')
-        self.travel_times.write(self.path.times, format=self.formats.times)
+        self.travel_times.write(self.paths.times, format=self.formats.times)
         t1 = time()
         logger.info(f'done initializing the travel time grids in '
                     f'{t1 - t0:0.2f} seconds')
