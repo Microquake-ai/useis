@@ -41,7 +41,7 @@ from uquake.core.inventory import Inventory
 from uquake.core.logging import logger
 from uquake.core.event import (Catalog)
 from uquake.core.coordinates import Coordinates
-from uquake.grid.extended import Seeds
+from uquake.grid.extended import SeedEnsemble, Seed
 
 from uuid import uuid4
 from pathlib import Path
@@ -972,32 +972,6 @@ class Srces:
             srces.append(location)
         return cls(srces)
 
-    # def add_site(self, label, x, y, z, elev=None, units='METERS'):
-    #     """
-    #     Add a single location to the source list
-    #     :param label: location label
-    #     :type label: str
-    #     :param x: x location relative to geographic origin expressed
-    #     in the units of measurements for location/source
-    #     :type x: float
-    #     :param y: y location relative to geographic origin expressed
-    #     in the units of measurements for location/source
-    #     :type y: float
-    #     :param z: z location relative to geographic origin expressed
-    #     in the units of measurements for location/source
-    #     :type z: float
-    #     :param elev: elevation above z grid position (positive UP) in
-    #     kilometers for location (Default = None)
-    #     :type elev: float
-    #     :param units: units of measurement used to express x, y, and z
-    #     ( 'METERS' or 'KILOMETERS')
-    #
-    #     """
-    #
-    #     validate(units.upper(), self.__valid_measurement_units__)
-    #
-    #     self.units = units.upper()
-
     def __repr__(self):
         line = ""
 
@@ -1046,6 +1020,20 @@ class Srces:
         obj['instruments'] = instruments
 
         cls.__init__(**obj)
+
+    @property
+    def seed_ensemble(self):
+        """
+        return a seed ensemble object
+        """
+
+        seeds = []
+        for instrument in self.instruments:
+            seeds.append(Seed(instrument.station, instrument.location,
+                              instrument.coordinates))
+
+        return SeedEnsemble(seeds)
+
 
     @property
     def locs(self):
