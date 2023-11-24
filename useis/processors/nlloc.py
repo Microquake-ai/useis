@@ -617,6 +617,11 @@ class NLLOC(ProjectManager):
                      evaluation_status: str = 'preliminary',
                      multithreading=False):
 
+        # correct the instrument names in the observations before running nlloc
+
+        observations.correct_instrument_code(
+            self.instrument_code_mapping.instrument_code_mapping_reverse)
+
         import subprocess
 
         if event is not None:

@@ -689,6 +689,15 @@ class Observations:
         self.picks = picks
         self.p_pick_error = p_pick_error
         self.s_pick_error = s_pick_error
+        self.instrument_codes = []
+        for pick in self.picks:
+            self.instrument_codes = pick.instrument
+
+
+    def correct_instrument_code(self, lookup_table):
+        self.instrument_codes = []
+        for pick in self.picks:
+            self.instrument_codes.append(lookup_table[pick.instrument])
 
     @classmethod
     def from_event(cls, event, p_pick_error=1e-3, s_pick_error=1e-3,
@@ -755,11 +764,10 @@ class Observations:
     def __repr__(self):
 
         lines = ''
-        for pick in self.picks:
+        for pick, instrument in zip(self.picks, self.instrument_codes):
             if pick.evaluation_status == 'rejected':
                 continue
 
-            location = pick.location
             instrument_identification = pick.waveform_id.channel_code[0:2]
             component = pick.waveform_id.channel_code[-1]
             phase_onset = 'e' if pick.onset in ['emergent', 'questionable'] \
@@ -784,7 +792,7 @@ class Observations:
             period = -1
             phase_weight = 1
 
-            line = f'{location:<6s} {instrument_identification:<4s} ' \
+            line = f'{instrument:<6s} {instrument_identification:<4s} ' \
                    f'{component:<4s} {phase_onset:1s} ' \
                    f'{phase_descriptor:<6s} {first_motion:1s} ' \
                    f'{datetime_str} {error_type} {pick_error} ' \
