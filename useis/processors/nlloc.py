@@ -10,6 +10,7 @@ import sys
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
 from useis.nlloc import Observations, NllocInputFiles, LocGrid
 from loguru import logger
+from uuid import uuid4
 
 
 def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
