@@ -1,7 +1,5 @@
-import openpyxl.styles.stylesheet
 import uquake.core.inventory
 from uquake.core.inventory import Inventory
-
 from ..core.project_manager import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival,
                                Pick, WaveformStreamID)
@@ -10,10 +8,6 @@ from uquake.core.stream import Stream
 import numpy as np
 import sys
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
-import toml
-# from pydantic import BaseModel
-# from typing import Optional, List
-import matplotlib.pyplot as plt
 from useis.nlloc import Observations, NllocInputFiles, LocGrid
 from loguru import logger
 
