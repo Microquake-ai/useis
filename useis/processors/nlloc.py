@@ -164,7 +164,7 @@ class NLLocResult(object):
                  hypocenter_file: str):
         self.nll_object = nll_object
         self.hypocenter = hypocenter
-        if hasattr(self.settings, 'projection'):
+        if self.nll_object.projection is not None:
             self.hypocenter_global = (self.nll_object.projection.
                                       transform_to_global(hypocenter[0],
                                                           hypocenter[1],
