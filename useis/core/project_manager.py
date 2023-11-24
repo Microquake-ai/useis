@@ -212,13 +212,12 @@ class ProjectManager(object):
         self.srces = None
         self.inventory = None
 
-        lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
-
         if self.files.inventory.exists():
             self.inventory = read_inventory(str(self.files.inventory))
-            self.srces = Srces.from_inventory(self.inventory, lookup_table=lookup_table)
             self.instrument_code_mapping = InstrumentCodeMapping.from_file(
                 str(self.files.instrument_code_mapping))
+            lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
+            self.srces = Srces.from_inventory(self.inventory, lookup_table=lookup_table)
         elif self.files.srces.exists():
             with open(self.files.srces, 'rb') as srces_file:
                 self.srces = pickle.load(srces_file)
