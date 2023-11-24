@@ -357,6 +357,10 @@ class ProjectManager(object):
 
         seeds = self.srces.seeds
 
+        for seed in self.srces.seeds:
+            seed.short_label = \
+                self.instrument_code_mapping.instrument_code_mapping_reverse[seed.label]
+
         tt = self.velocities.to_time(seeds, multi_threaded=multi_threaded)
 
         self.travel_times = tt
@@ -368,7 +372,7 @@ class ProjectManager(object):
         for tt in self.travel_times:
             tt.seed.station = \
                 self.instrument_code_mapping.instrument_code_mapping_reverse[
-                    tt.seed.station]
+                    tt.seed.label]
 
         self.travel_times.write(self.paths.nlloc_times, format='NLLOC')
 
