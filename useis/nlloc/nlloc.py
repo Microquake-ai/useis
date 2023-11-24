@@ -41,7 +41,7 @@ from uquake.core.inventory import Inventory
 from uquake.core.logging import logger
 from uquake.core.event import (Catalog)
 from uquake.core.coordinates import Coordinates
-from uquake.grid.extended import SeedEnsemble, Seed
+from uquake.grid.extended import SeedEnsemble, Seed, __default_grid_units__
 
 from uuid import uuid4
 from pathlib import Path
@@ -1082,7 +1082,7 @@ __valid_search_grid_type__ = ['MISFIT', 'PROB_DENSITY']
 class LocGrid(object):
     def __init__(self, dim_x, dim_y, dim_z, origin_x, origin_y, origin_z,
                  spacing_x, spacing_y, spacing_z, grid_type='PROB_DENSITY',
-                 save=False, units='METERS'):
+                 save=False, units=__default_grid_units__):
         """
         Specifies the size and other parameters of an initial or nested 3D
         search grid. The order of LOCGRID statements is critical (see Notes).
@@ -1148,8 +1148,12 @@ class LocGrid(object):
 
     def __repr__(self):
         div = 1
-        if self.units == 'METER':
-            div = 1000
+        if isinstance(self.units, str):
+            if self.units == 'METERS':
+                div = 1000
+        else:
+            if self.units.value == 'METER':
+                div = 1000
 
         if self.save:
             save_flag = 'SAVE'
