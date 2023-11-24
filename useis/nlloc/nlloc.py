@@ -1064,7 +1064,7 @@ class Srces:
         seed_labels = []
         for instrument in self.instruments:
             if self.lookup_table is not None:
-                seed_labels.append(self.lookup_table[instrument.label])
+                seed_labels.append(self.lookup_table[instrument.code])
             else:
                 seed_labels.append(instrument.code)
 
