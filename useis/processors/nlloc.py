@@ -250,7 +250,7 @@ class NLLocResult(object):
         for pick in self.picks:
             travel_time = pick.time - self.t
             phase = pick.phase_hint
-            site_code = pick.site
+            instrument_code = pick.instrument
 
             network = pick.waveform_id.network_code
             station = pick.waveform_id.station_code
@@ -258,7 +258,7 @@ class NLLocResult(object):
 
             if self.rays is not None:
                 for ray in self.rays:
-                    if (ray.site_code == site_code) & (ray.phase == phase):
+                    if (ray.instrument_code == instrument_code) & (ray.phase == phase):
                         break
                 distance = ray.length
 
@@ -276,13 +276,13 @@ class NLLocResult(object):
 
                 distance = np.linalg.norm(self.hypocenter - inv[0][0][0].loc)
 
-                predicted_time = predicted_times[phase][site_code]
+                predicted_time = predicted_times[phase][instrument_code]
 
                 time_residual = Arrival.calculate_time_residual(predicted_time,
                                                                 travel_time)
 
-                azimuth = angles['azimuth'][phase][site_code]
-                takeoff_angle = angles['takeoff'][phase][site_code]
+                azimuth = angles['azimuth'][phase][instrument_code]
+                takeoff_angle = angles['takeoff'][phase][instrument_code]
 
             time_weight = 1
 
@@ -406,9 +406,9 @@ class NLLOCResult2DCylindrical(NLLocResult):
         inv = inventory.select(station=station)
         xs = []
         ys = []
-        for site in inv.sites:
-            xs.append(site.x)
-            ys.append(site.y)
+        for instrument in inv.instruments:
+            xs.append(instrument.x)
+            ys.append(instrument.y)
 
         self.reference_x = np.mean(xs)
         self.reference_y = np.mean(ys)
