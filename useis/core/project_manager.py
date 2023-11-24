@@ -357,8 +357,8 @@ class ProjectManager(object):
 
         seeds = self.srces.seeds
 
-        for seed in self.srces.seeds:
-            seed.short_label = \
+        for i, seed in enumerate(seeds):
+            seeds[i].short_label = \
                 self.instrument_code_mapping.instrument_code_mapping_reverse[seed.label]
 
         tt = self.velocities.to_time(seeds, multi_threaded=multi_threaded)
