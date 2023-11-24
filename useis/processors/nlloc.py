@@ -653,7 +653,7 @@ class NLLOC(ProjectManager):
                 event_time = event.origins[-1].time
         else:
             p_times = []
-            for pick in observations.picks:
+            for pick in picks:
                 p_times.append(pick.time)
             if not p_times:
                 logger.error('empty results')
