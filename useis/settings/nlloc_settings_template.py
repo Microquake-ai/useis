@@ -1,4 +1,4 @@
-from uquake.nlloc.nlloc import (Control, GeographicTransformation,
+from useis.nlloc.nlloc import (Control, GeographicTransformation,
                                 LocSearchOctTree, LocationMethod,
                                 GaussianModelErrors, LocQual2Err)
 
