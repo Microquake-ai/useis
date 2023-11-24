@@ -611,7 +611,7 @@ class NLLOC(ProjectManager):
 
         self.observations = observations
 
-    def run_location(self, observations=None, calculate_rays=True,
+    def run_location(self, picks, calculate_rays=True,
                      delete_output_files=True, event=None,
                      evaluation_mode: str = 'automatic',
                      evaluation_status: str = 'preliminary',
@@ -626,14 +626,7 @@ class NLLOC(ProjectManager):
             observations = Observations.from_event(event=event,
                                                    lookup_table=lookup_table)
 
-        if (observations is None) and (self.observations is None):
-            raise ValueError('The current run does not contain travel time'
-                             'observations. Observations should be added to '
-                             'the current run using the add_observations '
-                             'method.')
-
-        elif observations is not None:
-            self.__add_observations__(observations)
+        self.__add_picks__(picks)
 
         self.write_control_file()
         from ipdb import set_trace
