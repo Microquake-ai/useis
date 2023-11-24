@@ -629,8 +629,8 @@ class NLLOC(ProjectManager):
         self.__add_picks__(picks)
 
         self.write_control_file()
-        from ipdb import set_trace
-        set_trace()
+        # from ipdb import set_trace
+        # set_trace()
 
         cmd = ['NLLoc', self.files.control]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
