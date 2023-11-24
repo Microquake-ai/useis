@@ -207,8 +207,7 @@ class Picker(ProjectManager):
                 pk = Pick(time=t, waveform_id=waveform_id, phase_hint=phase,
                           evaluation_mode='automatic',
                           evaluation_status='preliminary',
-                          method_id=ResourceIdentifier('synthetic interpolated'),
-                          method='synthetic interpolated')
+                          method_id=ResourceIdentifier('synthetic interpolated'))
 
                 picks.append(pk)
 
