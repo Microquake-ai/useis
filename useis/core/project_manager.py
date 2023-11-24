@@ -6,7 +6,7 @@ from useis.nlloc import Srces
 # from uquake.grid.extended import SeedEnsemble as Srces
 # from uquake.grid.extended import SeedEnsemble
 # from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
-from uquake.grid import extended as nlloc_grid
+from uquake.grid import extended as extended_grid
 from uquake.grid import read_grid
 from time import time
 import numpy as np
@@ -240,8 +240,8 @@ class ProjectManager(object):
 
         self.velocities = None
         if (self.p_velocity is not None) and (self.s_velocity is not None):
-            self.velocities = nlloc_grid.VelocityGridEnsemble(self.p_velocity,
-                                                              self.s_velocity)
+            self.velocities = extended_grid.VelocityGridEnsemble(self.p_velocity,
+                                                                 self.s_velocity)
 
         self.paths.times = self.paths.root / 'times'
         self.paths.times.mkdir(parents=True, exist_ok=True)
@@ -249,7 +249,7 @@ class ProjectManager(object):
 
         self.travel_times = None
         try:
-            self.travel_times = nlloc_grid.TravelTimeEnsemble.from_files(
+            self.travel_times = extended_grid.TravelTimeEnsemble.from_files(
                 self.paths.times)
         except Exception as e:
             logger.error(e)
