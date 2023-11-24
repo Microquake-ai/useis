@@ -262,11 +262,15 @@ class ProjectManager(object):
 
     @property
     def projection(self):
-        offset = self.settings.projection.local.offset.to_list()
-        return Projection(global_epsg_code=
-                          self.settings.projection.GLOBAL.epsg,
-                          local_epsg_code=self.settings.projection.local.epsg,
-                          offset=offset)
+        if hasattr(self.settings, 'projection'):
+
+            offset = self.settings.projection.local.offset.to_list()
+            return Projection(global_epsg_code=
+                              self.settings.projection.GLOBAL.epsg,
+                              local_epsg_code=self.settings.projection.local.epsg,
+                              offset=offset)
+        else:
+            return Projection()
 
     def set_global_epsg_code(self, epsg_code: int):
         self.settings.projection.GLOBAL.epsg = epsg_code

@@ -164,13 +164,14 @@ class NLLocResult(object):
                  hypocenter_file: str):
         self.nll_object = nll_object
         self.hypocenter = hypocenter
-        if self.nll_object.projection is None:
-            self.hypocenter_global = None
-        else:
+        if hasattr(self.settings, 'projection'):
             self.hypocenter_global = (self.nll_object.projection.
                                       transform_to_global(hypocenter[0],
                                                           hypocenter[1],
                                                           hypocenter[2]))
+        else:
+            self.hypocenter_global = None
+
         self.event_time = event_time
         self.scatter_cloud = scatter_cloud
         self.rays = rays
