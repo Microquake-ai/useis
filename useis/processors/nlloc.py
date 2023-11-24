@@ -8,7 +8,8 @@ from uquake.core.stream import Stream
 import numpy as np
 import sys
 from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
-from useis.nlloc import Observations, NllocInputFiles, LocGrid
+from useis.nlloc import (Observations, NllocInputFiles, LocGrid,
+                         read_scatter_file, read_hypocenter_file)
 from loguru import logger
 from uuid import uuid4
 
