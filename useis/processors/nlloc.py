@@ -3,7 +3,6 @@ import uquake.core.inventory
 from uquake.core.inventory import Inventory
 
 from ..core.project_manager import *
-from uquake.nlloc.nlloc import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival,
                                Pick, WaveformStreamID)
 from uquake.core import UTCDateTime
@@ -15,6 +14,8 @@ import toml
 # from pydantic import BaseModel
 # from typing import Optional, List
 import matplotlib.pyplot as plt
+from useis.nlloc import Observations, NllocInputFiles, LocGrid
+from loguru import logger
 
 
 def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
@@ -23,7 +24,7 @@ def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
     measure the incidence angle from hodogram
     :param st: a stream object containing the waveforms
     :type st: uquake.core.stream.Stream
-    :param picks: a list of picks associated the the waveforms
+    :param picks: a list of picks associated to the waveforms
     :type picks: list of uquake.core.event.Picks
     :param inventory: inventory file
     :type inventory: uquake.core.inventory.Inventory
@@ -67,11 +68,6 @@ def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
             wave_mat.append(tr.data)
 
         wave_mat = np.array(wave_mat)
-        # plt.figure(2)
-        # plt.close('all')
-        # plt.clf()
-        # plt.plot(wave_mat[1, :] / np.max(wave_mat[1, :]),
-        #          wave_mat[0, :] / np.max(wave_mat[0, :]), 'k')
 
         cov_mat = np.cov(np.array(wave_mat))
 
@@ -84,7 +80,6 @@ def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
             eig_vect = eig_vects[i_[-1]]
             linearity =  (1 - np.linalg.norm(eig_vals[i_[:2]]) /
                           eig_vals[i_[2]])
-            # input(f'grossomodo P {linearity}')
             color = 'b'
         elif arrival.phase == 'S':
             eig_vect = eig_vects[i_[0]]
@@ -711,7 +706,7 @@ class NLLOC(ProjectManager):
     @property
     def nlloc_files(self):
         return NllocInputFiles(self.files.observations,
-                               self.paths.times /
+                               self.paths.nlloc_times /
                                self.network_code,
                                self.paths.outputs / self.network_code)
 
