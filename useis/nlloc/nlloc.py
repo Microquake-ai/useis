@@ -916,7 +916,7 @@ class Srces:
 
     __valid_measurement_units__ = ['METERS', 'KILOMETERS']
 
-    def __init__(self, instruments=[], units='METERS'):
+    def __init__(self, instruments=[], units='METERS', lookup_table=None):
         """
         specifies a series of source location from an inventory object
         :param instruments: a list of instruments containing at least the location,
@@ -939,8 +939,15 @@ class Srces:
 
         self.instruments = instruments
 
+        self.labels = []
+        for instrument in instruments:
+            if lookup_table is not None:
+                self.labels.append(lookup_table[instrument.code])
+            else:
+                self.labels.append(instrument.code)
+
     @classmethod
-    def from_inventory(cls, inventory):
+    def from_inventory(cls, inventory, lookup_table=None):
         """
         create from an inventory object
         :param inventory:
@@ -950,7 +957,7 @@ class Srces:
         # instruments = [instrument for instrument in inventory.instruments]
         # for instrument, short_id in zip(inventory.instruments, inventory.short_ids):
         #     instruments.append(Instrument(short_id, instrument.coordinates))
-        return cls(inventory.instruments)
+        return cls(inventory.instruments, lookup_table=lookup_table)
 
     @classmethod
     def generate_random_srces_in_grid(cls, gd, n_srces=1, label_root='sta'):

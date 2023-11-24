@@ -391,11 +391,12 @@ class ProjectManager(object):
         """
 
         inventory.write(str(self.files.inventory))
-        self.srces = Srces.from_inventory(inventory)
+        self.instrument_code_mapping = InstrumentCodeMapping.from_inventory(inventory)
+        lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
+        self.srces = Srces.from_inventory(inventory, lookup_table=lookup_table)
 
         self.inventory = inventory
 
-        self.instrument_code_mapping = InstrumentCodeMapping.from_inventory(inventory)
         self.instrument_code_mapping.write(self.files.instrument_code_mapping)
 
         if create_srces_file:

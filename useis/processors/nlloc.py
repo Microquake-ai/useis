@@ -619,13 +619,13 @@ class NLLOC(ProjectManager):
 
         # correct the instrument names in the observations before running nlloc
 
-        observations.correct_instrument_code(
-            self.instrument_code_mapping.instrument_code_mapping_reverse)
-
         import subprocess
 
         if event is not None:
             observations = Observations.from_event(event=event)
+
+        observations.correct_instrument_code(
+            self.instrument_code_mapping.instrument_code_mapping_reverse)
 
         if (observations is None) and (self.observations is None):
             raise ValueError('The current run does not contain travel time'
@@ -726,6 +726,8 @@ class NLLOC(ProjectManager):
                              'observations. Observations should be added to '
                              'the current run using the add_observations '
                              'method.')
+
+        srces = self.srces
 
         observations = str(self.observations)
 
