@@ -597,14 +597,14 @@ class NLLOC(ProjectManager):
         with open(self.files.control, 'w') as control_file:
             control_file.write(self.control)
 
-    def __add_observations__(self, observations):
+    def __add_picks__(self, picks):
         """
-        adding observations to the project
-        :param observations: Observations
+        adding picks to the project
+        :param picks: list of uquake.core.event.Pick objects
         """
-        if not isinstance(observations, Observations):
-            raise TypeError(f'observations is type {type(observations)}. '
-                            f'observations must be type {Observations}.')
+        lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
+        observations = Observations(picks=picks, lookup_table=lookup_table)
+
         self.paths.observations.mkdir(parents=True, exist_ok=True)
         observations.write(self.files.observations.name,
                            path=self.paths.observations)
@@ -622,10 +622,9 @@ class NLLOC(ProjectManager):
         import subprocess
 
         if event is not None:
-            observations = Observations.from_event(event=event)
-
-        observations.correct_instrument_code(
-            self.instrument_code_mapping.instrument_code_mapping_reverse)
+            lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
+            observations = Observations.from_event(event=event,
+                                                   lookup_table=lookup_table)
 
         if (observations is None) and (self.observations is None):
             raise ValueError('The current run does not contain travel time'
