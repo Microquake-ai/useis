@@ -368,8 +368,8 @@ class ProjectManager(object):
         for tt in self.travel_times:
             tt.seed.location_code = ''
             tt.seed.station_code = \
-                [self.instrument_code_mapping.instrument_code_mapping_reverse[label]
-                 for label in self.srces.labels]
+                self.instrument_code_mapping.instrument_code_mapping_reverse[
+                    tt.seed.station_code]
 
         self.travel_times.write(self.paths.nlloc_times, format='NLLOC')
 
