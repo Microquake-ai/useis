@@ -678,7 +678,7 @@ class SimpleArrival:
 
 
 class Observations:
-    def __init__(self, picks, p_pick_error=1e-3, s_pick_error=1e-3):
+    def __init__(self, picks, p_pick_error=1e-3, s_pick_error=1e-3, lookup_table=None):
         """
         :param picks: a list of Pick object
         :type picks: list of uquake.core.event.Pick
@@ -693,15 +693,9 @@ class Observations:
         for pick in self.picks:
             self.instrument_codes = pick.instrument
 
-
-    def correct_instrument_code(self, lookup_table):
-        self.instrument_codes = []
-        for pick in self.picks:
-            self.instrument_codes.append(lookup_table[pick.instrument])
-
     @classmethod
     def from_event(cls, event, p_pick_error=1e-3, s_pick_error=1e-3,
-                   origin_index=None):
+                   origin_index=None, lookup_table=None):
 
         if type(event) is Catalog:
             event = event[0]
@@ -764,7 +758,7 @@ class Observations:
     def __repr__(self):
 
         lines = ''
-        for pick, instrument in zip(self.picks, self.instrument_codes):
+        for pick, label in zip(self.picks, self.labels):
             if pick.evaluation_status == 'rejected':
                 continue
 
@@ -792,7 +786,7 @@ class Observations:
             period = -1
             phase_weight = 1
 
-            line = f'{instrument:<6s} {instrument_identification:<4s} ' \
+            line = f'{label:<6s} {instrument_identification:<4s} ' \
                    f'{component:<4s} {phase_onset:1s} ' \
                    f'{phase_descriptor:<6s} {first_motion:1s} ' \
                    f'{datetime_str} {error_type} {pick_error} ' \
@@ -821,6 +815,18 @@ class Observations:
     def write(self, file_name, path='.'):
         with open(Path(path) / file_name, 'w') as file_out:
             file_out.write(str(self))
+
+    @property
+    def labels(self):
+        labels = []
+        for instrument_code in self.instrument_codes:
+            if self.lookup_table is None:
+                labels.append(instrument_code)
+            else:
+                labels.append(self.lookup_table[instrument_code])
+
+        return labels
+
 
 
 class LocFiles:
@@ -938,13 +944,7 @@ class Srces:
         self.units = units
 
         self.instruments = instruments
-
-        self.labels = []
-        for instrument in instruments:
-            if lookup_table is not None:
-                self.labels.append(lookup_table[instrument.code])
-            else:
-                self.labels.append(instrument.code)
+        self.lookup_table = lookup_table
 
     @classmethod
     def from_inventory(cls, inventory, lookup_table=None):
@@ -990,10 +990,10 @@ class Srces:
     def __repr__(self):
         line = ""
 
-        for instrument in self.instruments:
+        for instrument, label in zip(self.instruments, self.labels):
             # test if location name is shorter than 6 characters
 
-            line += f'GTSRCE {instrument.code} XYZ ' \
+            line += f'GTSRCE {label} XYZ ' \
                     f'{instrument.x / 1000:>15.6f} ' \
                     f'{instrument.y / 1000:>15.6f} ' \
                     f'{instrument.z / 1000:>15.6f} ' \
@@ -1061,7 +1061,10 @@ class Srces:
     def labels(self):
         seed_labels = []
         for instrument in self.instruments:
-            seed_labels.append(instrument.code)
+            if self.lookup_table is not None:
+                seed_labels.append(self.lookup_table[instrument.label])
+            else:
+                seed_labels.append(instrument.code)
 
         return np.array(seed_labels)
 
