@@ -366,10 +366,9 @@ class ProjectManager(object):
         self.travel_times.write(self.paths.times, format=self.formats.times)
 
         for tt in self.travel_times:
-            tt.seed.location_code = ''
-            tt.seed.station_code = \
+            tt.seed.station = \
                 self.instrument_code_mapping.instrument_code_mapping_reverse[
-                    tt.seed.station_code]
+                    tt.seed.station]
 
         self.travel_times.write(self.paths.nlloc_times, format='NLLOC')
 
