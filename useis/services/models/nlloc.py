@@ -72,7 +72,7 @@ class NLLOCResults(BaseModel):
     hypocenter_file: str
 
     @classmethod
-    def from_nlloc_results(cls, nlloc_results: useis.processors.nlloc.NLLOCResult):
+    def from_nlloc_results(cls, nlloc_results: useis.processors.nlloc.NLLocResult):
         hypocenter = Coordinates3D.from_array(nlloc_results.hypocenter)
 
         scatter_cloud = []

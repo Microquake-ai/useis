@@ -12,6 +12,7 @@ from useis.nlloc import (Observations, NllocInputFiles, LocGrid,
                          read_scatter_file, read_hypocenter_file)
 from loguru import logger
 from uuid import uuid4
+from typing import List
 
 
 def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
@@ -154,11 +155,11 @@ def calculate_uncertainty(point_cloud):
                              confidence_level=68)
 
 
-class NLLOCResult(object):
+class NLLocResult(object):
 
     def __init__(self, nll_object, hypocenter: np.array,
                  event_time: UTCDateTime, scatter_cloud: np.ndarray,
-                 rays: list, observations: Observations,
+                 rays: list, picks: List[Pick],
                  evaluation_mode: str, evaluation_status: str,
                  hypocenter_file: str):
         self.nll_object = nll_object
@@ -366,7 +367,7 @@ class NLLOCResult(object):
         return loc
 
 
-class NLLOCResult2DCylindrical(NLLOCResult):
+class NLLOCResult2DCylindrical(NLLocResult):
     """
     Transform a NLLOCResult object into 2D Cylindrical solution with more
     appropriate measurement of the uncertainty.
@@ -414,7 +415,7 @@ class NLLOCResult2DCylindrical(NLLOCResult):
                          hypocenter_file)
 
     @classmethod
-    def from_nlloc_result(cls, nlloc_result: NLLOCResult, station: str):
+    def from_nlloc_result(cls, nlloc_result: NLLocResult, station: str):
         return cls(nlloc_result.nll_object,nlloc_result.hypocenter,
                    nlloc_result.event_time,
                    nlloc_result.scatter_cloud, nlloc_result.rays,
@@ -472,7 +473,7 @@ class NLLOCResult2DCylindrical(NLLOCResult):
         """
         return out_str
 
-    def to_3d(self, azimuth: float, std_azimuth: float) -> NLLOCResult:
+    def to_3d(self, azimuth: float, std_azimuth: float) -> NLLocResult:
         """
         :centroi
         :param azimuth: azimuth in degrees
@@ -509,7 +510,7 @@ class NLLOCResult2DCylindrical(NLLOCResult):
                             (scatter_azimuths >= min_azimuth) &
                             (scatter_azimuths <= max_azimuth), :]
 
-        return NLLOCResult(self.nll_object, hypocenter, self.time,
+        return NLLocResult(self.nll_object, hypocenter, self.time,
                            scatter_cloud, self.rays, self.observations,
                            self.evaluation_mode, self.evaluation_status,
                            self.hypocenter_file)
@@ -689,7 +690,7 @@ class NLLOC(ProjectManager):
         if delete_output_files:
             self.remove_run_directory()
 
-        result = NLLOCResult(self, eloc, t, scatters, rays, observations,
+        result = NLLocResult(self, eloc, t, scatters, rays, picks,
                              evaluation_mode, evaluation_status,
                              hypocenter_file)
 
