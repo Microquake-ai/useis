@@ -693,6 +693,8 @@ class Observations:
         for pick in self.picks:
             self.instrument_codes = pick.instrument
 
+        self.lookup_table = lookup_table
+
     @classmethod
     def from_event(cls, event, p_pick_error=1e-3, s_pick_error=1e-3,
                    origin_index=None, lookup_table=None):
