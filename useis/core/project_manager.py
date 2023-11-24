@@ -245,7 +245,7 @@ class ProjectManager(object):
 
         self.paths.times = self.paths.root / 'times'
         self.paths.times.mkdir(parents=True, exist_ok=True)
-        file_list = list(self.paths.times.glob('*time*'))
+        # file_list = list(self.paths.times.glob('*time*'))
 
         self.travel_times = None
         try:
@@ -363,9 +363,16 @@ class ProjectManager(object):
 
         for fle in self.paths.times.glob('*time*'):
             fle.unlink(missing_ok=True)
+        self.travel_times.write(self.paths.times, format=self.formats.times)
+
+        for tt in self.travel_times:
+            tt.seed.location_code = ''
+            tt.seed.station_code = \
+                [self.instrument_code_mapping.instrument_code_mapping_reverse[label]
+                 for label in self.srces.labels]
 
         self.travel_times.write(self.paths.nlloc_times, format='NLLOC')
-        self.travel_times.write(self.paths.times, format=self.formats.times)
+
         t1 = time()
         logger.info(f'done initializing the travel time grids in '
                     f'{t1 - t0:0.2f} seconds')
@@ -454,49 +461,49 @@ class ProjectManager(object):
         self.add_inventory(inventory, create_srces_file=create_srces_file,
                            initialize_travel_time=initialize_travel_time)
 
-    def add_srces(self, srces, force=False, initialize_travel_time: bool=True,
-                  multi_threaded: bool=True):
-        """
-        add a list of sources to the projects
-        :param srces: list of sources or instruments
-        :param force: force the insertion of the srces object if an inventory
-        file is present
-        :param initialize_travel_time: if True, initialize the travel time
-        grid
-        :type srces: Srces
-        :param multi_threaded: if true, use multi-threading
-        :type multi_threaded: bool
-
-        ..warning:: travel time should be initialized when the instruments/srces
-        are updated. Not doing so, may cause the instruments/source and the
-        travel time grids to be incompatible.
-        """
-
-        if not isinstance(srces, Srces):
-            raise TypeError(f'Expecting type {Srces}, given '
-                            f'{type(srces)}')
-
-        if self.inventory is not None:
-            logger.warning('The project already has an inventory file!')
-            if not force:
-                logger.warning('exiting...')
-                return
-            else:
-                logger.warning('the force flag value is True, srces object '
-                               'will be added.')
-
-        self.srces = srces
-        with open(self.files.srces, 'wb') as srces_file:
-            pickle.dump(self.srces, srces_file)
-
-        if initialize_travel_time:
-            self.init_travel_time_grids(multi_threaded=multi_threaded)
-        else:
-            logger.warning('the travel time grids will not be initialized, '
-                           'the inventory and the travel time grids might '
-                           'be out of sync. To initialize the travel time '
-                           'grids make sure initialize_travel_time is set to '
-                           'True')
+    # def add_srces(self, srces, force=False, initialize_travel_time: bool=True,
+    #               multi_threaded: bool=True):
+    #     """
+    #     add a list of sources to the projects
+    #     :param srces: list of sources or instruments
+    #     :param force: force the insertion of the srces object if an inventory
+    #     file is present
+    #     :param initialize_travel_time: if True, initialize the travel time
+    #     grid
+    #     :type srces: Srces
+    #     :param multi_threaded: if true, use multi-threading
+    #     :type multi_threaded: bool
+    #
+    #     ..warning:: travel time should be initialized when the instruments/srces
+    #     are updated. Not doing so, may cause the instruments/source and the
+    #     travel time grids to be incompatible.
+    #     """
+    #
+    #     if not isinstance(srces, Srces):
+    #         raise TypeError(f'Expecting type {Srces}, given '
+    #                         f'{type(srces)}')
+    #
+    #     if self.inventory is not None:
+    #         logger.warning('The project already has an inventory file!')
+    #         if not force:
+    #             logger.warning('exiting...')
+    #             return
+    #         else:
+    #             logger.warning('the force flag value is True, srces object '
+    #                            'will be added.')
+    #
+    #     self.srces = srces
+    #     with open(self.files.srces, 'wb') as srces_file:
+    #         pickle.dump(self.srces, srces_file)
+    #
+    #     if initialize_travel_time:
+    #         self.init_travel_time_grids(multi_threaded=multi_threaded)
+    #     else:
+    #         logger.warning('the travel time grids will not be initialized, '
+    #                        'the inventory and the travel time grids might '
+    #                        'be out of sync. To initialize the travel time '
+    #                        'grids make sure initialize_travel_time is set to '
+    #                        'True')
 
     def add_velocities(self, velocities, initialize_travel_times=False):
         """

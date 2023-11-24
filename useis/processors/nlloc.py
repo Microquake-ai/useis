@@ -10,9 +10,9 @@ from uquake.core import UTCDateTime
 from uquake.core.stream import Stream
 import numpy as np
 import sys
+from uquake.core.event import ConfidenceEllipsoid, OriginUncertainty
 import toml
 # from pydantic import BaseModel
-# from ..services import models
 # from typing import Optional, List
 import matplotlib.pyplot as plt
 
