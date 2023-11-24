@@ -821,11 +821,11 @@ class Observations:
     @property
     def labels(self):
         labels = []
-        for instrument_code in self.instrument_codes:
+        for pick in self.picks:
             if self.lookup_table is None:
-                labels.append(instrument_code)
+                labels.append(pick.instrument)
             else:
-                labels.append(self.lookup_table[instrument_code])
+                labels.append(self.lookup_table[pick.instrument])
 
         return labels
 
