@@ -164,14 +164,17 @@ class NLLocResult(object):
                  hypocenter_file: str):
         self.nll_object = nll_object
         self.hypocenter = hypocenter
-        self.hypocenter_global = (self.nll_object.projection.
-                                  transform_to_global(hypocenter[0],
-                                                      hypocenter[1],
-                                                      hypocenter[2]))
+        if self.nll_object.projection is None:
+            self.hypocenter_global = None
+        else:
+            self.hypocenter_global = (self.nll_object.projection.
+                                      transform_to_global(hypocenter[0],
+                                                          hypocenter[1],
+                                                          hypocenter[2]))
         self.event_time = event_time
         self.scatter_cloud = scatter_cloud
         self.rays = rays
-        self.observations = observations
+        self.picks = picks
         self.evaluation_mode = evaluation_mode
         self.evaluation_status = evaluation_status
 
@@ -355,8 +358,7 @@ class NLLocResult(object):
             if arrival.time_residual < residual_threshold:
                 picks.append(arrival.pick)
 
-        observations = Observations(picks=picks)
-        return self.nll_object.run_location(observations)
+        return self.nll_object.run_location(self.picks)
 
     def relocate_hodogram(self, stream: Stream, window_length: float = 20e-3):
         loc = locate_hodogram(stream, self.event, self.nll_object.inventory,
@@ -379,7 +381,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
     def __init__(self, nlloc_object, hypocenter: np.array,
                  event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
-                 observations: Observations, evaluation_mode: str,
+                 picks: List[Pick], evaluation_mode: str,
                  evaluation_status: str, hypocenter_file: str,
                  inventory: uquake.core.inventory.Inventory, station: str):
 
@@ -389,7 +391,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
         :param event_time: event time
         :param scatter_cloud: cloud of probable location
         :param rays: a list of ray
-        :param observations: travel time observations used to calculate the
+        :param picks: travel time picks used to calculate the
         location
         :param evaluation_mode: evaluation mode as defined by the QuakeML
         standard
@@ -411,7 +413,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
         self.reference_y = np.mean(ys)
 
         super().__init__(nlloc_object, hypocenter, event_time, scatter_cloud,
-                        rays, observations, evaluation_mode, evaluation_status,
+                        rays, picks, evaluation_mode, evaluation_status,
                          hypocenter_file)
 
     @classmethod
@@ -419,7 +421,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
         return cls(nlloc_result.nll_object,nlloc_result.hypocenter,
                    nlloc_result.event_time,
                    nlloc_result.scatter_cloud, nlloc_result.rays,
-                   nlloc_result.observations, nlloc_result.evaluation_mode,
+                   nlloc_result.picks, nlloc_result.evaluation_mode,
                    nlloc_result.evaluation_status,
                    nlloc_result.hypocenter_file,
                    nlloc_result.nll_object.inventory, station)
@@ -511,7 +513,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
                             (scatter_azimuths <= max_azimuth), :]
 
         return NLLocResult(self.nll_object, hypocenter, self.time,
-                           scatter_cloud, self.rays, self.observations,
+                           scatter_cloud, self.rays, self.picks,
                            self.evaluation_mode, self.evaluation_status,
                            self.hypocenter_file)
 
