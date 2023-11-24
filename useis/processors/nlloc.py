@@ -632,6 +632,8 @@ class NLLOC(ProjectManager):
             self.__add_observations__(observations)
 
         self.write_control_file()
+        from ipdb import set_trace
+        set_trace()
 
         cmd = ['NLLoc', self.files.control]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
