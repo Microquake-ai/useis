@@ -247,7 +247,7 @@ class NLLocResult(object):
         predicted_times = self.nll_object.travel_times.travel_time(
             self.hypocenter)
         angles = self.nll_object.travel_times.angles(self.hypocenter)
-        for pick in self.observations.picks:
+        for pick in self.picks:
             travel_time = pick.time - self.t
             phase = pick.phase_hint
             site_code = pick.site
