@@ -10,11 +10,9 @@ from uquake.core.event import (Pick, WaveformStreamID, ResourceIdentifier,
                                Arrival, Origin, Event)
 from uquake.core import UTCDateTime
 import uquake
-from ..ai.model import AIPicker
+# from ..ai.model import AIPicker
 from datetime import datetime
 from uquake.core.stream import Stream
-from uquake.core.inventory import Inventory
-from typing import List
 from obspy.realtime.signal import kurtosis
 from numpy.fft import fftshift
 from loguru import logger
@@ -148,10 +146,10 @@ class Picker(ProjectManager):
 
         self.ai_picker = None
 
-        if self.files.picker_model.is_file():
-            if self.files.picker_model.is_file():
-                self.ai_picker = AIPicker.read(
-                    self.files.picker_model)
+        # if self.files.picker_model.is_file():
+        #     if self.files.picker_model.is_file():
+        #         self.ai_picker = AIPicker.read(
+        #             self.files.picker_model)
 
     @staticmethod
     def read_nmx_pick(pick_file: str):
@@ -185,14 +183,14 @@ class Picker(ProjectManager):
 
         return out_picks
 
-    def add_picker_model_from_file(self, file_path):
-        # shutil.copyfile(file_path, self.files.picker_model)
-        self.ai_picker = AIPicker.read(file_path)
-        self.ai_picker.write(self.files.picker_model)
-
-    def add_picker_model(self, model):
-        self.ai_picker = model
-        self.ai_picker.write(self.files.picker_model)
+    # def add_picker_model_from_file(self, file_path):
+    #     # shutil.copyfile(file_path, self.files.picker_model)
+    #     self.ai_picker = AIPicker.read(file_path)
+    #     self.ai_picker.write(self.files.picker_model)
+    #
+    # def add_picker_model(self, model):
+    #     self.ai_picker = model
+    #     self.ai_picker.write(self.files.picker_model)
 
     def synthetic_pick(self, origin_location, origin_time):
         tts = self.travel_times.travel_time(origin_location)
@@ -210,7 +208,7 @@ class Picker(ProjectManager):
 
     def snr_repick(self, stream: uquake.core.stream.Stream,
                    picks: List[uquake.core.event.Pick],
-                   ai_enhanced=False,
+                   ai_enhanced: bool = False,
                    setting_section='snr_repicker'):
 
         """
