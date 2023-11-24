@@ -197,12 +197,22 @@ class Picker(ProjectManager):
 
         picks = []
         for phase in ['P', 'S']:
-            for tt in tts[phase]:
-                t = origin_time + tt
+            for key in tts[phase].keys():
+                station_code = key.split('.')[0]
+                location_code = key.split('.')[1]
+                t = origin_time + tts[phase][key]
                 waveform_id = WaveformStreamID(network_code=self.network_code,
-                                               station_code=self.station_code)
-                # pk = Pick(time=t, )
-                picks.append()
+                                               station_code=station_code,
+                                               location_code=location_code)
+                pk = Pick(time=t, waveform_id=waveform_id, phase_hint=phase,
+                          evaluation_mode='automatic',
+                          evaluation_status='preliminary',
+                          method_id=ResourceIdentifier('synthetic interpolated'),
+                          method='synthetic interpolated')
+
+                picks.append(pk)
+
+        return picks
 
 
 
