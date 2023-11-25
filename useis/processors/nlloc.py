@@ -189,6 +189,7 @@ class NLLocResult(object):
         self.hypocenter_file = hypocenter_file
         self.unc = self.origin_uncertainty.confidence_ellipsoid.\
             semi_major_axis_length
+        self.lookup_table = lookup_table
 
     def __repr__(self):
         out_str = f"""
