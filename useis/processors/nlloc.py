@@ -161,7 +161,9 @@ class NLLocResult(object):
                  event_time: UTCDateTime, scatter_cloud: np.ndarray,
                  rays: list, picks: List[Pick],
                  evaluation_mode: str, evaluation_status: str,
-                 hypocenter_file: str):
+                 hypocenter_file: str,
+                 lookup_table: dict = None):
+
         self.nll_object = nll_object
         self.hypocenter = hypocenter
         if self.nll_object.projection is not None:
@@ -281,8 +283,14 @@ class NLLocResult(object):
                 time_residual = Arrival.calculate_time_residual(predicted_time,
                                                                 travel_time)
 
-                azimuth = angles['azimuth'][phase][instrument_code]
-                takeoff_angle = angles['takeoff'][phase][instrument_code]
+
+                if self.lookup_table is not None:
+                    code = self.lookup_table[instrument_code]
+                    azimuth = angles['azimuth'][phase][code]
+                    takeoff_angle = angles['takeoff'][phase][code]
+                else:
+                    azimuth = None
+                    takeoff_angle = None
 
             time_weight = 1
 
@@ -384,7 +392,8 @@ class NLLOCResult2DCylindrical(NLLocResult):
                  scatter_cloud: np.ndarray, rays: list,
                  picks: List[Pick], evaluation_mode: str,
                  evaluation_status: str, hypocenter_file: str,
-                 inventory: uquake.core.inventory.Inventory, station: str):
+                 inventory: uquake.core.inventory.Inventory, station: str,
+                 lookup_table: dict = None):
 
         """
         :param nlloc_object:
@@ -516,7 +525,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
         return NLLocResult(self.nll_object, hypocenter, self.time,
                            scatter_cloud, self.rays, self.picks,
                            self.evaluation_mode, self.evaluation_status,
-                           self.hypocenter_file)
+                           self.hypocenter_file, self.nll_object.lookup_table)
 
 
 class NLLOC(ProjectManager):
@@ -693,9 +702,12 @@ class NLLOC(ProjectManager):
         if delete_output_files:
             self.remove_run_directory()
 
+        lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
+
         result = NLLocResult(self, eloc, t, scatters, rays, picks,
                              evaluation_mode, evaluation_status,
-                             hypocenter_file)
+                             hypocenter_file,
+                             lookup_table=lookup_table)
 
         return result
 
