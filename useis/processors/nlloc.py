@@ -320,8 +320,8 @@ class NLLocResult(object):
                         uncertainty=self.unc,
                         rays=self.rays,
                         uncertainty_point_cloud=self.scatter_cloud)
-        origin.scatter = self.scatter_cloud
-        origin.rays = self.rays
+        # origin.scatter = self.scatter_cloud
+        # origin.rays = self.rays
         return origin
 
     @property
