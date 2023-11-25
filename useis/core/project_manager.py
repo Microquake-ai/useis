@@ -241,6 +241,8 @@ class ProjectManager(object):
             self.velocities = extended_grid.VelocityGridEnsemble(self.p_velocity,
                                                                  self.s_velocity)
 
+        self.coordinate_system = self.velocities['P'].coordinate_system
+
         self.paths.times = self.paths.root / 'times'
         self.paths.times.mkdir(parents=True, exist_ok=True)
         # file_list = list(self.paths.times.glob('*time*'))

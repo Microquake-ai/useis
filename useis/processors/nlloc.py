@@ -3,6 +3,7 @@ from uquake.core.inventory import Inventory
 from ..core.project_manager import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival,
                                Pick, WaveformStreamID)
+from uquake.core.coordinates import Coordinates, CoordinateSystem
 from uquake.core import UTCDateTime
 from uquake.core.stream import Stream
 import numpy as np
@@ -157,7 +158,7 @@ def calculate_uncertainty(point_cloud):
 
 class NLLocResult(object):
 
-    def __init__(self, nll_object, hypocenter: np.array,
+    def __init__(self, nll_object, coordinates: Coordinates,
                  event_time: UTCDateTime, scatter_cloud: np.ndarray,
                  rays: list, picks: List[Pick],
                  evaluation_mode: str, evaluation_status: str,
@@ -165,7 +166,8 @@ class NLLocResult(object):
                  lookup_table: dict = None):
 
         self.nll_object = nll_object
-        self.hypocenter = hypocenter
+        self.hypocenter = coordinates.loc
+        self.coordinates = coordinates
         if self.nll_object.projection is not None:
             self.hypocenter_global = (self.nll_object.projection.
                                       transform_to_global(hypocenter[0],
@@ -307,7 +309,10 @@ class NLLocResult(object):
 
     @property
     def origin(self):
-        origin = Origin(x=self.x, y=self.y, z=self.z, time=self.t,
+        coordinates = Coordinates(x=self.x, y=self.y, z=self.z,
+                                  coordinate_system=self.coordinate_system)
+        origin = Origin(coordinates=coordinates,
+                        time=self.time,
                         latitude=self.latitude,
                         longitude=self.longitude,
                         depth=self.depth,
@@ -388,7 +393,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
     can be neglected
     """
 
-    def __init__(self, nlloc_object, hypocenter: np.array,
+    def __init__(self, nlloc_object, coordinates: Coordinates,
                  event_time: UTCDateTime,
                  scatter_cloud: np.ndarray, rays: list,
                  picks: List[Pick], evaluation_mode: str,
@@ -413,6 +418,9 @@ class NLLOCResult2DCylindrical(NLLocResult):
         :param station: station name
         """
 
+        self.lookup_table = lookup_table
+        self.coordinates = coordinates
+        self.hypocenter = coordinates.loc
         inv = inventory.select(station=station)
         xs = []
         ys = []
@@ -423,7 +431,7 @@ class NLLOCResult2DCylindrical(NLLocResult):
         self.reference_x = np.mean(xs)
         self.reference_y = np.mean(ys)
 
-        super().__init__(nlloc_object, hypocenter, event_time, scatter_cloud,
+        super().__init__(nlloc_object, self.hypocenter, event_time, scatter_cloud,
                         rays, picks, evaluation_mode, evaluation_status,
                          hypocenter_file)
 
@@ -523,7 +531,10 @@ class NLLOCResult2DCylindrical(NLLocResult):
                             (scatter_azimuths >= min_azimuth) &
                             (scatter_azimuths <= max_azimuth), :]
 
-        return NLLocResult(self.nll_object, hypocenter, self.time,
+        coordinates = Coordinates(x=hypocenter[0], y=hypocenter[1], z=hypocenter[2],
+                                  coordinate_system=self.coordinate_system)
+
+        return NLLocResult(self.nll_object, coordinates, self.time,
                            scatter_cloud, self.rays, self.picks,
                            self.evaluation_mode, self.evaluation_status,
                            self.hypocenter_file, self.nll_object.lookup_table)
@@ -705,7 +716,10 @@ class NLLOC(ProjectManager):
 
         lookup_table = self.instrument_code_mapping.instrument_code_mapping_reverse
 
-        result = NLLocResult(self, eloc, t, scatters, rays, picks,
+        coordinates = Coordinates(x=eloc[0], y=eloc[1], z=eloc[2],
+                                  coordinate_system=self.coordinate_system)
+
+        result = NLLocResult(self, coordinates, t, scatters, rays, picks,
                              evaluation_mode, evaluation_status,
                              hypocenter_file,
                              lookup_table=lookup_table)
