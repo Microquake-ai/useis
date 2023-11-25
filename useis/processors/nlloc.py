@@ -2,7 +2,8 @@ import uquake.core.inventory
 from uquake.core.inventory import Inventory
 from ..core.project_manager import *
 from uquake.core.event import (Catalog, Event, CreationInfo, Origin, Arrival,
-                               Pick, WaveformStreamID)
+                               Pick, WaveformStreamID, RayEnsemble,
+                               UncertaintyPointCloud)
 from uquake.core.coordinates import Coordinates, CoordinateSystem
 from uquake.core import UTCDateTime
 from uquake.core.stream import Stream
@@ -160,7 +161,7 @@ class NLLocResult(object):
 
     def __init__(self, nll_object, coordinates: Coordinates,
                  event_time: UTCDateTime, scatter_cloud: np.ndarray,
-                 rays: list, picks: List[Pick],
+                 rays: Union[list, RayEnsemble], picks: List[Pick],
                  evaluation_mode: str, evaluation_status: str,
                  hypocenter_file: str,
                  lookup_table: dict = None):
@@ -178,6 +179,10 @@ class NLLocResult(object):
 
         self.event_time = event_time
         self.scatter_cloud = scatter_cloud
+
+        if isinstance(rays, list):
+            rays = RayEnsemble(rays)
+
         self.rays = rays
         self.picks = picks
         self.evaluation_mode = evaluation_mode
@@ -245,6 +250,14 @@ class NLLocResult(object):
     @property
     def time(self):
         return self.event_time
+
+    @property
+    def uncertainty_point_cloud(self):
+        uncertainty_point_cloud = UncertaintyPointCloud(self.scatter_cloud[:, :-1],
+                                                        self.scatter_cloud[:, -1],
+                                                        coordinate_system=
+                                                        self.coordinate_system)
+        return uncertainty_point_cloud
 
     @property
     def arrivals(self) -> list:
@@ -324,7 +337,7 @@ class NLLocResult(object):
                         origin_uncertainty=self.origin_uncertainty,
                         uncertainty=self.unc,
                         rays=self.rays,
-                        uncertainty_point_cloud=self.scatter_cloud)
+                        uncertainty_point_cloud=self.uncertainty_point_cloud)
         # origin.scatter = self.scatter_cloud
         # origin.rays = self.rays
         return origin
