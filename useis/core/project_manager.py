@@ -2,6 +2,7 @@ from pathlib import Path
 import pickle
 from uquake.core.inventory import read_inventory
 from uquake.core.logging import logger
+from uquake.core.coordinates import CoordinateSystem
 from useis.nlloc import Srces
 from uquake.grid import extended as extended_grid
 from uquake.grid import read_grid
@@ -119,7 +120,7 @@ class ProjectManager(object):
     inventory_file_name = 'inventory.xml'
 
     def __init__(self, base_projects_path, project_name, network_code,
-                 use_srces=False, **kwargs):
+                 coordinate_system=CoordinateSystem.NED, **kwargs):
         """
         Interface to manage project and grids.
 
@@ -129,8 +130,8 @@ class ProjectManager(object):
         :type project_name: str
         :param network_code: network name or id
         :type network_code: str
-        :param use_srces: if True use the srces files instead of the the
-        inventory file should both files be present (default=False)
+        :param coordinate_system: coordinate system
+        :type coordinate_system: CoordinateSystem
         """
 
         self.project_name = project_name
@@ -241,7 +242,10 @@ class ProjectManager(object):
             self.velocities = extended_grid.VelocityGridEnsemble(self.p_velocity,
                                                                  self.s_velocity)
 
-        self.coordinate_system = self.velocities['P'].coordinate_system
+        if self.velocities is not None:
+            self.coordinate_system = self.velocities['P'].coordinate_system
+        else:
+            self.coordinate_system = coordinate_system
 
         self.paths.times = self.paths.root / 'times'
         self.paths.times.mkdir(parents=True, exist_ok=True)
