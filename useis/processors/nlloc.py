@@ -14,7 +14,7 @@ from useis.nlloc import (Observations, NllocInputFiles, LocGrid,
                          read_scatter_file, read_hypocenter_file)
 from loguru import logger
 from uuid import uuid4
-from typing import List
+from typing import List, Union
 
 
 def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
