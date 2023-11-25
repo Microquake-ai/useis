@@ -349,6 +349,10 @@ class NLLocResult(object):
 
         return predicted_picks
 
+    @property
+    def coordinate_system(self):
+        return self.coordinates.coordinate_system
+
     def append_to_event(self, event: Event) -> Event:
         o = self.origin
         if isinstance(event, Catalog):
