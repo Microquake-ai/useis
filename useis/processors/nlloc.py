@@ -170,9 +170,9 @@ class NLLocResult(object):
         self.coordinates = coordinates
         if self.nll_object.projection is not None:
             self.hypocenter_global = (self.nll_object.projection.
-                                      transform_to_global(hypocenter[0],
-                                                          hypocenter[1],
-                                                          hypocenter[2]))
+                                      transform_to_global(self.hypocenter[0],
+                                                          self.hypocenter[1],
+                                                          self.hypocenter[2]))
         else:
             self.hypocenter_global = None
 
