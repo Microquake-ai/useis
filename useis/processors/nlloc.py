@@ -363,7 +363,7 @@ class NLLocResult(object):
 
     def export_as_event(self):
         o = self.origin
-        e = Event(origins=[o], picks=self.observations.picks)
+        e = Event(origins=[o], picks=self.picks)
         e.preferred_origin_id = o.resource_id
         return e
 
