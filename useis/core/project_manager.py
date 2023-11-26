@@ -334,7 +334,7 @@ class ProjectManager(object):
         project_path = Path(project_path) / project_name / network_code
         return project_path.exists()
 
-    def init_travel_time_grids(self, multi_threaded=True):
+    def init_travel_time_grids(self, multi_threaded=True, sub_grid_resolution=0.1):
         """
         initialize the travel time grids
         """
@@ -369,7 +369,8 @@ class ProjectManager(object):
             seeds[i].short_label = \
                 self.instrument_code_mapping.instrument_code_mapping_reverse[seed.label]
 
-        tt = self.velocities.to_time(seeds, multi_threaded=multi_threaded)
+        tt = self.velocities.to_time(seeds, multi_threaded=multi_threaded,
+                                     sub_grid_resolution=sub_grid_resolution)
 
         self.travel_times = tt
 
@@ -389,7 +390,8 @@ class ProjectManager(object):
                     f'{t1 - t0:0.2f} seconds')
 
     def add_inventory(self, inventory, create_srces_file: bool = True,
-                      initialize_travel_times: bool = True):
+                      initialize_travel_times: bool = True,
+                      multi_threaded=True, **kwargs):
         """
         adding a inventory object to the project
         :param inventory: station xml inventory object
@@ -415,7 +417,7 @@ class ProjectManager(object):
                 pickle.dump(self.srces, srces_file)
 
         if initialize_travel_times:
-            self.init_travel_time_grids()
+            self.init_travel_time_grids(multi_threaded=multi_threaded, **kwargs)
         else:
             logger.warning('the travel time grids will not be initialized, '
                            'the inventory and the travel time grids might '
