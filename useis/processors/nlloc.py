@@ -70,8 +70,6 @@ def locate_hodogram(st: Stream, event: Event, inventory: Inventory,
 
         cov_mat = np.cov(np.array(wave_mat))
 
-        e = None
-
         eig_vals, eig_vects = np.linalg.eig(cov_mat)
         i_ = np.argsort(eig_vals)
 
@@ -275,14 +273,16 @@ class NLLocResult(object):
             location = pick.waveform_id.location_code
 
             if self.rays is not None:
-                for ray in self.rays:
-                    if (ray.instrument_code == instrument_code) & (ray.phase == phase):
-                        break
+                ray = self.rays.select(network=network, station=station,
+                                       location=location, phase=phase)[0]
                 distance = ray.length
 
                 time_residual = Arrival.calculate_time_residual(
                     ray.travel_time,
                     travel_time)
+
+                from ipdb import set_trace
+                set_trace()
 
                 azimuth = ray.azimuth
                 takeoff_angle = ray.takeoff_angle
