@@ -281,9 +281,6 @@ class NLLocResult(object):
                     ray.travel_time,
                     travel_time)
 
-                from ipdb import set_trace
-                set_trace()
-
                 azimuth = ray.azimuth
                 takeoff_angle = ray.takeoff_angle
 
