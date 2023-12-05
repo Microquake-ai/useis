@@ -5,7 +5,7 @@ from pathlib import Path
 import os
 import shutil
 from ..settings.settings import Settings
-from uquake.waveform.pick import snr_ensemble_re_picker, calculate_snr
+from useis.waveform.pick import snr_ensemble_re_picker, calculate_snr
 from uquake.core.event import (Pick, WaveformStreamID, ResourceIdentifier,
                                Arrival, Origin, Event)
 from uquake.core import UTCDateTime
