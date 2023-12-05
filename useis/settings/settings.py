@@ -8,7 +8,6 @@ class Settings(LazySettings):
         Initializes the settings object, ensuring all .toml files in the specified
         settings_location are read.
         """
-        self.settings_location = settings_location
 
         # Define configuration dictionary for Dynaconf
         dconf = {}
