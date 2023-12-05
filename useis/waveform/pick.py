@@ -33,14 +33,14 @@
 # along with uquake.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-from libraries.uquake.uquake.core import Stream, Trace
+from uquake.uquake.core import Stream, Trace
 from obspy.realtime.signal import kurtosis
 from scipy.signal import detrend
-from libraries.uquake.uquake.core.logging import logger
-from libraries.uquake.uquake.core.event import make_pick, Pick
-from libraries.uquake.uquake.core.inventory import Inventory
-from libraries.uquake.uquake.core.util.tools import copy_picks_to_dict
-from libraries.uquake.uquake.core import UTCDateTime
+from uquake.uquake.core.logging import logger
+from uquake.uquake.core.event import make_pick, Pick
+from uquake.uquake.core.inventory import Inventory
+from uquake.uquake.core.util.tools import copy_picks_to_dict
+from uquake.uquake.core import UTCDateTime
 
 
 def measure_polarity(st, catalog, location, average_time_window=1e-3,
